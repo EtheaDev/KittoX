@@ -1,0 +1,9 @@
+Fields:
+  ACTIVITY_DATE: Date primary key
+    DisplayLabel: Date
+  ACTIVITY_COUNT: Integer
+    DisplayLabel: Count
+  TOTAL_HOURS: Decimal(9, 2)
+    DisplayLabel: Hours
+PhysicalName: VW_ACTIVITY_DAILY_RANGE
+ImageName: bar_chart

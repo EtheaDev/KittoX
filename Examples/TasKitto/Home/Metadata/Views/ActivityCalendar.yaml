@@ -1,0 +1,17 @@
+﻿Type: Data
+ImageName: date_range
+DisplayLabel: _(Activity Calendar)
+Controller: List
+  CenterController: CalendarPanel
+    EventTemplate: CalendarActivity.html
+MainTable:
+  Model: ACTIVITY_CALENDAR
+    CalendarId: EventId
+    CalendarStartDate: StartDate
+    CalendarEndDate: EndDate
+    CalendarEventType: EventType
+    CalendarEventNotes: Notes
+  EditController:
+    Width: 800
+    Height: 600
+    CloneButton:

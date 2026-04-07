@@ -1,0 +1,245 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{44E44607-5754-4B0C-BEEB-4EEC44A09CE7}</ProjectGuid>
+        <MainSource>KittoXCore.dpk</MainSource>
+        <ProjectVersion>20.2</ProjectVersion>
+        <FrameworkType>VCL</FrameworkType>
+        <Base>True</Base>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>3</TargetedPlatforms>
+        <AppType>Package</AppType>
+        <ProjectName Condition="'$(ProjectName)'==''">KittoXCore</ProjectName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_DcuOutput>..\..\Lib\D12\$(Platform)</DCC_DcuOutput>
+        <DCC_E>false</DCC_E>
+        <DCC_N>false</DCC_N>
+        <DCC_S>false</DCC_S>
+        <DCC_F>false</DCC_F>
+        <DCC_K>false</DCC_K>
+        <GenDll>true</GenDll>
+        <GenPackage>true</GenPackage>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.0.0.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <DCC_Description>KittoX Core Run-Time Package</DCC_Description>
+        <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
+        <SanitizedProjectName>KittoXCore</SanitizedProjectName>
+        <DCC_DUPLICATE_CTOR_DTOR>false</DCC_DUPLICATE_CTOR_DTOR>
+        <DllSuffix>$(Auto)</DllSuffix>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_MajorVer>4</VerInfo_MajorVer>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
+        <DCC_Optimize>false</DCC_Optimize>
+        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_RemoteDebug>false</DCC_RemoteDebug>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="vcl.dcp"/>
+        <DCCReference Include="dbrtl.dcp"/>
+        <DCCReference Include="dbexpress.dcp"/>
+        <DCCReference Include="adortl.dcp"/>
+        <DCCReference Include="inet.dcp"/>
+        <DCCReference Include="vclimg.dcp"/>
+        <DCCReference Include="RESTComponents.dcp"/>
+        <DCCReference Include="IndyCore.dcp"/>
+        <DCCReference Include="IndySystem.dcp"/>
+        <DCCReference Include="IndyProtocols.dcp"/>
+        <DCCReference Include="FireDAC.dcp"/>
+        <DCCReference Include="..\..\Source\EF\EF.Classes.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.DB.ADO.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.DB.DBX.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.DB.FD.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.DB.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Emailer.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.FOP.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Intf.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.JSON.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Localization.dxgettext.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Localization.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Logger.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Logger.TextFile.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Macros.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.ObserverIntf.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.RegEx.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Rtti.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Shell.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.SQL.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Streams.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.StrUtils.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Sys.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Sys.Windows.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Tree.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.Types.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.VariantUtils.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.XML.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.YAML.pas"/>
+        <DCCReference Include="..\..\Source\EF\EF.YAML.Attributes.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\ADOX_TypeLibrary.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\DebenuPDFLibraryLite1114_TLB.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\gnugettext.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.Types.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.SubNodes.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.SubNodes2.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.AccessControl.DB.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.AccessControl.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.DB.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.DBServer.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.OSDB.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.TextFile.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Config.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Config.Defaults.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.DatabaseRouter.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Excel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.All.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Base.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Editors.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Filters.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.BorderPanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.FormController.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.ChangePassword.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Controller.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.DataPanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Files.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Form.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.GroupingList.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.HtmlPanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.List.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Login.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Panel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.ResetPassword.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Response.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.StatusBar.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.TabPanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.TemplateDataPanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.TemplateEngine.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.ToolBar.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Tools.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.TilePanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.TreePanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Utils.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.Wizard.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.FlexPanel.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Rules.Wizard.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.Export.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.ADO.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.FOP.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.XSL.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.DebenuQuickPDF.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.SQL.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.Indy.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Tool.Standard.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Localization.dxgettext.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.DataView.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.ModelImplementation.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.Models.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.ViewBuilders.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Metadata.Views.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Rules.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.SQL.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Store.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Types.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Application.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Engine.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Request.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Response.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routes.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Attributes.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Registry.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Injection.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Activation.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Route.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Session.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Providers.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Routing.Scripts.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Session.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Types.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.URL.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.WebBroker.Handler.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.WebBroker.WebModule.pas">
+            <Form>KWebModule</Form>
+            <DesignClass>TWebModule</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\..\Source\Kitto.DebenuQuickPDF.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Base32U.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Bcrypt.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\DelphiZXIngQRCode.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\GoogleOTP.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Kitto.ExprEvaluator.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Kitto.TemplatePro.Types.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Kitto.TemplatePro.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Kitto.JsonDataObjects.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\Kitto.Nullables.pas"/>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Package</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Excluded_Packages/>
+                <Source>
+                    <Source Name="MainSource">KittoXCore.dpk</Source>
+                </Source>
+            </Delphi.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">True</Platform>
+            </Platforms>
+            <Deployment Version="5"/>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+    <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+</Project>

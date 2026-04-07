@@ -1,0 +1,8 @@
+Type: Data
+DisplayLabel: _(Monthly Activities)
+ImageName: todo_list.svg
+Controller: TemplateDataPanel
+  TemplateFileName: DashKpiActivities.html
+MainTable:
+  IsReadOnly: True
+  Model: KPI_MONTHLY

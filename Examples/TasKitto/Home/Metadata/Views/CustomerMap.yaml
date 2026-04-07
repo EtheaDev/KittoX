@@ -1,0 +1,26 @@
+Type: Data
+Controller: GoogleMap
+  GoogleMap:
+    Zoom: 6
+    Center:
+      Latitude: 41.9028
+      Longitude: 12.4964
+    MapTypeId: ROADMAP
+    MapControls:
+      Zoom: True
+      MapType: True
+      FullScreen: True
+      StreetView: False
+    MapView:
+      Traffic: False
+      Bicycling: False
+      Markers: True
+    SidebarPosition: West
+    SidebarWidth: 600
+    AddressFields: ADDRESS, CITY
+    TitleField: CUSTOMER_NAME
+    InfoFields: CUSTOMER_NAME, ADDRESS, CITY, PHONE, EMAIL
+MainTable:
+  Model: CUSTOMER
+DisplayLabel: Customer Map
+ImageName: map

@@ -1,0 +1,26 @@
+Type: Data
+ImageName: checklist
+
+Controller: GroupingList
+
+MainTable:
+  PluralDisplayLabel: Activities by Type
+  Model: ACTIVITY
+  EditController:
+    CloneButton:
+    Width: 1220
+    Height: 460
+
+  Controller:
+    Form:
+      Layout: ActivityInput_Form
+
+    Grouping:
+      FieldName: TYPE
+      EnableMenu: False
+      StartCollapsed: True
+      ShowName: False
+      ShowCount: True
+        ItemName: activity
+        PluralItemName: activities
+      SortFieldNames: TYPE ACTIVITY_DATE

@@ -1,0 +1,109 @@
+AppName: HelloKittoX
+AppTitle: _(Peoria Girls and their Dolls)
+AppIcon: HelloKittoIcon
+# Default is the application name in lower case.
+AppPath: /hellokittox
+BlobPath: %HOME_PATH%UploadedFiles\
+
+# Change this to switch databases.
+DefaultDatabaseName: FireDAC_MSSQL
+
+Databases:
+  FireDAC_MSSQL: FD
+    Connection:
+      DriverID: MSSQL
+      Server: 127.0.0.1, 1433
+      ApplicationName: %APPTITLE%
+      Database: HelloKitto
+      OSAuthent: No
+      User_Name: SA
+      Password: 12345
+      Isolation: RepeatableRead
+      ODBCAdvanced: TrustServerCertificate=yes
+
+Auth: DB
+  IsPassepartoutEnabled: True
+  PassepartoutPassword: password
+  IsClearPassword: False
+  .Defaults:
+    UserName: administrator
+    Password: password
+
+AccessControl: Null
+
+LanguagePerSession: True
+
+Login:
+  Controller:
+    Title: Login to "HelloKitto Desktop" %APP_VERSION%
+    BorderPanel:
+      NorthView:
+        Controller: HtmlPanel
+          Height: 80
+          Html: |
+            <div style="text-align: center">
+              <p/>
+              <p><img src="%IMAGE(hello_kitto_150)%"></img></p>
+              <p/>
+            </div>
+    LabelWidth: 150
+    EditWidth: 200
+    ExtraHeight: 100
+    ExtraWidth: 350
+    LocalStorage:
+      Mode: Password
+      AskUser: True
+        .Default: False
+      AutoLogin: False
+
+HomeView: Home
+
+Theme: Light
+  Primary-Color: FireBrick
+  Font-Family: Comic Sans MS
+  Font-Size: 12px
+  IconStyle: filled
+
+AjaxTimeout: 100000
+
+LanguageId: en
+LanguagePerSession: True
+Charset: utf-8
+UserFormats:
+  Date: dd/mm/yyyy
+  Time: hh:nn
+  Currency: €
+  Decimal: ,
+  Thousand: .
+
+Log:
+  Level: detailed
+  TextFile:
+    FileName: %APP_PATH%log.txt
+    IsEnabled: True
+  Console:
+    IsEnabled: True
+
+Server:
+  Port: 3621
+  ThreadPoolSize: 15
+  # Bind to loopback only — avoids Windows Firewall prompt in desktop mode
+  BindAddress: 127.0.0.1
+
+Engine:
+  Session:
+    TimeOut: 10
+    CleanupInterval: 30
+
+# Desktop embedded mode settings (used by Kitto.Vcl.Embedded)
+Desktop:
+  ClientWidth: 1000
+  ClientHeight: 900
+  Maximized: False
+  Resizable: True
+  BorderIcons:
+    biSystemMenu: True
+    biMinimize: True
+    biMaximize: True
+    biHelp: False
+  Position: poScreenCenter

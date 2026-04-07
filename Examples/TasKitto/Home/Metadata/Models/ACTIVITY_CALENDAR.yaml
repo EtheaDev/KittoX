@@ -1,0 +1,53 @@
+﻿ModelName: ACTIVITY_CALENDAR
+DisplayLabel: Activity
+PluralDisplayLabel: Activities
+PhysicalName: ACTIVITY
+Fields:
+  Title:
+    Expression: CONCAT(Employee.EMPLOYEE_NAME, ' - ', Phase.PHASE_NAME)
+  EventId: String(32) primary key
+    PhysicalName: ACTIVITY_ID
+    DefaultValue: %COMPACT_GUID%
+  Employee: Reference(EMPLOYEE) not null
+    Fields:
+      EMPLOYEE_ID:
+  Phase: Reference(PHASE) not null
+    Fields:
+      PHASE_ID:
+  StartDate: DateTime
+    Expression: CAST({Q}ACTIVITY_DATE AS datetime) + CAST({Q}START_TIME AS datetime)
+  EndDate: DateTime
+    Expression: CAST({Q}ACTIVITY_DATE AS datetime) + CAST({Q}END_TIME AS datetime)
+  Notes: String(80)
+    PhysicalName: DESCRIPTION
+    DisplayWidth: 50
+  Role: Reference(OPERATOR_ROLE) not null
+    Fields:
+      ROLE_ID:
+  EventType: Reference(ACTIVITY_TYPE) not null
+    Fields:
+      TYPE_ID:
+  ActivityDate: Date
+    PhysicalName: ACTIVITY_DATE
+  START_TIME: Time
+  END_TIME: Time
+  STATUS: String(12)
+    DisplayWidth: 6
+    AllowedValues:
+      Inserted: Inserted
+      Approved: Approved
+      Billed: Billed
+      NotBillable: Not Billable
+      Internal: Internal
+      Done: Done
+  DURATION: Float
+    DisplayWidth: 8
+    Expression: |
+      case
+        when ({Q}START_TIME is null) or ({Q}END_TIME is null) then 0
+        else DATEDIFF(SECOND, {Q}START_TIME, {Q}END_TIME) / 3600.0
+      end
+Rules:
+  EnforceRange:
+    From: START_TIME
+    To: END_TIME

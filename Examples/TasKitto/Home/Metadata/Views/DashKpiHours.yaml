@@ -1,0 +1,8 @@
+Type: Data
+DisplayLabel: _(Monthly Hours)
+ImageName: overtime.svg
+Controller: TemplateDataPanel
+  TemplateFileName: DashKpiHours.html
+MainTable:
+  IsReadOnly: True
+  Model: KPI_MONTHLY

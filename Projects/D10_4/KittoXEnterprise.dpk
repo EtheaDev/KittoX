@@ -1,0 +1,47 @@
+package KittoXEnterprise;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'KittoX Enterprise Run-Time Package'}
+{$LIBSUFFIX AUTO}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  rtl,
+  KittoXCore;
+
+contains
+  Kitto.Html.ChartPanel in '..\..\Source\Kitto.Html.ChartPanel.pas',
+  Kitto.Html.CalendarPanel in '..\..\Source\Kitto.Html.CalendarPanel.pas',
+  Kitto.Html.GoogleMap in '..\..\Source\Kitto.Html.GoogleMap.pas',
+  Kitto.Html.Dashboard in '..\..\Source\Kitto.Html.Dashboard.pas',
+  Kitto.Web.Handler.Chart in '..\..\Source\Kitto.Web.Handler.Chart.pas',
+  Kitto.Web.Handler.Calendar in '..\..\Source\Kitto.Web.Handler.Calendar.pas',
+  Kitto.Web.Handler.Map in '..\..\Source\Kitto.Web.Handler.Map.pas',
+  Kitto.Web.Enterprise in '..\..\Source\Kitto.Web.Enterprise.pas';
+
+end.

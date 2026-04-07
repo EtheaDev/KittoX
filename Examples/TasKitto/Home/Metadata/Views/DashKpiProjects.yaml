@@ -1,0 +1,8 @@
+Type: Data
+DisplayLabel: _(Active Projects)
+ImageName: services.svg
+Controller: TemplateDataPanel
+  TemplateFileName: DashKpiProjects.html
+MainTable:
+  IsReadOnly: True
+  Model: KPI_MONTHLY

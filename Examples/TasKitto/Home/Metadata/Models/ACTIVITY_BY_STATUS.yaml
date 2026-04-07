@@ -1,0 +1,10 @@
+Fields:
+  STATUS: String(12) primary key
+    DisplayLabel: Status
+    DisplayWidth: 12
+  ACTIVITY_COUNT: Integer
+    DisplayLabel: Count
+  TOTAL_HOURS: Decimal(9, 2)
+    DisplayLabel: Hours
+PhysicalName: VW_ACTIVITY_BY_STATUS
+ImageName: checklist

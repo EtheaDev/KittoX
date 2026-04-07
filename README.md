@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.0 - 06 Apr 2026**
+**Latest Version 4.0.0 - 07 Apr 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -58,7 +58,7 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 
 # Release Notes
 
-## 06 Apr 2026: ver. 4.0.0 (first public release)
+## 07 Apr 2026: ver. 4.0.0 (first public release)
 
 First public release of **Kitto<sup>x</sup>**, the fourth generation of the Kitto framework. Complete rewrite of the client-side from ExtJS to HTMX + AlpineJS + TemplatePro, with a new modular server architecture.
 

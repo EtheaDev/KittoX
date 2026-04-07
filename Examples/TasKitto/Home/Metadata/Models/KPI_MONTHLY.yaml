@@ -1,0 +1,6 @@
+Fields:
+  ACTIVITY_COUNT: Integer primary key
+  TOTAL_HOURS: Decimal(9, 2)
+  ACTIVE_PROJECTS: Integer
+  ACTIVE_CUSTOMERS: Integer
+PhysicalName: VW_KPI_MONTHLY

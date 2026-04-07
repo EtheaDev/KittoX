@@ -1,0 +1,81 @@
+{ -------------------------------------------------------------------------------
+  Copyright 2012-2026 Ethea S.r.l.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  ------------------------------------------------------------------------------- }
+
+{ -------------------------------------------------------------------------------
+  Based on code by David Hoyle
+  http://www.davidghoyle.co.uk/
+  ------------------------------------------------------------------------------- }
+package KittoXIDE;
+
+{$R *.res}
+{$R *.dres}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'KittoX IDE Design-Time Package'}
+{$LIBSUFFIX AUTO}
+{$DESIGNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  rtl,
+  designide,
+  VclSmp,
+  KittoXCore;
+
+contains
+  KIDE.IOTA.ProjectWizard in '..\..\Source\KIDE.IOTA.ProjectWizard.pas',
+  KIDE.IOTA.Register in '..\..\Source\KIDE.IOTA.Register.pas',
+  KIDE.IOTA.ProjectCreator in '..\..\Source\KIDE.IOTA.ProjectCreator.pas',
+  KIDE.IOTA.Utils in '..\..\Source\KIDE.IOTA.Utils.pas',
+  KIDE.IOTA.ModuleCreator in '..\..\Source\KIDE.IOTA.ModuleCreator.pas',
+  KIDE.IOTA.MainFormCreator in '..\..\Source\KIDE.IOTA.MainFormCreator.pas',
+  KIDE.YAMLHighlighter in '..\..\Source\KIDE.YAMLHighlighter.pas',
+
+  KIDE.Controls in '..\..\..\Kide\Source\KIDE.Controls.pas',
+  KIDE.BaseFrameUnit in '..\..\..\Kide\Source\KIDE.BaseFrameUnit.pas' {BaseFrame: TFrame},
+  KIDE.ProjectTemplateFrameUnit in '..\..\..\Kide\Source\KIDE.ProjectTemplateFrameUnit.pas' {ProjectTemplateFrame: TFrame},
+  KIDE.ProjectTemplate in '..\..\..\Kide\Source\KIDE.ProjectTemplate.pas',
+  KIDE.BaseFormUnit in '..\..\..\Kide\Source\KIDE.BaseFormUnit.pas' {BaseForm},
+  KIDE.BaseWizardFormUnit in '..\..\..\Kide\Source\KIDE.BaseWizardFormUnit.pas' {BaseWizardForm},
+  KIDE.NewProjectWizardFormUnit in '..\..\..\Kide\Source\KIDE.NewProjectWizardFormUnit.pas' {NewProjectWizardForm},
+  KIDE.MRUOptions in '..\..\..\Kide\Source\KIDE.MRUOptions.pas',
+  KIDE.Config in '..\..\..\Kide\Source\KIDE.Config.pas',
+  KIDE.Project in '..\..\..\Kide\Source\KIDE.Project.pas',
+  KIDE.MainDataModuleUnit in '..\..\..\Kide\Source\KIDE.MainDataModuleUnit.pas' {MainDataModule: TDataModule};
+
+end.

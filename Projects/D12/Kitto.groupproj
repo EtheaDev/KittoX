@@ -1,0 +1,100 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{407D680B-4C31-4351-A29E-D5ED3ECBEDD5}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="KittoXCore.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="KittoXEnterprise.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\IDE\Projects\D12\KittoXIDE.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="KittoXCore">
+        <MSBuild Projects="KittoXCore.dproj"/>
+    </Target>
+    <Target Name="KittoXCore:Clean">
+        <MSBuild Projects="KittoXCore.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="KittoXCore:Make">
+        <MSBuild Projects="KittoXCore.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="KittoXEnterprise">
+        <MSBuild Projects="KittoXEnterprise.dproj"/>
+    </Target>
+    <Target Name="KittoXEnterprise:Clean">
+        <MSBuild Projects="KittoXEnterprise.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="KittoXEnterprise:Make">
+        <MSBuild Projects="KittoXEnterprise.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="KittoXIDE">
+        <MSBuild Projects="..\..\IDE\Projects\D12\KittoXIDE.dproj"/>
+    </Target>
+    <Target Name="KittoXIDE:Clean">
+        <MSBuild Projects="..\..\IDE\Projects\D12\KittoXIDE.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="KittoXIDE:Make">
+        <MSBuild Projects="..\..\IDE\Projects\D12\KittoXIDE.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="KittoXCore;KittoXEnterprise;KittoXIDE"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="KittoXCore:Clean;KittoXEnterprise:Clean;KittoXIDE:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="KittoXCore:Make;KittoXEnterprise:Make;KittoXIDE:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+    <ItemGroup Condition="'$(BuildGroup)'=='ALL_Win64'">
+        <BuildGroupProject Include="KittoXCore.dproj">
+            <ProjectGuid>{44E44607-5754-4B0C-BEEB-4EEC44A09CE7}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win64</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="..\..\IDE\Projects\D12\KittoXIDE.dproj">
+            <ProjectGuid>{245397D4-4D37-4125-9399-681D24762800}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win64</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="KittoXEnterprise.dproj">
+            <ProjectGuid>{F6269E11-83AD-4E30-BF3F-453AB1DF354C}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win64</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+    </ItemGroup>
+    <ItemGroup Condition="'$(BuildGroup)'=='ALL_Win32'">
+        <BuildGroupProject Include="KittoXCore.dproj">
+            <ProjectGuid>{44E44607-5754-4B0C-BEEB-4EEC44A09CE7}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="..\..\IDE\Projects\D12\KittoXIDE.dproj">
+            <ProjectGuid>{245397D4-4D37-4125-9399-681D24762800}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="KittoXEnterprise.dproj">
+            <ProjectGuid>{F6269E11-83AD-4E30-BF3F-453AB1DF354C}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+    </ItemGroup>
+</Project>

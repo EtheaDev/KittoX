@@ -1,0 +1,27 @@
+Type: Data
+DisplayLabel: _(Hours by Type)
+Controller: List
+  CenterController: ChartPanel
+    Chart:
+      Type: Polar
+      Theme: Muted
+      Series:
+        Series:
+          Type: Pie
+          AngleField: DURATION
+          Label:
+            Field: TYPE_NAME
+            CalloutLine:
+              Length: 60
+              Width: 2
+          Title: _(Hours by Type)
+      Legend:
+        Docked: bottom
+        Padding: 10
+        Toggleable: True
+      InnerPadding: 20
+      InsetPadding: 50
+MainTable:
+  IsReadOnly: True
+  Model: ACTIVITY_BY_TYPE
+ImageName: pie_chart

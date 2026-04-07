@@ -1,0 +1,11 @@
+﻿DisplayLabel: _(Privacy notes)
+# Empty ACName allows the view to be opened when no user is logged in.
+ACName:
+Controller: HtmlPanel
+  IsModal: True
+  Title: %Config:AppTitle% %APP_VERSION_FULL%
+  Width: 800
+  Height: 600
+  Autoscroll: True
+  FileName: Privacy.htm
+  AllowClose: True

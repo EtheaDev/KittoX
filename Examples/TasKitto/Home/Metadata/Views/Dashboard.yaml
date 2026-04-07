@@ -1,0 +1,43 @@
+Type: Data
+DisplayLabel: _(Activity Dashboard)
+ImageName: dashboard
+Controller: Dashboard
+  Gap: 12
+  MaxColumns: 4
+  RefreshInterval: 60
+  Items:
+    View: DashKpiActivities
+      Flex: 1
+      MinWidth: 180
+      Height: 180
+      Footer: _(Current calendar month)
+    View: DashKpiHours
+      Flex: 1
+      MinWidth: 180
+      Height: 180
+      Footer: _(Current calendar month)
+    View: DashKpiProjects
+      Flex: 1
+      MinWidth: 180
+      Height: 180
+      Footer: _(All projects with Open status)
+    View: DashKpiCustomers
+      Flex: 1
+      MinWidth: 180
+      Height: 180
+      Footer: _(Distinct customers with activities this month)
+    View: DashStatusPie
+      Flex: 2
+      MinWidth: 400
+      Height: 350
+      Footer: _(Activities grouped by status in the current month)
+    View: DashTypePie
+      Flex: 1
+      MinWidth: 300
+      Height: 350
+      Footer: _(Total hours grouped by activity type, all time)
+    View: DashDailyChart
+      Flex: 1
+      MinWidth: 700
+      Height: 300
+      Footer: _(Daily hours from 15 days before to 15 days after today)

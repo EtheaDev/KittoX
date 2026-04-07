@@ -1,0 +1,28 @@
+<div id="{{:htmlId}}" class="kx-login-overlay">
+  <div class="kx-login-dialog" style="{{:dialogStyle$}}">
+    <div class="kx-login-header">
+      <span class="kx-login-title">{{:title}}</span>
+    </div>
+    {{:northContent$}}
+    <form id="kx-login-form" class="kx-login-form" hx-post="kx/login" hx-target="#kx-login-status" hx-swap="innerHTML">
+      <div class="kx-login-fields">
+        {{:fieldsContent$}}
+      </div>
+      {{:linksContent$}}
+      <div class="kx-login-footer">
+        <div id="kx-login-status" class="kx-login-status">
+          <div class="kx-login-indicator htmx-indicator">
+            <span class="kx-login-spinner"></span>
+            {{:loggingInLabel}}
+          </div>
+        </div>
+        <button type="submit" class="kx-login-button" id="kx-login-btn" disabled {{:buttonStyleAttr$}}>
+          {{:loginIconHtml$}}
+          {{:loginLabel}}
+        </button>
+      </div>
+    </form>
+    {{:southContent$}}
+  </div>
+</div>
+{{:scriptContent$}}

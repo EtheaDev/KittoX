@@ -32,6 +32,7 @@ td{
 <h1>Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX</h1>
 <p><a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg" alt="Core License"/></a>
 <a href="KittoLicensing"><img src="https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg" alt="Enterprise License"/></a></p>
+<p><strong>Latest Version 4.0.0 - 07 Apr 2026</strong></p>
 <p><img src="./images/kittoX_logo_200.png" alt="KittoX_logo.png"/></p>
 <p><strong>Kitto<sup>x</sup></strong> allows to create <strong>Rich Internet Applications</strong> based on a data model that can be mapped onto any database. The client-side part uses <strong>HTMX</strong> (through webbroker technology) to create a fully <strong>AJAX</strong> application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.</p>
 <p><strong>Kitto<sup>x</sup></strong> uses <strong>HTMX</strong> as its client-side library: the server generates HTML fragments and HTMX handles partial page updates via AJAX, with no need for a heavy JavaScript framework.</p>
@@ -41,8 +42,17 @@ td{
 <p>A <strong>Kitto<sup>x</sup></strong> application is described as a set of easily maintained <strong>YAML</strong> files, keeping definitions abstract and declarative and allowing for future extensions. Business rules are enforced either declaratively or through small javascript fragments on the client, or in Delphi code on the server.</p>
 <p><img src="./images/Logo-Ethea-200x90.png" alt="Ethea Logo"/></p>
 <p><strong></strong>Kitto<sup>x</sup><strong></strong> was originally designed by <em>Nando Dessena</em>.</p>
-<p><strong>Kitto<sup>x</sup></strong> retained some basic concepts but was evolved by <em>Carlo Barazzetta</em> to take advantage of the modern and advanced features provided by HTML and to eliminate the dependency on the ExtJS library.</p>
+<p><strong>Kitto<sup>x</sup></strong> retained some basic concepts but was evolved by <em>Carlo Barazzetta</em> to take advantage of the modern and advanced features provided by HTML and to eliminate the dependency on the ExtJS client library.</p>
 <p>The development of <strong>Kitto<sup>x</sup></strong> is sponsored by <a href="http://www.ethea.it/">Ethea</a>, which uses <strong>Kitto<sup>x</sup></strong> for projects such as <a href="https://sportclubmanager.it/">Sport Club Manager</a> application.</p>
+<h3><em>Happy Kittoing!</em></h3>
+<hr />
+<h2>Full documentation</h2>
+<ul>
+<li><a href="https://ethea.it/docs/kittox/">Documentation site</a> with 50+ pages</li>
+<li>Pages for all controllers, filters, data concepts, how-to guides, FAQ</li>
+<li>Three example applications: HelloKitto, TasKitto, KEmployee</li>
+</ul>
+<hr />
 <h2>Licensing</h2>
 <p><strong>Kitto<sup>x</sup></strong> uses an <strong>Open Core</strong> licensing model:</p>
 <ul>
@@ -53,9 +63,118 @@ td{
 <li><p><strong>KIDEX</strong> (Visual IDE): commercial license only.</p>
 </li>
 </ul>
-<p>See the <a href="KittoLicensing">Licensing</a> page and <a href="KittoEnt">Enterprise Edition</a> for full details.</p>
-<p>Start <a href="./Kitto-at-a-glance">here</a> for further information.</p>
+<p>See the <a href="https://ethea.it/docs/kittox/KittoLicensing.html">Licensing</a> page and <a href="KittoEnt">Enterprise Edition</a> for full details.</p>
+<p>Start <a href="https://ethea.it/docs/kittox/Kitto-at-a-glance.html">here</a> for further information.</p>
 <p>Visit <a href="https://ethea.it/Kitto-Demo/">this site</a> for online demos.</p>
-<p>Happy Kittoing!</p>
+<hr />
+<h1>Release Notes</h1>
+<h2>07 Apr 2026: ver. 4.0.0 (first public release)</h2>
+<p>First public release of <strong>Kitto<sup>x</sup></strong>, the fourth generation of the Kitto framework. Complete rewrite of the client-side from ExtJS to HTMX + AlpineJS + TemplatePro, with a new modular server architecture.</p>
+<h3>Architecture</h3>
+<ul>
+<li><strong>HTMX + AlpineJS client</strong>: server-generated HTML fragments with partial page updates via AJAX. No heavy JavaScript framework.</li>
+<li><strong>Attribute-Based Routing (RTTI)</strong>: URL routing via Delphi custom attributes, inspired by MARS/WiRL. Resource classes register in <code>initialization</code> sections; the framework discovers them via RTTI. Dependency injection for request context (<code>[TKXContext]</code>). Dynamic JS/CSS injection via <code>TKXScriptRegistry</code>.</li>
+<li><strong>Open Core licensing</strong>: Core (Apache 2.0), Enterprise modules (AGPL-3.0 / Commercial), KIDEX (Commercial only). Separate packages: <code>KittoXCore.dpk</code> and <code>KittoXEnterprise.dpk</code>.</li>
+<li><strong>Server-Side Store</strong>: persistent in-session data stores with record state tracking (<code>rsNew</code>, <code>rsClean</code>, <code>rsDirty</code>, <code>rsDeleted</code>), transactional master-detail saving (INSERT/UPDATE/DELETE in a single DB transaction), blob lazy-loading, and store lifecycle management (save/cancel/close/timeout).</li>
+</ul>
+<h3>Controllers</h3>
+<ul>
+<li><strong>List</strong> (grid with CRUD toolbar, server-side paging, sorting, column layouts, row colors, grouping)</li>
+<li><strong>GroupingList</strong> (collapsible group headers)</li>
+<li><strong>Form</strong> (data-aware editing with field pages, detail tabs, ViewMode/EditMode state machine)</li>
+<li><strong>Wizard</strong> (multi-step data-aware with Back/Next/Finish, per-step validation)</li>
+<li><strong>BorderPanel</strong>, <strong>TabPanel</strong>, <strong>FlexPanel</strong>, <strong>TreePanel</strong>, <strong>TilePanel</strong>, <strong>HtmlPanel</strong>, <strong>StatusBar</strong>, <strong>ToolBar</strong></li>
+<li><strong>Enterprise</strong>: ChartPanel (Chart.js), CalendarPanel (EventCalendar), GoogleMap (Google Maps JS API), Dashboard (auto-refresh)</li>
+<li><strong>Card View</strong>: List controller with <code>TemplateFileName</code> for custom HTML card layouts with full CRUD</li>
+<li><strong>Desktop Embedded Mode</strong>: KittoX app inside a WebView2 (TEdgeBrowser) VCL window</li>
+</ul>
+<h3>Data &amp; Database</h3>
+<ul>
+<li><strong>Database agnostic</strong>: pluggable via FireDAC (preferred), DBExpress, ADO</li>
+<li><strong>Master-detail transactional save</strong>: master + all detail stores persisted in one transaction</li>
+<li><strong>Detail CRUD in memory</strong>: add/edit/delete detail records without DB round-trips until final Save All</li>
+<li><strong>Record state after Load</strong>: records loaded from DB correctly marked as <code>rsClean</code></li>
+<li><strong>Server-Side Store cache</strong>: blob lazy-load from session store, store released on save/cancel/close/timeout</li>
+</ul>
+<h3>Forms &amp; Editing</h3>
+<ul>
+<li><strong>Form State Machine</strong>: ViewMode (Edit / Save All / Close) and EditMode (Save / Cancel) with CSS-based button toggling</li>
+<li><strong>Save-cache endpoint</strong>: saves master to memory without DB persistence, enables Save All workflow</li>
+<li><strong>Detail tables</strong>: lazy-loaded tabs, auto-built views, FK pre-fill on Add, transactional cascading save</li>
+<li><strong>Unified Editor Factory</strong> (<code>Kitto.Html.Editors</code>): centralized HTML input generation shared between Form and FilterPanel</li>
+<li><strong>Help button</strong>: configurable via <code>Defaults/Help/HRef</code> in Config.yaml, appears in forms (first button) and list toolbar (after Refresh)</li>
+</ul>
+<h3>Mobile Support</h3>
+<ul>
+<li><strong>Automatic mobile detection</strong>: user agent + screen size cookie</li>
+<li><strong>Fullscreen dialogs on mobile</strong>: <code>IsModal</code> + <code>Maximized</code> forced for all fragment views/forms via <code>AdjustControllerForContext</code></li>
+<li><strong>Panel properties</strong>: <code>IsModal</code> (dialog overlay), <code>Maximized</code> (fullscreen viewport), <code>AllowClose</code> (X button and Close button)</li>
+<li><strong>Width/Height getters</strong>: return 0 when Maximized is True (original values preserved for restore)</li>
+<li><strong><code>kxApp.openView</code></strong>: single JS function for view opening from menus (TreePanel and TilePanel use identical logic)</li>
+<li><strong><code>body.kx-mobile</code> CSS class</strong>: forces dialog and login fullscreen on mobile devices</li>
+<li><strong>TilePanel</strong>: tile-based menu controller for mobile home pages, with touch support (<code>role="button"</code>, <code>touch-action: manipulation</code>)</li>
+<li><strong>Home view selection</strong>: <code>HomeTinyView</code> (phone), <code>HomeSmallView</code> (tablet), <code>HomeView</code> (desktop)</li>
+</ul>
+<h3>UI &amp; UX</h3>
+<ul>
+<li><strong>Toast notifications</strong>: shown after save (&ldquo;Data saved&rdquo;) and delete (&ldquo;Data deleted&rdquo;), auto-dismiss 3 seconds</li>
+<li><strong>Error handling</strong>: DB errors (EEFDBError) non-fatal with clean messages (driver prefixes stripped). Session-level errors trigger reload.</li>
+<li><strong>Draggable dialogs</strong>: all message boxes and error dialogs draggable by title bar via <code>kxMakeDraggable</code></li>
+<li><strong>Refresh button</strong>: in CRUD toolbar (visible by default, hidden with <code>PreventRefreshing</code> or on read-only controllers)</li>
+<li><strong>Column sorting</strong>: click to sort ascending, click again for descending, sort arrows via CSS pseudo-elements</li>
+<li><strong>Double-click to open</strong>: automatic edit/view form from grid rows</li>
+<li><strong>Session lost detection</strong>: fatal error dialog with reload on server restart</li>
+<li><strong>Timeout handling</strong>: configurable <code>AjaxTimeout</code> for both HTMX and fetch channels, Retry/Reset dialog</li>
+</ul>
+<h3>Filters</h3>
+<ul>
+<li>Filter Panel with: <code>FreeSearch</code>, <code>List</code>, <code>DynaList</code>, <code>ButtonList</code>, <code>DynaButtonList</code></li>
+<li><code>DateSearch</code>, <code>TimeSearch</code>, <code>DateTimeSearch</code>, <code>NumericSearch</code>, <code>BooleanSearch</code></li>
+<li>Layout with <code>ColumnBreak</code> and <code>LabelWidth</code></li>
+</ul>
+<h3>Custom Layouts</h3>
+<ul>
+<li>Custom Layout for Grid and Form</li>
+<li>Grid Layout with Column position, alignment</li>
+<li>Form Layout &ldquo;multipage&rdquo;, with collapsible regions</li>
+</ul>
+<h3>Authentication &amp; Access Control</h3>
+<ul>
+<li>Pluggable authenticators: <code>DB</code>, <code>DBCrypt</code>, <code>TextFile</code>, <code>DBServer</code>, <code>OSDB</code>, <code>Null</code></li>
+<li>Pluggable access controllers: <code>DB</code>, <code>Null</code></li>
+<li>BCrypt password hashing, Google OTP (TOTP) two-factor authentication, QR code generation</li>
+<li>Session abstraction: <code>IKXSessionProvider</code> with <code>TKXCookieSessionProvider</code> (JWT-ready for future)</li>
+</ul>
+<h3>Tools</h3>
+<ul>
+<li>CSV export (<code>ExportCSVTool</code>), Excel export via ADO (<code>ExportExcelTool</code>), SQL tool, file download/upload</li>
+<li>FlexCel integration (commercial, Enterprise edition)</li>
+<li>ReportBuilder integration (commercial, Enterprise edition)</li>
+<li>DebenuQuickPDF for PDF merging</li>
+</ul>
+<h3>Deployment</h3>
+<ul>
+<li><strong>Standalone</strong> (VCL desktop or Windows service with embedded Indy HTTP server)</li>
+<li><strong>Desktop Embedded</strong> (WebView2 inside VCL window)</li>
+<li><strong>Console</strong> (headless server)</li>
+<li><strong>IIS</strong> (ISAPI DLL via WebBroker)</li>
+<li><strong>Apache</strong> (module via WebBroker)</li>
+</ul>
+<h3>KIDEX (Visual IDE — Enterprise)</h3>
+<ul>
+<li>RTTI-based property discovery (replaced 215 MetadataTemplate YAML files)</li>
+<li>6 custom YAML attributes: <code>YamlNode</code>, <code>YamlRequiredNode</code>, <code>YamlContainer</code>, <code>YamlSubNode</code>, <code>YamlChildType</code>, <code>YamlEnumValue</code></li>
+<li>SVG icon support (Material Design Icons)</li>
+<li>Database reverse engineering (model creation from DB schema)</li>
+<li>Project wizard, validators, tree editors</li>
+</ul>
+<h3>Examples</h3>
+<ul>
+<li><strong>HelloKitto</strong>: simple party/invitation manager (Parties, Girls, Dolls, Invitations)</li>
+<li><strong>TasKitto</strong>: activity tracking with dashboard, charts, calendar, projects, customers</li>
+<li><strong>KEmployee</strong>: employee/customer management with master-detail, card views</li>
+</ul>
+<h3>Supported Delphi Versions</h3>
+<p>Available from Delphi 10.4 to Latest (Win32 or Win64 platforms).</p>
 <p><img src="./images/SupportingDelphi.jpg" alt="Supporting Delphi"/></p>
-<p>Related links: https://www.embarcadero.com/ - https://learndelphi.org/</p>
+<p>Related links: <a href="https://www.embarcadero.com/">www.embarcadero.com</a> - <a href="https://learndelphi.org/">https://learndelphi.org</a></p>

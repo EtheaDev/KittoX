@@ -1,0 +1,3251 @@
+/* KittoX Base Stylesheet — Theme-aware via CSS Custom Properties */
+
+/* ===== Theme Variables ===== */
+:root {
+  /* Typography — configurable via Config Theme/Font-Family and Theme/Font-Size */
+  --kx-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --kx-font-size: 13px;
+
+  /* Base */
+  --kx-bg: #f5f5f5;
+  --kx-text: #333;
+  --kx-text-muted: #666;
+  --kx-text-secondary: #555;
+
+  /* Surfaces */
+  --kx-surface: #fff;
+  --kx-surface-alt: #fafafa;
+
+  /* Borders */
+  --kx-border: #ddd;
+  --kx-border-light: #eee;
+
+  /* Chrome — UI frame elements (headers, toolbars, status bar, group bars).
+     Configurable via Config Theme/Primary-Color.
+     Gradient from darkest to lightest:
+       --kx-chrome-dark    → status bar, apply button bg
+       --kx-chrome         → main headers, region headers, panel headers
+       --kx-chrome-hover   → hover state on chrome surfaces
+       --kx-chrome-mid     → group headers, pager bar (softer than main chrome)
+       --kx-chrome-light   → splitter, collapsed bar, inactive icons
+       --kx-chrome-text    → text/icons on any chrome surface
+       --kx-chrome-btn-hover → translucent overlay for buttons on chrome  */
+  --kx-chrome: #34495e;
+  --kx-chrome-dark: #2c3e50;
+  --kx-chrome-hover: #3d566e;
+  --kx-chrome-mid: color-mix(in srgb, var(--kx-chrome), var(--kx-chrome-light));
+  --kx-chrome-light: #5a7a96;
+  --kx-chrome-text: #ecf0f1;
+  --kx-chrome-btn-hover: rgba(255, 255, 255, 0.15);
+
+  /* Accent — configurable via Config Theme/Primary-Color */
+  --kx-accent: #1a73e8;
+  --kx-accent-bg: #e8f0fe;
+  --kx-accent-ring: rgba(26, 115, 232, 0.15);
+
+  /* Status bar — follows chrome */
+  --kx-status-bg: var(--kx-chrome-dark);
+  --kx-status-text: var(--kx-chrome-text);
+  --kx-status-border: color-mix(in srgb, var(--kx-chrome-dark), black 30%);
+
+  /* Tree */
+  --kx-tree-folder-text: var(--kx-text);
+  --kx-tree-leaf-text: var(--kx-text);
+
+  /* Inputs */
+  --kx-input-bg: #fff;
+  --kx-input-border: #ccc;
+
+  /* Error */
+  --kx-error: #c0392b;
+  --kx-error-surface: #fdecea;
+  --kx-error-border: #f5c6cb;
+
+  /* Overlay & Shadow */
+  --kx-overlay: rgba(0, 0, 0, 0.45);
+  --kx-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* Spinner */
+  --kx-spinner-track: #ccc;
+  --kx-spinner-head: #333;
+}
+
+/* ===== Dark Theme — explicit ===== */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --kx-bg: #111827;
+  --kx-text: #e5e7eb;
+  --kx-text-muted: #9ca3af;
+  --kx-text-secondary: #9ca3af;
+
+  --kx-surface: #1f2937;
+  --kx-surface-alt: #1a1f2e;
+
+  --kx-border: #374151;
+  --kx-border-light: #2d3748;
+
+  --kx-chrome: #1e293b;
+  --kx-chrome-dark: #0f172a;
+  --kx-chrome-hover: #334155;
+  --kx-chrome-mid: color-mix(in srgb, var(--kx-chrome), var(--kx-chrome-light));
+  --kx-chrome-light: #475569;
+  --kx-chrome-text: #e2e8f0;
+  --kx-chrome-btn-hover: rgba(255, 255, 255, 0.1);
+
+  --kx-accent: #60a5fa;
+  --kx-accent-bg: rgba(96, 165, 250, 0.12);
+  --kx-accent-ring: rgba(96, 165, 250, 0.25);
+
+  --kx-status-bg: #0f172a;
+  --kx-status-text: #94a3b8;
+  --kx-status-border: #0a0f1a;
+
+  --kx-tree-folder-text: var(--kx-text);
+  --kx-tree-leaf-text: var(--kx-text);
+
+  --kx-input-bg: #111827;
+  --kx-input-border: #4b5563;
+
+  --kx-error: #dc2626;
+  --kx-error-surface: rgba(220, 38, 38, 0.15);
+  --kx-error-border: #7f1d1d;
+
+  --kx-overlay: rgba(0, 0, 0, 0.6);
+  --kx-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  --kx-spinner-track: #4b5563;
+  --kx-spinner-head: #e5e7eb;
+}
+
+/* ===== Dark Theme — auto (follows OS preference) ===== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --kx-bg: #111827;
+    --kx-text: #e5e7eb;
+    --kx-text-muted: #9ca3af;
+    --kx-text-secondary: #9ca3af;
+
+    --kx-surface: #1f2937;
+    --kx-surface-alt: #1a1f2e;
+
+    --kx-border: #374151;
+    --kx-border-light: #2d3748;
+
+    --kx-chrome: #1e293b;
+    --kx-chrome-dark: #0f172a;
+    --kx-chrome-hover: #334155;
+    --kx-chrome-mid: color-mix(in srgb, var(--kx-chrome), var(--kx-chrome-light));
+    --kx-chrome-light: #475569;
+    --kx-chrome-text: #e2e8f0;
+    --kx-chrome-btn-hover: rgba(255, 255, 255, 0.1);
+
+    --kx-accent: #60a5fa;
+    --kx-accent-bg: rgba(96, 165, 250, 0.12);
+    --kx-accent-ring: rgba(96, 165, 250, 0.25);
+
+    --kx-status-bg: #0f172a;
+    --kx-status-text: #94a3b8;
+    --kx-status-border: #0a0f1a;
+
+    --kx-tree-folder-text: var(--kx-text);
+    --kx-tree-leaf-text: var(--kx-text);
+
+    --kx-input-bg: #111827;
+    --kx-input-border: #4b5563;
+
+    --kx-error: #dc2626;
+    --kx-error-surface: rgba(220, 38, 38, 0.15);
+    --kx-error-border: #7f1d1d;
+
+    --kx-overlay: rgba(0, 0, 0, 0.6);
+    --kx-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+    --kx-spinner-track: #4b5563;
+    --kx-spinner-head: #e5e7eb;
+  }
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Force form controls to inherit font from page (browsers default to system UI font) */
+input, select, textarea, button {
+  font-family: inherit;
+}
+
+/* Placeholder text follows theme muted color */
+::placeholder {
+  color: var(--kx-text-muted);
+  opacity: 0.7;
+}
+
+/* Date/time empty fields — muted placeholder segments (gg/mm/aaaa, --:--)
+   to match the ::placeholder style of text inputs.
+   Only applies when the field has no value (no .has-value class). */
+input[type="date"]:not(.has-value)::-webkit-datetime-edit,
+input[type="time"]:not(.has-value)::-webkit-datetime-edit {
+  color: var(--kx-text-muted);
+  opacity: 0.7;
+}
+input[type="date"]:not(.has-value),
+input[type="time"]:not(.has-value) {
+  color: var(--kx-text-muted);
+}
+
+/* Date/time picker — cursor pointer, compact icon margins */
+::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--kx-font);
+  font-size: var(--kx-font-size);
+  color: var(--kx-text);
+  background: var(--kx-bg);
+}
+
+/* ===== Border Panel (CSS Grid Layout) ===== */
+.kx-border-panel {
+  display: grid;
+  grid-template-areas:
+    "north north north"
+    "west center east"
+    "south south south";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto 1fr auto;
+  height: 100vh;
+  width: 100%;
+}
+
+.kx-region-north {
+  grid-area: north;
+  border-bottom: 1px solid var(--kx-border);
+}
+
+.kx-region-west {
+  grid-area: west;
+  background: var(--kx-surface);
+  border-right: 1px solid var(--kx-border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-region-center {
+  grid-area: center;
+  background: var(--kx-surface-alt);
+  overflow: auto;
+}
+
+.kx-region-east {
+  grid-area: east;
+  background: var(--kx-surface);
+  border-left: 1px solid var(--kx-border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-region-south {
+  grid-area: south;
+}
+
+/* ===== Region Header & Collapsible ===== */
+.kx-region-header {
+  display: flex;
+  align-items: center;
+  padding: 2px 2px 2px 2px;
+  background: var(--kx-chrome);
+  color: var(--kx-chrome-text);
+  font-weight: 600;
+  font-size: var(--kx-font-size);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--kx-chrome-dark);
+}
+
+.kx-region-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kx-region-toggle {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.kx-region-collapsible .kx-region-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.kx-region-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Collapsed state: hide body, rotate chevron */
+.kx-region-collapsed .kx-region-body {
+  display: none;
+}
+
+.kx-region-collapsed .kx-region-toggle {
+  transform: rotate(180deg);
+}
+
+/* Side regions (East/West): horizontal collapse.
+   width:auto!important overrides the inline style set by the server. */
+.kx-region-side.kx-region-collapsed {
+  width: auto !important;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.kx-region-side.kx-region-collapsed .kx-region-header {
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  height: 100%;
+  border-bottom: none;
+}
+
+/* Toggle stays at top; title fills remaining space below */
+.kx-region-side.kx-region-collapsed .kx-region-toggle {
+  flex-shrink: 0;
+  order: -1;
+  margin-bottom: 8px;
+}
+
+.kx-region-side.kx-region-collapsed .kx-region-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  overflow: visible;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+/* ===== Region Splitter (drag-to-resize) ===== */
+.kx-splitter {
+  flex-shrink: 0;
+  background: var(--kx-chrome-light);
+  opacity: 0.4;
+  z-index: 1;
+  transition: opacity 0.15s;
+}
+
+.kx-splitter:hover {
+  opacity: 1;
+}
+
+/* Horizontal splitter (West/East): thin vertical bar on the edge */
+.kx-splitter-h {
+  width: 4px;
+  cursor: col-resize;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+/* West region: splitter on right edge */
+.kx-region-west > .kx-splitter-h {
+  right: 0;
+}
+
+/* East region: splitter on left edge */
+.kx-region-east > .kx-splitter-h {
+  left: 0;
+}
+
+/* Side regions need position:relative for the absolute splitter */
+.kx-region-west,
+.kx-region-east {
+  position: relative;
+}
+
+/* Vertical splitter (North/South): thin horizontal bar on the edge */
+.kx-splitter-v {
+  height: 4px;
+  cursor: row-resize;
+}
+
+/* Make room for the splitter so content doesn't go under it */
+.kx-region-west:has(> .kx-splitter) {
+  padding-right: 4px;
+}
+
+.kx-region-east:has(> .kx-splitter) {
+  padding-left: 4px;
+}
+
+/* Hide splitter when region is collapsed */
+.kx-region-collapsed > .kx-splitter {
+  display: none;
+}
+
+/* When center region contains a full-height panel that handles its own
+   scrolling (e.g. TilePanel, TreePanel), suppress center's own scrollbar
+   to avoid double scrollbars. */
+.kx-region-center:has(> .kx-tile-panel),
+.kx-region-center:has(> .kx-tree-panel) {
+  overflow: hidden;
+}
+
+/* Nested border panels should fill parent, not viewport */
+.kx-region-west .kx-border-panel,
+.kx-region-east .kx-border-panel,
+.kx-region-body .kx-border-panel {
+  height: 100%;
+}
+
+/* ===== Tree Panel ===== */
+.kx-tree-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-tree-panel-title {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: calc(var(--kx-font-size) + 2px);
+  background: var(--kx-chrome);
+  color: var(--kx-chrome-text);
+  border-bottom: 1px solid var(--kx-chrome-dark);
+}
+
+.kx-tree-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.kx-tree-folder {
+  margin: 2px;
+  border: none;
+}
+
+.kx-tree-folder > summary {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--kx-tree-folder-text);
+  list-style: none;
+  user-select: none;
+}
+
+.kx-tree-folder > summary::-webkit-details-marker {
+  display: none;
+}
+.kx-tree-folder > summary::marker {
+  content: none;
+}
+
+/* Tree folder toggle: collapsed = chevron-right (right arrow),
+   open = chevron-right rotated 90deg (down arrow). Uses shared .kx-toggle-icon class. */
+.kx-tree-folder[open] > summary > .kx-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.kx-tree-folder > summary:hover {
+  background: var(--kx-accent-bg);
+}
+
+.kx-tree-children {
+  padding-left: 8px;
+}
+
+.kx-tree-leaf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 2px 2px 20px;
+  color: var(--kx-tree-leaf-text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.kx-tree-leaf:hover {
+  background: var(--kx-accent-bg);
+  color: var(--kx-accent);
+}
+
+/* .kx-tree-icon: additional tree-specific icon styling if needed */
+
+/* ===== Tab Panel ===== */
+.kx-tab-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-tab-header {
+  display: flex;
+  align-items: stretch;
+  background: var(--kx-surface);
+  border-bottom: 2px solid var(--kx-border);
+  flex-shrink: 0;
+}
+
+.kx-tab-scroll-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.8em;
+  background: var(--kx-surface);
+  border: none;
+  color: var(--kx-text-muted);
+  cursor: pointer;
+  font-size: calc(var(--kx-font-size) + 1px);
+  flex-shrink: 0;
+  padding: 0;
+  z-index: 1;
+}
+.kx-tab-scroll-btn:hover {
+  color: var(--kx-text);
+  background: var(--kx-accent-bg);
+}
+.kx-tab-header.kx-tab-overflow .kx-tab-scroll-btn {
+  display: flex;
+}
+
+.kx-tab-strip {
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+  flex: 1;
+  padding-bottom: 2px;
+  margin-bottom: -2px;
+}
+
+.kx-tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.kx-tab-icon {
+  flex-shrink: 0;
+}
+
+.kx-tab-button:hover {
+  color: var(--kx-text);
+}
+
+.kx-tab-active {
+  background: var(--kx-accent-bg);
+  color: var(--kx-accent);
+  border-bottom-color: var(--kx-accent);
+  font-weight: 700;
+}
+
+.kx-tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-tab-body {
+  padding: 12px;
+}
+
+/* Tab close button — always visible */
+.kx-tab-close {
+  opacity: 0.5;
+  margin-left: 4px;
+  cursor: pointer;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0 2px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.kx-tab-close .kx-icon,
+.kx-tab-close svg { width: 1.2em; height: 1.2em; }
+.kx-tab-close:hover { opacity: 1; color: var(--kx-accent); }
+
+/* Tab panes */
+.kx-tab-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 2px;
+  background: var(--kx-surface);
+}
+
+/* Loading state */
+.kx-tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--kx-text-muted);
+  gap: 8px;
+}
+
+
+/* ===== Status Bar ===== */
+.kx-status-bar {
+  background: var(--kx-status-bg);
+  color: var(--kx-status-text);
+  padding: 4px 16px;
+  font-size: var(--kx-font-size);
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--kx-status-border);
+}
+
+.kx-status-icon {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.kx-status-text {
+  flex: 1;
+}
+
+/* ===== HTML Panel ===== */
+.kx-html-panel {
+  padding: 0;
+  overflow: hidden; /* prevent margin collapsing */
+}
+
+/* ===== Base Panel: Header, Collapsible, Border ===== */
+.kx-panel-bordered {
+  border: 1px solid var(--kx-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.kx-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  background: var(--kx-chrome-hover);
+  color: var(--kx-chrome-text);
+  font-size: var(--kx-font-size);
+  font-weight: 600;
+  user-select: none;
+}
+
+.kx-panel-collapsible .kx-panel-header {
+  cursor: pointer;
+}
+
+.kx-panel-title {
+  flex: 1;
+}
+
+.kx-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.kx-panel-collapsed .kx-panel-toggle {
+  transform: rotate(180deg);
+}
+
+.kx-panel-body {
+  overflow: auto;
+}
+
+.kx-panel-collapsed .kx-panel-body {
+  display: none;
+}
+
+/* ===== Message Box Dialog (info, error, confirm) ===== */
+/* ===== Toast Notification ===== */
+.kx-toast {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: var(--kx-chrome);
+  color: var(--kx-chrome-text);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: var(--kx-font-size);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 100000;
+  pointer-events: none;
+  text-align: center;
+}
+
+.kx-toast-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.kx-toast-title {
+  font-size: 150%;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.kx-toast-message {
+  font-size: var(--kx-font-size);
+}
+
+.kx-msgbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--kx-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.kx-msgbox-dialog {
+  background: var(--kx-surface);
+  border-radius: 6px;
+  box-shadow: var(--kx-shadow);
+  min-width: 340px;
+  max-width: 520px;
+  overflow: hidden;
+}
+
+.kx-msgbox-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  color: #fff;
+  font-weight: 600;
+  font-size: calc(var(--kx-font-size) + 1px);
+  cursor: move;
+  user-select: none;
+}
+
+.kx-msgbox-header.kx-msgbox-info {
+  background: var(--kx-chrome-dark);
+}
+
+.kx-msgbox-header.kx-msgbox-error {
+  background: var(--kx-error);
+}
+
+.kx-msgbox-header.kx-msgbox-confirm {
+  background: var(--kx-chrome-dark);
+}
+
+.kx-msgbox-icon {
+  width: 1.5em;
+  height: 1.5em;
+  flex-shrink: 0;
+}
+
+.kx-msgbox-icon-info {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='9' fill='%23fff'/%3E%3Ctext x='10' y='15' text-anchor='middle' font-size='14' font-weight='bold' fill='%231565c0'%3Ei%3C/text%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.kx-msgbox-icon-error {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='9' fill='%23fff'/%3E%3Cpath d='M6.5 6.5l7 7M13.5 6.5l-7 7' stroke='%23c0392b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.kx-msgbox-icon-confirm {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='9' fill='%23fff'/%3E%3Ctext x='10' y='15' text-anchor='middle' font-size='14' font-weight='bold' fill='%231565c0'%3E%3F%3C/text%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.kx-msgbox-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: calc(var(--kx-font-size) + 3px);
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0 4px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.kx-msgbox-close:hover {
+  opacity: 1;
+}
+
+.kx-msgbox-body {
+  padding: 12px 16px;
+  font-size: var(--kx-font-size);
+  line-height: 1.5;
+  color: var(--kx-text);
+  max-height: 300px;
+  overflow-y: auto;
+  word-wrap: break-word;
+}
+
+.kx-msgbox-footer {
+  padding: 8px 12px;
+  text-align: right;
+  border-top: 1px solid var(--kx-border-light);
+  background: var(--kx-surface-alt);
+}
+
+.kx-msgbox-footer button {
+  padding: 6px 24px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  border: none;
+  border-radius: 4px;
+  font-size: var(--kx-font-size);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.kx-msgbox-footer button:hover {
+  background: var(--kx-chrome);
+}
+
+.kx-msgbox-footer button + button {
+  margin-left: 8px;
+}
+
+.kx-msgbox-dialog.kx-msgbox-confirm .kx-msgbox-btn-yes {
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+}
+.kx-msgbox-dialog.kx-msgbox-confirm .kx-msgbox-btn-yes:hover {
+  background: var(--kx-chrome);
+}
+.kx-msgbox-dialog.kx-msgbox-confirm .kx-msgbox-btn-no {
+  background: var(--kx-chrome-light);
+  color: var(--kx-chrome-text);
+}
+.kx-msgbox-dialog.kx-msgbox-confirm .kx-msgbox-btn-no:hover {
+  background: var(--kx-chrome-hover);
+}
+
+.kx-msgbox-dialog.kx-msgbox-error .kx-msgbox-btn-yes {
+  background: var(--kx-error);
+  color: #fff;
+}
+.kx-msgbox-dialog.kx-msgbox-error .kx-msgbox-btn-yes:hover {
+  background: #a93226;
+}
+
+.kx-msgbox-dialog.kx-msgbox-info .kx-msgbox-btn-yes {
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+}
+.kx-msgbox-dialog.kx-msgbox-info .kx-msgbox-btn-yes:hover {
+  background: var(--kx-chrome);
+}
+
+/* ===== Generic Dialog Overlay ===== */
+.kx-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--kx-overlay);
+  z-index: 9000;
+}
+
+.kx-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--kx-surface);
+  border-radius: 6px;
+  box-shadow: var(--kx-shadow);
+  display: flex;
+  flex-direction: column;
+  max-width: 95vw;
+  max-height: 90vh;
+  min-width: 320px;
+  min-height: 200px;
+  overflow: hidden;
+  resize: both;
+}
+
+/* Maximized dialog: fills the entire viewport (used by Maximized property and mobile) */
+.kx-dialog-maximized {
+  top: 0;
+  left: 0;
+  transform: none;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  resize: none;
+}
+
+/* Mobile: force all dialogs maximized */
+body.kx-mobile .kx-dialog {
+  top: 0;
+  left: 0;
+  transform: none;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  resize: none;
+}
+
+.kx-dialog-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  font-weight: 600;
+  font-size: calc(var(--kx-font-size) + 1px);
+  flex-shrink: 0;
+  cursor: move;
+  user-select: none;
+}
+
+.kx-dialog-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kx-dialog-close-btn {
+  background: none;
+  border: none;
+  color: var(--kx-chrome-text);
+  font-size: calc(var(--kx-font-size) + 5px);
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 12px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.kx-dialog-close-btn:hover {
+  opacity: 1;
+}
+
+.kx-dialog-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Login Panel ===== */
+.kx-login-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--kx-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.kx-login-dialog {
+  background: var(--kx-surface);
+  border-radius: 6px;
+  box-shadow: var(--kx-shadow);
+  min-width: 340px;
+  max-width: 600px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-login-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  font-weight: 600;
+  font-size: calc(var(--kx-font-size) + 1px);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.kx-login-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kx-login-north {
+  border-bottom: 1px solid var(--kx-border-light);
+}
+
+.kx-login-form {
+  padding: 10px 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-login-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kx-login-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kx-login-field-label {
+  text-align: right;
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-secondary);
+  flex-shrink: 0;
+}
+
+.kx-login-field-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--kx-input-border);
+  border-radius: 4px;
+  font-size: var(--kx-font-size);
+  outline: none;
+  background: var(--kx-input-bg);
+  color: var(--kx-text);
+  transition: border-color 0.15s;
+}
+
+.kx-login-field-input:focus {
+  border-color: var(--kx-accent);
+  box-shadow: 0 0 0 2px var(--kx-accent-ring);
+}
+
+select.kx-login-field-input {
+  appearance: auto;
+}
+
+.kx-login-checkbox-row {
+  margin-top: 2px;
+}
+
+.kx-login-checkbox-label {
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kx-login-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--kx-border-light);
+}
+
+.kx-login-link {
+  font-size: var(--kx-font-size);
+  color: var(--kx-accent);
+  text-decoration: none;
+}
+
+.kx-login-link:hover {
+  text-decoration: underline;
+}
+
+.kx-login-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--kx-border);
+  flex-shrink: 0;
+  background: var(--kx-surface-alt);
+  margin-left: -16px;
+  margin-right: -16px;
+  margin-bottom: -12px;
+}
+
+.kx-login-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 28px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  border: none;
+  border-radius: 4px;
+  font-size: calc(var(--kx-font-size) + 1px);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.kx-login-button:hover:not(:disabled) {
+  background: var(--kx-chrome);
+}
+
+.kx-login-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.kx-login-button-icon {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.kx-login-status {
+  flex: 1;
+  min-height: 1.5em;
+}
+
+.kx-login-indicator {
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kx-login-spinner {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  border: 2px solid var(--kx-spinner-track);
+  border-top-color: var(--kx-spinner-head);
+  border-radius: 50%;
+  animation: kx-spin 0.6s linear infinite;
+}
+
+@keyframes kx-spin {
+  to { transform: rotate(360deg); }
+}
+
+.kx-login-error {
+  color: var(--kx-error);
+  font-size: var(--kx-font-size);
+  font-weight: 500;
+  text-align: center;
+  padding: 8px;
+  background: var(--kx-error-surface);
+  border: 1px solid var(--kx-error-border);
+  border-radius: 4px;
+}
+
+/* ===== ResetPassword / ChangePassword Form (reuses login field styles) ===== */
+.kx-rp-form {
+  padding: 10px 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-rp-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kx-rp-success {
+  color: var(--kx-accent);
+  font-size: var(--kx-font-size);
+  font-weight: 500;
+  text-align: center;
+  padding: 8px;
+  background: var(--kx-accent-bg);
+  border: 1px solid var(--kx-accent);
+  border-radius: 4px;
+}
+
+/* Login responsive: full width on mobile */
+@media (max-width: 480px) {
+  .kx-login-dialog {
+    min-width: auto;
+    max-width: none;
+    width: 95vw;
+    border-radius: 4px;
+  }
+  .kx-login-field-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .kx-login-field-label {
+    text-align: left;
+    min-width: auto !important;
+    width: auto !important;
+  }
+}
+
+/* Mobile: login dialog fills the screen */
+body.kx-mobile .kx-login-overlay {
+  align-items: stretch;
+  justify-content: stretch;
+  background: var(--kx-surface);
+}
+
+body.kx-mobile .kx-login-dialog {
+  min-width: auto;
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ===== Icons (SVG via CSS mask-image) ===== */
+.kx-icon {
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.kx-icon-sm  { width: 1em; height: 1em; }
+.kx-icon-md  { width: 1.4em; height: 1.4em; }
+.kx-icon-lg  { width: 1.8em; height: 1.8em; }
+
+/* PNG fallback icons: same sizing, no mask */
+.kx-icon-img {
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ===== HTMX indicators ===== */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator {
+  display: inline-block;
+}
+
+.htmx-request.htmx-indicator {
+  display: inline-block;
+}
+
+/* ===== Global Loading Overlay ===== */
+.kx-loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.kx-loading-overlay.htmx-request,
+.kx-loading-overlay.kx-busy {
+  display: flex;
+  cursor: wait;
+}
+.kx-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid var(--kx-spinner-track);
+  border-top-color: var(--kx-spinner-head);
+  border-radius: 50%;
+  animation: kx-spin 0.6s linear infinite;
+}
+
+/* ===== Menu Bar (ToolBar controller) ===== */
+.kx-menubar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--kx-chrome);
+  border-bottom: 1px solid var(--kx-border);
+  flex-wrap: wrap;
+}
+
+.kx-menubar > .kx-menubar-btn,
+.kx-menubar > .kx-menubar-item,
+.kx-menubar > .kx-menubar-dropdown > .kx-menubar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--kx-chrome-text);
+  font-size: var(--kx-font-size);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.kx-menubar-dropdown-content .kx-menubar-btn,
+.kx-menubar-dropdown-content .kx-menubar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--kx-text);
+  font-size: var(--kx-font-size);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.kx-menubar > .kx-menubar-btn:hover,
+.kx-menubar > .kx-menubar-item:hover,
+.kx-menubar > .kx-menubar-dropdown > .kx-menubar-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--kx-chrome-text);
+}
+
+.kx-menubar-dropdown-content .kx-menubar-btn:hover,
+.kx-menubar-dropdown-content .kx-menubar-item:hover {
+  background: var(--kx-accent);
+  color: #fff;
+}
+
+.kx-menubar-dropdown {
+  position: relative;
+}
+
+.kx-menubar-dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  min-width: 180px;
+  padding: 4px 0;
+  background: var(--kx-surface);
+  border: 1px solid var(--kx-border);
+  border-radius: 4px;
+  box-shadow: var(--kx-shadow);
+}
+
+.kx-menubar-dropdown:hover > .kx-menubar-dropdown-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-menubar-dropdown-content .kx-menubar-item {
+  padding: 6px 12px;
+  border-radius: 0;
+}
+
+/* Nested dropdowns inside dropdown */
+.kx-menubar-dropdown-content .kx-menubar-dropdown {
+  width: 100%;
+}
+
+.kx-menubar-dropdown-content .kx-menubar-btn {
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 0;
+  justify-content: flex-start;
+}
+
+.kx-menubar-dropdown-content .kx-menubar-dropdown > .kx-menubar-dropdown-content {
+  top: 0;
+  left: 100%;
+}
+
+/* ===== List Panel (Grid) ===== */
+
+/* Container overrides when hosting a list panel */
+.kx-tab-pane:has(> .kx-list-panel) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Region center containing list content: flex column so grid scrolls and pager sticks to bottom */
+.kx-region-center:has(> .kx-list-grid),
+.kx-region-center:has(> .kx-template-content) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Border panel nested inside list panel must fill the flex parent, not use 100vh */
+.kx-list-panel > .kx-border-panel {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.kx-list-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ===== Filter Panel ===== */
+/* Structure (header/body/collapse) handled by kx-panel-* classes.
+   kx-filter-panel adds filter-specific overrides. */
+.kx-filter-panel {
+  border-bottom: 1px solid var(--kx-border);
+  flex-shrink: 0;
+}
+
+.kx-filter-panel > .kx-panel-body {
+  padding: 8px 10px;
+  background: var(--kx-surface);
+}
+
+/* Shared toggle icon used by regions and other components */
+.kx-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.kx-filter-columns {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.kx-filter-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kx-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kx-filter-label {
+  text-align: right;
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.kx-filter-panel .kx-filter-input {
+  padding: 4px 8px;
+  border: 1px solid var(--kx-input-border);
+  border-radius: 3px;
+  background: var(--kx-input-bg);
+  color: var(--kx-text);
+  font-size: var(--kx-font-size);
+  line-height: 1.4;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.kx-filter-panel .kx-filter-input:focus {
+  border-color: var(--kx-accent);
+  box-shadow: 0 0 0 2px var(--kx-accent-ring);
+}
+
+.kx-filter-panel select.kx-filter-input {
+  appearance: auto;
+}
+
+.kx-filter-checkbox {
+  width: 1.2em;
+  height: 1.2em;
+  cursor: pointer;
+}
+
+.kx-filter-apply-col {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.kx-filter-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 16px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  border: none;
+  border-radius: 3px;
+  font-size: var(--kx-font-size);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.kx-filter-apply-btn:hover {
+  background: var(--kx-chrome);
+}
+
+/* ButtonList filter */
+.kx-filter-buttonlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.kx-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: var(--kx-font-size);
+  background: var(--kx-surface);
+  color: var(--kx-text);
+  border: 1px solid var(--kx-input-border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.kx-filter-btn:hover {
+  background: var(--kx-accent-bg);
+  border-color: var(--kx-accent);
+}
+
+.kx-filter-btn.kx-active {
+  background: var(--kx-accent);
+  color: #fff;
+  border-color: var(--kx-accent);
+}
+
+.kx-filter-btn.kx-active:hover {
+  opacity: 0.85;
+}
+
+/* CRUD Toolbar */
+.kx-list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--kx-border);
+  flex-shrink: 0;
+  background: var(--kx-surface);
+}
+/* Hide toolbar when it contains no visible buttons (only hidden inputs) */
+.kx-list-toolbar:not(:has(button, .kx-toolbar-separator)) {
+  display: none;
+}
+
+.kx-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--kx-chrome-dark);
+  border-radius: 3px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  font-size: var(--kx-font-size);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+  line-height: 1.2;
+}
+
+.kx-toolbar-btn:not(:disabled):hover {
+  background: var(--kx-chrome);
+  border-color: var(--kx-chrome);
+}
+
+.kx-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.kx-toolbar-btn .kx-icon {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.kx-btn-label {
+  font-size: var(--kx-font-size);
+}
+
+/* Toolbar separator (vertical line between CRUD and tool buttons) */
+.kx-toolbar-separator {
+  display: inline-block;
+  width: 1px;
+  height: 1.6em;
+  background: var(--kx-border);
+  margin: 0 6px;
+  vertical-align: middle;
+}
+
+/* Grid table */
+.kx-list-grid {
+  overflow: auto;
+  flex: 1;
+  min-height: 0; /* allow flex shrinking below content height */
+}
+
+.kx-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--kx-font-size);
+}
+
+.kx-grid-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.kx-grid-table th {
+  background: var(--kx-surface);
+  border-bottom: 2px solid var(--kx-border);
+  border-right: 1px solid var(--kx-border-light);
+  padding: 8px 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+}
+.kx-grid-table th:last-child,
+.kx-grid-table td:last-child {
+  border-right: none;
+}
+
+.kx-grid-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--kx-border);
+  border-right: 1px solid var(--kx-border-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+/* Zebra striping (exclude group header rows and custom-colored rows) */
+.kx-grid-table tbody tr:not(.kx-group-row):not(.kx-custom-row):nth-child(even) {
+  background: var(--kx-surface-alt);
+}
+
+.kx-grid-table tbody tr:not(.kx-group-row):hover {
+  background: var(--kx-accent-bg);
+  cursor: pointer;
+}
+
+/* Row selection */
+.kx-grid-table tbody tr.kx-row-selected {
+  background: var(--kx-accent-bg) !important;
+  outline: 2px solid var(--kx-accent);
+  outline-offset: -2px;
+}
+
+/* Sortable columns */
+.kx-col-sortable {
+  cursor: pointer;
+}
+
+.kx-col-sortable:hover {
+  background: var(--kx-accent-bg);
+}
+
+.kx-sort-asc::after,
+.kx-sort-desc::after {
+  content: '';
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-left: 2px;
+  vertical-align: middle;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+.kx-sort-asc::after {
+  -webkit-mask-image: url('../icons/filled/arrow_upward.svg');
+  mask-image: url('../icons/filled/arrow_upward.svg');
+}
+.kx-sort-desc::after {
+  -webkit-mask-image: url('../icons/filled/arrow_downward.svg');
+  mask-image: url('../icons/filled/arrow_downward.svg');
+}
+
+/* Pager */
+.kx-list-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--kx-border);
+  background: var(--kx-chrome-mid);
+  color: var(--kx-chrome-text);
+  flex-shrink: 0;
+  font-size: var(--kx-font-size);
+}
+
+.kx-list-pager button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--kx-chrome-text);
+  font-size: var(--kx-font-size);
+  line-height: 1;
+}
+
+.kx-list-pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.kx-list-pager button:not(:disabled):hover {
+  background: var(--kx-chrome-btn-hover);
+}
+
+/* Pager separator */
+.kx-pager-separator {
+  width: 1px;
+  height: 1.4em;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 2px;
+}
+
+/* Pager info text */
+.kx-pager-info {
+  font-size: var(--kx-font-size);
+  color: var(--kx-chrome-text);
+  white-space: nowrap;
+}
+
+/* Empty/loading state */
+.kx-list-empty td {
+  text-align: center;
+  color: var(--kx-text-muted);
+  padding: 32px;
+}
+
+/* ===== Form Panel ===== */
+
+/* Form panel fills dialog body */
+.kx-form-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Scrollable form body */
+.kx-form-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 12px;
+}
+
+/* Multi-page form tabs (PageBreak layout) */
+.kx-form-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--kx-border);
+  padding: 0 16px;
+  background: var(--kx-surface);
+  flex-shrink: 0;
+}
+
+.kx-form-tab {
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+}
+
+.kx-form-tab:hover {
+  color: var(--kx-text);
+}
+
+.kx-form-tab-active {
+  color: var(--kx-accent);
+  border-bottom-color: var(--kx-accent);
+  font-weight: 700;
+}
+
+/* Paged form body (no padding — pages provide their own) */
+.kx-form-body-paged {
+  padding: 0;
+}
+
+.kx-form-page {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px;
+}
+
+/* ===== Detail pages inside unified form tabs ===== */
+.kx-form-page.kx-detail-page {
+  padding: 0;
+  overflow: auto;
+}
+
+/* Bottom toolbar with buttons */
+.kx-form-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--kx-border);
+  flex-shrink: 0;
+  background: var(--kx-surface-alt);
+}
+
+/* Single field: label + input */
+.kx-form-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+/* LabelAlign=top variant */
+.kx-form-field.kx-form-field-top {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* Horizontal row of fields */
+.kx-form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* Label */
+.kx-form-label {
+  text-align: right;
+  font-size: var(--kx-font-size);
+  color: var(--kx-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.kx-form-field-top > .kx-form-label {
+  text-align: left;
+}
+
+/* Required indicator — handled server-side via RequiredLabelTemplate */
+
+/* Base input/select/textarea styling — no fixed height, scales with font-size */
+.kx-form-input {
+  padding: 4px 4px;
+  border: 1px solid var(--kx-input-border);
+  border-radius: 4px;
+  font-size: var(--kx-font-size);
+  line-height: 1.4;
+  outline: none;
+  max-width: 100%;
+  min-width: 0;
+  background: var(--kx-input-bg);
+  color: var(--kx-text);
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.kx-form-input:focus {
+  border-color: var(--kx-accent);
+  box-shadow: 0 0 0 2px var(--kx-accent-ring);
+}
+
+/* SunEditor integration — theme-aware overrides */
+.kx-form-field .sun-editor {
+  border: 1px solid var(--kx-input-border);
+  border-radius: 4px;
+  background-color: var(--kx-input-bg);
+  color: var(--kx-text);
+  font-family: var(--kx-font);
+  font-size: var(--kx-font-size);
+}
+.kx-form-field textarea.kx-html-editor {
+  display: none;
+}
+/* Toolbar */
+.sun-editor .se-toolbar {
+  background-color: var(--kx-surface);
+  border-bottom: 1px solid var(--kx-border);
+  outline: none;
+}
+/* Toolbar button groups — remove default white border */
+.sun-editor .se-btn-module-border {
+  border-color: var(--kx-border);
+}
+/* Toolbar buttons — match KittoX button sizing */
+.sun-editor .se-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 2px;
+  color: var(--kx-text);
+  border-radius: 3px;
+}
+.sun-editor .se-btn:enabled:hover,
+.sun-editor .se-btn:enabled:focus,
+.sun-editor .se-btn:enabled.active:hover,
+.sun-editor .se-btn:enabled.on:hover,
+.sun-editor .se-btn-module .se-btn-more:hover,
+.sun-editor .se-btn-module .se-btn-more:focus,
+.sun-editor .se-btn-module .se-btn-more.on:hover {
+  background-color: var(--kx-accent-bg);
+  color: var(--kx-accent);
+  border-color: transparent;
+  outline: 0 none;
+}
+.sun-editor .se-btn:active,
+.sun-editor .se-btn.active,
+.sun-editor .se-btn:enabled.active,
+.sun-editor .se-btn:enabled.on {
+  background-color: var(--kx-accent-bg);
+  color: var(--kx-accent);
+}
+.sun-editor .se-btn-list:hover {
+  background-color: var(--kx-accent-bg);
+  color: var(--kx-accent);
+  border-color: transparent;
+}
+.sun-editor .se-btn svg {
+  width: 16px;
+  height: 16px;
+}
+/* Toolbar select/dropdown buttons (Font, Size) */
+.sun-editor .se-btn-select {
+  width: auto;
+  min-width: 40px;
+  height: 26px;
+  margin-top: 0;
+  padding: 0 6px;
+  font-family: var(--kx-font);
+  font-size: var(--kx-font-size);
+  color: var(--kx-text);
+  background-color: var(--kx-input-bg);
+  border: 1px solid var(--kx-border);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+/* Font family selector — wider */
+.sun-editor .se-btn-select.se-btn-tool-font {
+  width: 200px;
+}
+.sun-editor .se-btn-select:hover,
+.sun-editor .se-btn-select:focus {
+  border-color: var(--kx-accent);
+  background-color: var(--kx-input-bg);
+  color: var(--kx-text);
+}
+.sun-editor .se-btn-select .txt {
+  font-family: var(--kx-font);
+  font-size: var(--kx-font-size);
+  color: var(--kx-text);
+  line-height: 22px;
+}
+/* Toolbar separator */
+.sun-editor .se-toolbar-separator {
+  background-color: var(--kx-border);
+}
+/* Editing area */
+.sun-editor .se-wrapper .se-wrapper-inner {
+  background-color: var(--kx-input-bg);
+  color: var(--kx-text);
+  font-family: var(--kx-font);
+  font-size: var(--kx-font-size);
+  padding: 4px;
+}
+/* Code view (source toggle) */
+.sun-editor .se-wrapper .se-wrapper-code {
+  background-color: var(--kx-input-bg);
+  color: var(--kx-text);
+  font-family: monospace;
+}
+/* Status bar */
+.sun-editor .se-resizing-bar {
+  background-color: var(--kx-surface);
+  border-top: 1px solid var(--kx-border);
+}
+.sun-editor .se-navigation {
+  color: var(--kx-text-muted);
+  font-family: var(--kx-font);
+  font-size: calc(var(--kx-font-size) - 2px);
+}
+/* Dropdown lists (font list, size list, color picker) */
+.sun-editor .se-list-layer {
+  background-color: var(--kx-surface);
+  border: 1px solid var(--kx-border);
+  color: var(--kx-text);
+  font-family: var(--kx-font);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.sun-editor .se-list-layer .se-list-basic li button {
+  color: var(--kx-text);
+}
+.sun-editor .se-list-layer .se-list-basic li button:hover {
+  background-color: var(--kx-accent-bg);
+  color: var(--kx-accent);
+}
+/* Active/selected item in dropdown lists */
+.sun-editor .se-list-basic li button.active {
+  background-color: var(--kx-accent-bg);
+  border-color: var(--kx-accent);
+  color: var(--kx-accent);
+}
+.sun-editor .se-list-basic li button.active:hover {
+  background-color: var(--kx-accent);
+  border-color: var(--kx-accent);
+  color: var(--kx-surface);
+}
+.sun-editor .se-list-basic li button.active:active {
+  background-color: var(--kx-accent);
+  border-color: var(--kx-accent);
+  color: var(--kx-surface);
+  box-shadow: none;
+  -webkit-box-shadow: none;
+}
+/* Dialog boxes (link, image, etc.) */
+.sun-editor .se-dialog-inner .se-dialog-content {
+  background-color: var(--kx-surface);
+  color: var(--kx-text);
+  border: 1px solid var(--kx-border);
+}
+.sun-editor .se-dialog-inner .se-dialog-header {
+  background-color: var(--kx-surface);
+  border-bottom: 1px solid var(--kx-border);
+  color: var(--kx-text);
+}
+.sun-editor .se-dialog-inner .se-dialog-body label {
+  color: var(--kx-text);
+}
+.sun-editor .se-dialog-inner input,
+.sun-editor .se-dialog-inner select {
+  background-color: var(--kx-input-bg);
+  border: 1px solid var(--kx-input-border);
+  color: var(--kx-text);
+  font-family: var(--kx-font);
+}
+/* Disabled state */
+.sun-editor.se-disabled .se-wrapper .se-wrapper-inner,
+.sun-editor .se-wrapper .se-wrapper-inner[contenteditable="false"] {
+  background-color: var(--kx-surface-alt);
+  color: var(--kx-text-muted);
+  opacity: 0.6;
+}
+
+/* --- Per-type input classes --- */
+
+/* Text (default string) */
+.kx-input-text {}
+
+/* Password */
+.kx-input-password {}
+
+/* Select (AllowedValues, Reference FK) */
+.kx-input-select {
+  appearance: auto;
+}
+
+/* Checkbox (Boolean) */
+.kx-input-checkbox {
+  width: auto !important;
+  padding: 0;
+}
+
+/* Force identical height on all single-line inputs, selects, date and time pickers
+   across both form and filter contexts. Without this, browsers render date/time/select
+   with ~1px extra height due to internal chrome (picker icons, dropdown arrow). */
+input.kx-form-input,
+select.kx-form-input,
+input.kx-filter-input,
+select.kx-filter-input {
+  height: calc(var(--kx-font-size) * 1.4 + 10px);
+  box-sizing: border-box;
+}
+
+/* Firefox: add clock icon to time inputs (Firefox hides native picker icon for type="time").
+   Purely visual — clicking the time segments still allows editing natively.
+   Uses the same color-mix opacity as Firefox's native calendar icon on date inputs. */
+@-moz-document url-prefix() {
+  input[type="time"].kx-input-time {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    background-size: 14px;
+    padding-right: 24px;
+  }
+}
+@-moz-document url-prefix() {
+  [data-theme="dark"] input[type="time"].kx-input-time {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+}
+@media (prefers-color-scheme: dark) {
+  @-moz-document url-prefix() {
+    :root:not([data-theme]) input[type="time"].kx-input-time {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+  }
+}
+
+/* Firefox: compact date/time segments — reduce extra spacing between dd/mm/yyyy */
+input[type="date"]::-moz-datetime-edit,
+input[type="time"]::-moz-datetime-edit {
+  padding: 0;
+  letter-spacing: -0.5px;
+}
+input[type="date"]::-moz-datetime-edit-fields-wrapper,
+input[type="time"]::-moz-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+/* Integer */
+.kx-input-integer {
+  text-align: right;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.kx-input-integer::-webkit-inner-spin-button,
+.kx-input-integer::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Show spin buttons when UseSpeedButtons: True */
+.kx-input-integer.kx-spin-buttons {
+  -moz-appearance: auto;
+  appearance: auto;
+  padding-right: 4px;
+}
+.kx-input-integer.kx-spin-buttons::-webkit-inner-spin-button,
+.kx-input-integer.kx-spin-buttons::-webkit-outer-spin-button {
+  -webkit-appearance: auto;
+  margin-left: 4px;
+}
+
+/* Currency */
+.kx-input-currency {
+  text-align: right;
+}
+
+/* Decimal / Float */
+.kx-input-decimal {
+  text-align: right;
+}
+
+/* Memo (plain text textarea) */
+.kx-input-memo {
+  resize: vertical;
+}
+
+/* HTMLMemo (SunEditor textarea) — see also .kx-html-editor and .sun-editor rules */
+
+/* Readonly / disabled fields */
+.kx-form-readonly .kx-form-input,
+.kx-form-input:disabled {
+  background: var(--kx-surface-alt);
+  color: var(--kx-text-muted);
+  cursor: default;
+}
+
+/* FieldSet */
+.kx-form-fieldset {
+  border: 1px solid var(--kx-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 6px 0;
+}
+
+.kx-form-fieldset legend {
+  font-size: var(--kx-font-size);
+  font-weight: 600;
+  color: var(--kx-text);
+  padding: 0 6px;
+  user-select: none;
+}
+
+/* Non-collapsible legends are static */
+.kx-form-fieldset:not(.kx-form-fieldset-collapsible) legend {
+  cursor: default;
+}
+
+/* Collapsible fieldset: clickable legend with chevron */
+.kx-form-fieldset-collapsible legend {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Fieldset toggle: collapsed = chevron-up rotated 180deg (down).
+   Uses shared .kx-toggle-icon class. */
+.kx-form-fieldset-collapsible.kx-collapsed .kx-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.kx-form-fieldset-body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Collapsed fieldset hides body */
+.kx-form-fieldset.kx-collapsed .kx-form-fieldset-body {
+  display: none;
+}
+
+/* Form toolbar buttons */
+.kx-form-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 20px;
+  border: 1px solid var(--kx-border);
+  border-radius: 4px;
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+  font-size: var(--kx-font-size);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.kx-form-btn:hover:not(:disabled) {
+  background: var(--kx-chrome);
+}
+
+.kx-form-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Icon size inside form buttons is controlled by kx-icon-sm/md/lg classes */
+
+/* Save = dark (confirm action), Cancel = light (non-confirm) */
+.kx-form-btn-save {
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+}
+.kx-form-btn-save:hover:not(:disabled) {
+  background: var(--kx-chrome);
+}
+
+.kx-form-btn-cancel {
+  background: var(--kx-chrome-light);
+  color: var(--kx-chrome-text);
+}
+.kx-form-btn-cancel:hover:not(:disabled) {
+  background: var(--kx-chrome-hover);
+}
+
+/* Clone button: same style as Save */
+.kx-form-btn-clone {
+  background: var(--kx-chrome-dark);
+  color: var(--kx-chrome-text);
+}
+.kx-form-btn-clone:hover:not(:disabled) {
+  background: var(--kx-chrome);
+}
+
+/* ===== Form ToolViews toolbar ===== */
+.kx-form-toolviews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--kx-border);
+}
+
+/* ===== Lookup Editor (IsLarge reference fields) ===== */
+.kx-form-lookup-wrapper {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 4px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.kx-form-lookup-wrapper:focus-within {
+  box-shadow: 0 0 0 2px var(--kx-accent-ring);
+}
+
+.kx-form-lookup-wrapper:focus-within .kx-form-lookup-display {
+  border-color: var(--kx-accent);
+}
+
+.kx-form-lookup-wrapper:focus-within .kx-form-lookup-btn {
+  border-color: var(--kx-accent);
+}
+
+/* Suppress individual input focus ring inside lookup wrapper */
+.kx-form-lookup-wrapper .kx-form-input:focus {
+  box-shadow: none;
+}
+
+.kx-form-lookup-display {
+  cursor: default;
+  border-radius: 4px 0 0 4px;
+  border-right: none;
+}
+
+.kx-form-lookup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2em;
+  border: 1px solid var(--kx-input-border);
+  border-radius: 0;
+  border-left: none;
+  background: var(--kx-surface);
+  color: var(--kx-text);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.kx-form-lookup-btn:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.kx-form-lookup-btn:hover {
+  background: var(--kx-accent-bg);
+  border-color: var(--kx-accent);
+}
+
+.kx-form-lookup-btn .kx-icon {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* Select/Cancel bar in lookup dialog */
+.kx-lookup-select-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--kx-border);
+  justify-content: flex-end;
+}
+
+/* ===== GroupingList (collapsible grouped rows) ===== */
+
+/* Tab pane overrides when hosting a grouping list panel */
+.kx-tab-pane:has(> .kx-grouping-list) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-group-row {
+  cursor: pointer;
+  background: var(--kx-chrome-mid);
+}
+
+.kx-group-row:hover {
+  background: var(--kx-chrome);
+}
+
+.kx-group-row td {
+  padding: 6px 10px;
+  color: var(--kx-chrome-text);
+  font-weight: 600;
+}
+
+.kx-group-toggle {
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+  margin-right: 4px;
+}
+
+/* Group data rows participate in zebra striping within their group */
+.kx-group-data:nth-child(even) {
+  background: var(--kx-surface);
+}
+
+.kx-group-data:hover {
+  background: var(--kx-accent-bg);
+  cursor: pointer;
+}
+
+.kx-group-data.kx-row-selected {
+  background: var(--kx-accent-bg) !important;
+  outline: 2px solid var(--kx-accent);
+  outline-offset: -2px;
+}
+
+/* ===== Template Data Panel ===== */
+.kx-template-content {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-content: flex-start;
+}
+.kx-template-error {
+  color: var(--kx-error);
+  padding: 16px;
+  font-style: italic;
+}
+.kx-card-item {
+  cursor: pointer;
+  border: 1px solid var(--kx-border);
+  border-radius: 8px;
+  background: var(--kx-surface);
+  overflow: hidden;
+  transition: background 0.15s, border-color 0.15s;
+}
+.kx-card-item:hover {
+  background: var(--kx-accent-bg);
+  border-color: var(--kx-accent);
+}
+.kx-card-item.kx-row-selected {
+  background: var(--kx-accent-bg);
+  outline: 2px solid var(--kx-accent);
+  outline-offset: -2px;
+}
+.kx-card-empty {
+  padding: 16px;
+  color: var(--kx-text-muted);
+  width: 100%;
+  text-align: center;
+}
+/* Card body: horizontal flex layout (photo left, info right) */
+.kx-card-body {
+  display: flex;
+  height: 100%;
+}
+.kx-card-photo {
+  width: 150px;
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--kx-surface-alt);
+  border-right: 1px solid var(--kx-border-light);
+}
+.kx-card-photo img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+}
+.kx-card-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 16px;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.kx-card-name {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+.kx-card-detail {
+  font-size: 0.9em;
+  color: var(--kx-text-muted);
+}
+.kx-no-pic {
+  color: var(--kx-text-muted);
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+/* ===== Chart Panel ===== */
+
+/* Tab pane overrides when hosting a chart panel */
+.kx-tab-pane:has(> .kx-chart-panel) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-chart-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kx-chart-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  position: relative;
+}
+
+.kx-chart-area canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.kx-chart-sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--kx-border);
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.kx-chart-sidebar-west {
+  padding-right: 4px;
+}
+
+.kx-chart-sidebar-west > .kx-splitter-h {
+  right: 0;
+}
+
+/* East sidebar: border on left instead of right */
+.kx-chart-sidebar-east {
+  border-right: none;
+  border-left: 1px solid var(--kx-border);
+  padding-left: 4px;
+}
+
+.kx-chart-sidebar-east > .kx-splitter-h {
+  left: 0;
+}
+
+.kx-chart-grid {
+  flex: 1;
+  overflow: auto;
+}
+
+/* ===== Google Map Panel ===== */
+
+/* Tab pane overrides when hosting a map panel */
+.kx-tab-pane:has(> .kx-googlemap-panel) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-googlemap-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kx-googlemap-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.kx-googlemap-container {
+  flex: 1;
+  min-width: 0;
+  min-height: 400px;
+}
+
+.kx-googlemap-directions {
+  flex: 0 1 auto;
+  max-width: 30rem;
+  min-width: 15rem;
+  overflow: auto;
+  border-left: 1px solid var(--kx-border);
+  padding: 0.5rem;
+}
+
+.kx-googlemap-sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--kx-border);
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.kx-googlemap-sidebar-west {
+  padding-right: 4px;
+}
+
+.kx-googlemap-sidebar-west > .kx-splitter-h {
+  right: 0;
+}
+
+/* East sidebar: border on left instead of right */
+.kx-googlemap-sidebar-east {
+  border-right: none;
+  border-left: 1px solid var(--kx-border);
+  padding-left: 4px;
+}
+
+.kx-googlemap-sidebar-east > .kx-splitter-h {
+  left: 0;
+}
+
+.kx-googlemap-grid {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Toolbar toggle button active state */
+.kx-toolbar-btn-active {
+  background-color: var(--kx-accent) !important;
+  color: #fff !important;
+}
+
+.kx-toolbar-btn-active .kx-icon {
+  background-color: #fff !important;
+}
+
+.kx-toolbar-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.4em;
+  background: var(--kx-border);
+  vertical-align: middle;
+  margin: 0 4px;
+}
+
+.kx-toolbar-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.85em;
+  color: var(--kx-text);
+  cursor: pointer;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.kx-toolbar-checkbox input[type="checkbox"] {
+  accent-color: var(--kx-accent);
+  cursor: pointer;
+}
+
+/* Active row highlight when clicking a marker */
+.kx-googlemap-row-active {
+  background-color: var(--kx-accent) !important;
+  color: #fff !important;
+}
+
+.kx-googlemap-grid-row:hover {
+  background-color: var(--kx-row-hover);
+  cursor: pointer;
+}
+
+/* Flex item child fills available space */
+.kx-flex-item > .kx-googlemap-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Google Maps InfoWindow dark theme override */
+[data-theme="dark"] .gm-style-iw-c,
+[data-theme="dark"] .gm-style-iw-d,
+[data-theme="dark"] .gm-style-iw-chr {
+  background-color: #1f2937 !important;
+  color: #e5e7eb !important;
+}
+
+[data-theme="dark"] .gm-style-iw-tc::after {
+  background: #1f2937 !important;
+}
+
+[data-theme="dark"] .gm-ui-hover-effect span {
+  background-color: #e5e7eb !important;
+}
+
+[data-theme="dark"] .gm-style-iw-d {
+  overflow: auto !important;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .gm-style-iw-c,
+  :root:not([data-theme]) .gm-style-iw-d,
+  :root:not([data-theme]) .gm-style-iw-chr {
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+  }
+  :root:not([data-theme]) .gm-style-iw-tc::after {
+    background: #1f2937 !important;
+  }
+  :root:not([data-theme]) .gm-ui-hover-effect span {
+    background-color: #e5e7eb !important;
+  }
+  :root:not([data-theme]) .gm-style-iw-d {
+    overflow: auto !important;
+    scrollbar-color: #4b5563 #1f2937;
+  }
+}
+
+/* ===== Calendar Panel ===== */
+
+/* Tab pane overrides when hosting a calendar panel */
+.kx-tab-pane:has(> .kx-calendar-panel) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-calendar-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kx-calendar-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* EventCalendar fills its container and inherits theme */
+.kx-calendar-container .ec {
+  height: 100%;
+  --ec-bg-color: var(--kx-surface);
+  --ec-text-color: var(--kx-text);
+  --ec-border-color: var(--kx-border);
+  --ec-button-bg-color: var(--kx-surface);
+  --ec-button-border-color: var(--kx-border);
+  --ec-button-text-color: var(--kx-text);
+  --ec-button-active-bg-color: var(--kx-accent);
+  --ec-button-active-border-color: var(--kx-accent);
+  --ec-button-active-text-color: #fff;
+  --ec-today-bg-color: color-mix(in srgb, var(--kx-accent) 12%, transparent);
+  --ec-highlight-color: var(--kx-surface-alt);
+  --ec-now-indicator-color: var(--kx-accent);
+  --ec-day-bg-color: var(--kx-surface);
+  --ec-popup-bg-color: var(--kx-surface);
+}
+
+/* Calendar toolbar padding */
+.kx-calendar-container .ec-toolbar {
+  padding: 6px 8px;
+}
+
+/* Selected event highlight — same style as grid/card row selection */
+.ec-event.kx-cal-event-selected {
+  outline: 2px solid var(--kx-accent);
+  outline-offset: -1px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Event notes line (smaller, muted) */
+.ec-event-notes {
+  font-size: 0.85em;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Picture Editor Widget (IsPicture blob fields) ===== */
+
+.kx-picture-editor {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kx-picture-preview {
+  border: 1px solid var(--kx-border);
+  border-radius: 4px;
+  background: var(--kx-input-bg, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.kx-picture-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.kx-picture-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.kx-picture-buttons .kx-toolbar-btn {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+/* ===== TilePanel ===== */
+
+/* Outer container: flex column fills parent region */
+.kx-tile-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.kx-tile-panel-title {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: calc(var(--kx-font-size) + 1px);
+  color: var(--kx-text);
+  flex-shrink: 0;
+}
+
+/* Scrollable tile box area */
+.kx-tile-box {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+
+/* Section title (rendered from folder DisplayLabel) */
+.kx-tile-section-title {
+  font-size: 120%;
+  color: var(--kx-text);
+}
+
+/* Tile row: wrapping container for tiles */
+.kx-tile-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* Individual tile — matches Kitto1 layout: icon top-left, label bottom-left.
+   content-box required because Kitto1 had no border-box reset: inline width/height
+   set the content area, padding adds on top. */
+.kx-tile {
+  box-sizing: content-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 120%;
+  color: #fff;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+  transition: transform 0.12s, box-shadow 0.12s;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-position: 10px 10px;
+}
+
+.kx-tile:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Tile label: white text at bottom-left (matching Kitto1 k-tile-inner), clamp to 2 lines */
+.kx-tile-label {
+  margin-top: 2px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Icons inside tiles: fixed 32px (matching Kitto1 PNG _large), white on colored background */
+.kx-tile .kx-icon {
+  width: 32px;
+  height: 32px;
+  background-color: #fff;
+}
+
+.kx-tile .kx-icon-img {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0) invert(1);
+}
+
+/* ImagePosition: center — icon centered horizontally */
+.kx-tile-icon-center .kx-icon,
+.kx-tile-icon-center .kx-icon-img {
+  align-self: center;
+}
+
+/* ===== TilePanel: home button (reuses kx-tab-* for the rest) ===== */
+
+.kx-tile-home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--kx-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.kx-tile-home-btn:hover {
+  color: var(--kx-text);
+}
+
+.kx-tile-home-btn .kx-icon {
+  background-color: currentColor;
+}
+
+/* ===== FlexPanel ===== */
+
+/* Tab pane containing a dashboard: fill height like list/chart panels */
+.kx-tab-pane:has(> .kx-flex-panel) {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kx-flex-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.kx-flex-container {
+  width: 100%;
+}
+
+.kx-flex-item {
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--kx-surface);
+  border: 1px solid var(--kx-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Child panel inside flex item fills available space */
+.kx-flex-item > .kx-list-panel,
+.kx-flex-item > .kx-template-panel,
+.kx-flex-item > .kx-chart-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Remove padding on template-content inside flex items (KPI cards have their own) */
+.kx-flex-item .kx-template-content {
+  padding: 0;
+  gap: 0;
+}
+
+.kx-flex-item-title {
+  padding: 8px 12px;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--kx-chrome-text);
+  background: var(--kx-chrome-hover);
+  border-bottom: 1px solid var(--kx-border);
+  border-radius: 5px 5px 0 0;
+  flex-shrink: 0;
+}
+
+.kx-flex-item-footer {
+  padding: 6px 12px;
+  font-size: 0.9em;
+  color: var(--kx-text-muted);
+  background: var(--kx-surface-alt);
+  border-top: 1px solid var(--kx-border-light);
+  border-radius: 0 0 5px 5px;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+/* ===== Dashboard ===== */
+
+.kx-dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px 0;
+}
+
+.kx-dashboard-toolbar .kx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kx-dashboard-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--kx-chrome);
+  color: var(--kx-chrome-text);
+  font-size: 1.1em;
+  font-weight: 600;
+  border-bottom: 1px solid var(--kx-border);
+}
+
+.kx-dashboard-title {
+  flex: 1;
+}
+
+/* ===== KPI Cards ===== */
+.kx-kpi-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  min-height: 100px;
+  gap: 12px;
+  overflow: visible;
+  flex: 1;
+  width: 100%;
+}
+
+.kx-kpi-icon {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kx-kpi-icon .kx-icon {
+  width: 100%;
+  height: 100%;
+  background-color: var(--kx-accent);
+}
+
+.kx-kpi-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.kx-kpi-body {
+  flex: 1;
+  text-align: center;
+}
+
+.kx-kpi-value {
+  font-size: 2.5em;
+  font-weight: 700;
+  color: var(--kx-accent);
+}
+
+.kx-kpi-label {
+  font-size: 0.95em;
+  color: var(--kx-text-muted);
+}
+
+/* ===== Wizard Controller ===== */
+
+.kx-wizard-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Step indicator bar */
+.kx-wizard-steps {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--kx-surface);
+  border-bottom: 1px solid var(--kx-border);
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.kx-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.kx-wizard-step-active {
+  opacity: 1;
+}
+
+.kx-wizard-step-completed {
+  opacity: 0.8;
+}
+
+.kx-wizard-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--kx-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kx-text-muted);
+  background: var(--kx-surface);
+  flex-shrink: 0;
+}
+
+.kx-wizard-step-active .kx-wizard-step-num {
+  border-color: var(--kx-accent);
+  background: var(--kx-accent);
+  color: #fff;
+}
+
+.kx-wizard-step-completed .kx-wizard-step-num {
+  border-color: #33b679;
+  background: #33b679;
+  color: #fff;
+}
+
+.kx-wizard-step-title {
+  font-size: 13px;
+  color: var(--kx-text-muted);
+  white-space: nowrap;
+}
+
+.kx-wizard-step-active .kx-wizard-step-title {
+  color: var(--kx-text);
+  font-weight: 600;
+}
+
+.kx-wizard-step-completed .kx-wizard-step-title {
+  color: var(--kx-text);
+}
+
+.kx-wizard-step-separator {
+  flex: 1;
+  height: 2px;
+  background: var(--kx-border);
+  margin: 0 12px;
+  min-width: 20px;
+}
+
+/* Wizard page content */
+.kx-wizard-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.kx-wizard-page {
+  /* Same as kx-form-page */
+}
+
+/* Wizard navigation buttons */
+.kx-wizard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--kx-border);
+  background: var(--kx-surface);
+  flex-shrink: 0;
+}
+
+.kx-wizard-toolbar .kx-form-btn {
+  min-width: 100px;
+}
+
+/* Wizard HTML step content */
+.kx-wizard-html {
+  padding: 8px 0;
+  line-height: 1.6;
+  color: var(--kx-text);
+}

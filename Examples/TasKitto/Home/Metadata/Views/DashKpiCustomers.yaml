@@ -1,0 +1,8 @@
+Type: Data
+DisplayLabel: _(Active Customers)
+ImageName: business_contact.svg
+Controller: TemplateDataPanel
+  TemplateFileName: DashKpiCustomers.html
+MainTable:
+  IsReadOnly: True
+  Model: KPI_MONTHLY

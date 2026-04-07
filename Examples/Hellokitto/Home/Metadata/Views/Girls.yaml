@@ -1,0 +1,50 @@
+﻿Type: Data
+ImageName: woman
+
+Controller: List
+  .InplaceEditing: True
+  EastView:
+    Controller: HtmlPanel
+      Html: |
+        <div style="padding:4px 8px; margin:2px 4px">Age under 12</div>
+        <div class="semi-important-row" style="padding:4px 8px; margin:2px 4px">Age between 12 and 15</div>
+        <div class="important-row" style="padding:4px 8px; margin:2px 4px">Age over 15</div>
+      Border: True
+      Collapsible: True
+      Header: True
+      Title: _(Legend)
+      Width: 180
+      Split: True
+  Filters:
+    LabelWidth: 76
+    DisplayLabel: _(Girls Filter)
+    Connector: and
+    Items:
+      ButtonList: _(Hair Color)
+        Items:
+          Blond: _(Blond)
+            Expression: HAIR.HAIR_COLOR = 'Blond'
+          Walnut: _(Walnut)
+            Expression: HAIR.HAIR_COLOR = 'Walnut'
+          Black: _(Black)
+            Expression: HAIR.HAIR_COLOR = 'Black'
+          Silver: _(Silver)
+            Expression: HAIR.HAIR_COLOR = 'Silver'
+          Red: _(Red)
+            Expression: HAIR.HAIR_COLOR = 'Red'
+          Platinum: _(Platinum)
+            Expression: HAIR.HAIR_COLOR = 'Platinum'
+
+MainTable:
+  Model: Girl
+  Fields:
+    Girl_Id:
+      IsVisible: False
+    Girl_Name:
+    Age:
+    Phone:
+    Hair:
+
+  Controller:
+    PagingTools: True
+    RowClassProvider: function (record) { return getAgeClass(record.get('Age')); }

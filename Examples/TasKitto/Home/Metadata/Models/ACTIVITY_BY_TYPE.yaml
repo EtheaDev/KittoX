@@ -1,0 +1,4 @@
+﻿Fields:
+  TYPE_NAME: String(20) primary key
+  DURATION: Decimal(9, 2)
+ImageName: calendar_today

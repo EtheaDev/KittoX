@@ -1,0 +1,28 @@
+Type: Data
+
+Controller: Wizard
+  Width: 700
+  Height: 500
+  Steps:
+    Step: _(Project & Phase)
+      Fields:
+        PHASE:
+        EMPLOYEE:
+        ROLE:
+    Step: _(Activity Details)
+      Fields:
+        DESCRIPTION:
+        TYPE:
+        STATUS:
+    Step: _(Date & Time)
+      Fields:
+        ACTIVITY_DATE:
+        START_TIME:
+        END_TIME:
+  FinishButton: _(Create Activity)
+
+MainTable:
+  Model: ACTIVITY
+
+DisplayLabel: _(New Activity Wizard)
+ImageName: auto_fix_high

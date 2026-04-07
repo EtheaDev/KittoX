@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ink: #1a1a2e;
+            --body: #3a3a50;
+            --muted: #6b6b80;
+            --accent: #2d5a7b;
+            --accent-light: #e8f0f6;
+            --bg: #fdfcfb;
+            --card: #ffffff;
+            --border: #e5e3df;
+            --rule: #d4d1cb;
+            --serif: 'DM Serif Display', Georgia, serif;
+            --sans: 'Source Sans 3', 'Segoe UI', sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--sans);
+            font-size: 17px;
+            line-height: 1.75;
+            color: var(--body);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Header ── */
+        .hero {
+            background: linear-gradient(165deg, #1a1a2e 0%, #2d5a7b 100%);
+            color: #fff;
+            padding: 5rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 80%, rgba(255,255,255,0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            font-family: var(--serif);
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.6rem;
+        }
+        .hero .subtitle {
+            font-size: 1.05rem;
+            font-weight: 300;
+            opacity: 0.75;
+        }
+        .hero .effective-date {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.35rem 1.2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        /* ── Layout ── */
+        .wrapper {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 3rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem 5rem;
+        }
+
+        /* ── Sidebar / TOC ── */
+        .toc {
+            position: sticky;
+            top: 2rem;
+            align-self: start;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+        }
+        .toc-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+        .toc ol {
+            list-style: none;
+            counter-reset: toc-counter;
+        }
+        .toc li { counter-increment: toc-counter; }
+        .toc a {
+            display: block;
+            padding: 0.35rem 0;
+            font-size: 0.88rem;
+            font-weight: 400;
+            color: var(--muted);
+            text-decoration: none;
+            border-left: 2px solid transparent;
+            padding-left: 1rem;
+            transition: all 0.2s;
+        }
+        .toc a::before {
+            content: counter(toc-counter, decimal-leading-zero) " ";
+            font-weight: 600;
+            color: var(--border);
+            margin-right: 0.3rem;
+            transition: color 0.2s;
+        }
+        .toc a:hover {
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+        .toc a:hover::before { color: var(--accent); }
+
+        /* ── Content ── */
+        .content { max-width: 720px; }
+
+        .content section {
+            margin-bottom: 2.8rem;
+            padding-bottom: 2.8rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .content section:last-child { border-bottom: none; }
+
+        .content h2 {
+            font-family: var(--serif);
+            font-size: 1.6rem;
+            font-weight: 400;
+            color: var(--ink);
+            margin-bottom: 1rem;
+            letter-spacing: -0.01em;
+        }
+        .content h2 .num {
+            display: inline-block;
+            font-family: var(--sans);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            background: var(--accent-light);
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 6px;
+            margin-right: 0.6rem;
+            vertical-align: middle;
+            position: relative;
+            top: -2px;
+        }
+
+        .content h3 {
+            font-family: var(--sans);
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 1.6rem 0 0.5rem;
+        }
+
+        .content p { margin-bottom: 1rem; }
+
+        .content ul {
+            margin: 0.5rem 0 1rem 1.4rem;
+            list-style: disc;
+        }
+        .content ul li {
+            margin-bottom: 0.4rem;
+            padding-left: 0.3rem;
+        }
+
+        .highlight-box {
+            background: var(--accent-light);
+            border-left: 3px solid var(--accent);
+            padding: 1.1rem 1.4rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.2rem 0;
+            font-size: 0.95rem;
+        }
+
+        .contact-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.6rem;
+            margin-top: 1rem;
+        }
+        .contact-card p { margin-bottom: 0.3rem; font-size: 0.95rem; }
+        .contact-card strong { color: var(--ink); }
+
+        /* ── Footer ── */
+        footer {
+            text-align: center;
+            padding: 2.5rem 2rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 800px) {
+            .wrapper {
+                grid-template-columns: 1fr;
+                padding: 2rem 1.2rem 3rem;
+            }
+            .toc {
+                position: relative;
+                top: 0;
+                border-bottom: 1px solid var(--border);
+                padding-bottom: 1.5rem;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <h1>Privacy Policy</h1>
+    <p class="subtitle">How we collect, use, and protect your information</p>
+    <span class="effective-date">Effective Date: February 19, 2026</span>
+</header>
+
+<div class="wrapper">
+    <nav class="toc" aria-label="Table of Contents">
+        <div class="toc-label">Contents</div>
+        <ol>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#info-collect">Information We Collect</a></li>
+            <li><a href="#how-use">How We Use Your Information</a></li>
+            <li><a href="#sharing">Sharing of Information</a></li>
+            <li><a href="#cookies">Cookies &amp; Tracking</a></li>
+            <li><a href="#security">Data Security</a></li>
+            <li><a href="#retention">Data Retention</a></li>
+            <li><a href="#rights">Your Rights</a></li>
+            <li><a href="#children">Children's Privacy</a></li>
+            <li><a href="#international">International Transfers</a></li>
+            <li><a href="#changes">Changes to This Policy</a></li>
+            <li><a href="#contact">Contact Us</a></li>
+        </ol>
+    </nav>
+
+    <main class="content">
+
+        <!-- 1 -->
+        <section id="introduction">
+            <h2><span class="num">1</span>Introduction</h2>
+            <p>Welcome to <strong>[Your Company Name]</strong> ("<strong>Company</strong>", "<strong>we</strong>", "<strong>us</strong>", or "<strong>our</strong>"). We operate the web application located at <strong>[https://yourapp.com]</strong> (the "<strong>Service</strong>").</p>
+            <p>This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you access or use our Service. By using the Service, you agree to the collection and use of information in accordance with this policy. If you do not agree with the terms of this Privacy Policy, please do not access or use the Service.</p>
+        </section>
+
+        <!-- 2 -->
+        <section id="info-collect">
+            <h2><span class="num">2</span>Information We Collect</h2>
+
+            <h3>2.1 Information You Provide Directly</h3>
+            <p>We may collect personal information that you voluntarily provide when you register for an account, use our Service, or communicate with us. This may include:</p>
+            <ul>
+                <li>Full name, email address, and contact details</li>
+                <li>Account credentials (username and password)</li>
+                <li>Billing and payment information</li>
+                <li>Profile information and preferences</li>
+                <li>Content you submit, upload, or create within the Service</li>
+                <li>Communications you send to us (e.g., support requests, feedback)</li>
+            </ul>
+
+            <h3>2.2 Information Collected Automatically</h3>
+            <p>When you access the Service, we may automatically collect certain technical and usage data, including:</p>
+            <ul>
+                <li>IP address and approximate geographic location</li>
+                <li>Browser type, version, and language preferences</li>
+                <li>Operating system and device information</li>
+                <li>Pages visited, features used, and time spent on the Service</li>
+                <li>Referring URLs and exit pages</li>
+                <li>Date and time stamps of access</li>
+            </ul>
+
+            <h3>2.3 Information from Third Parties</h3>
+            <p>We may receive information about you from third-party services, such as single sign-on providers (e.g., Google, Microsoft), analytics platforms, or business partners, in accordance with their own privacy policies.</p>
+        </section>
+
+        <!-- 3 -->
+        <section id="how-use">
+            <h2><span class="num">3</span>How We Use Your Information</h2>
+            <p>We use the information we collect for the following purposes:</p>
+            <ul>
+                <li><strong>Service Delivery</strong> &mdash; To create and manage your account, provide the features and functionality of the Service, and process transactions.</li>
+                <li><strong>Communication</strong> &mdash; To send you service-related notices, respond to your inquiries, and provide customer support.</li>
+                <li><strong>Improvement</strong> &mdash; To analyze usage trends, diagnose technical issues, and improve the performance, reliability, and user experience of the Service.</li>
+                <li><strong>Personalization</strong> &mdash; To tailor content, recommendations, and features to your preferences and usage patterns.</li>
+                <li><strong>Security</strong> &mdash; To detect, prevent, and address fraud, abuse, security vulnerabilities, and other harmful activity.</li>
+                <li><strong>Legal Compliance</strong> &mdash; To comply with applicable laws, regulations, and legal processes, and to enforce our terms of service.</li>
+                <li><strong>Marketing</strong> &mdash; With your consent where required, to send you promotional communications about products, services, or events that may interest you.</li>
+            </ul>
+        </section>
+
+        <!-- 4 -->
+        <section id="sharing">
+            <h2><span class="num">4</span>Sharing of Information</h2>
+            <p>We do not sell your personal information. We may share your information in the following circumstances:</p>
+            <ul>
+                <li><strong>Service Providers</strong> &mdash; With trusted third-party vendors who perform services on our behalf (e.g., hosting, payment processing, analytics, email delivery), subject to confidentiality obligations.</li>
+                <li><strong>Business Transfers</strong> &mdash; In connection with a merger, acquisition, reorganization, or sale of assets, your information may be transferred as part of that transaction.</li>
+                <li><strong>Legal Requirements</strong> &mdash; When required by law, regulation, legal process, or governmental request, or to protect the rights, property, or safety of our Company, our users, or others.</li>
+                <li><strong>With Your Consent</strong> &mdash; In any other case where we have obtained your explicit consent to share your information.</li>
+            </ul>
+        </section>
+
+        <!-- 5 -->
+        <section id="cookies">
+            <h2><span class="num">5</span>Cookies &amp; Tracking Technologies</h2>
+            <p>We use cookies and similar tracking technologies (such as web beacons, pixels, and local storage) to collect and store information when you use our Service. These technologies help us:</p>
+            <ul>
+                <li>Maintain your session and remember your preferences</li>
+                <li>Understand how you interact with the Service</li>
+                <li>Measure the effectiveness of our communications</li>
+                <li>Deliver relevant content and, where applicable, advertising</li>
+            </ul>
+            <div class="highlight-box">
+                <strong>Managing Cookies:</strong> You can control and manage cookies through your browser settings. Please note that disabling certain cookies may affect the functionality of the Service. For more details, please refer to our Cookie Policy.
+            </div>
+        </section>
+
+        <!-- 6 -->
+        <section id="security">
+            <h2><span class="num">6</span>Data Security</h2>
+            <p>We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These measures include, but are not limited to:</p>
+            <ul>
+                <li>Encryption of data in transit (TLS/SSL) and at rest</li>
+                <li>Access controls and authentication mechanisms</li>
+                <li>Regular security assessments and vulnerability testing</li>
+                <li>Employee training on data protection practices</li>
+            </ul>
+            <p>While we strive to protect your personal information, no method of transmission over the Internet or method of electronic storage is 100% secure. We cannot guarantee absolute security, but we are committed to promptly addressing any breach in accordance with applicable laws.</p>
+        </section>
+
+        <!-- 7 -->
+        <section id="retention">
+            <h2><span class="num">7</span>Data Retention</h2>
+            <p>We retain your personal information only for as long as necessary to fulfill the purposes described in this Privacy Policy, unless a longer retention period is required or permitted by law. When your information is no longer needed, we will securely delete or anonymize it.</p>
+            <p>Criteria we use to determine retention periods include the nature and sensitivity of the data, the purposes for which it is processed, applicable legal and regulatory requirements, and our legitimate business interests.</p>
+        </section>
+
+        <!-- 8 -->
+        <section id="rights">
+            <h2><span class="num">8</span>Your Rights</h2>
+            <p>Depending on your jurisdiction, you may have certain rights regarding your personal information, including:</p>
+            <ul>
+                <li><strong>Access</strong> &mdash; The right to request a copy of the personal information we hold about you.</li>
+                <li><strong>Rectification</strong> &mdash; The right to request correction of inaccurate or incomplete information.</li>
+                <li><strong>Erasure</strong> &mdash; The right to request deletion of your personal information, subject to certain exceptions.</li>
+                <li><strong>Restriction</strong> &mdash; The right to request that we restrict the processing of your information in certain circumstances.</li>
+                <li><strong>Portability</strong> &mdash; The right to receive your personal information in a structured, commonly used, and machine-readable format.</li>
+                <li><strong>Objection</strong> &mdash; The right to object to processing based on legitimate interests or for direct marketing purposes.</li>
+                <li><strong>Withdraw Consent</strong> &mdash; Where processing is based on consent, the right to withdraw consent at any time without affecting the lawfulness of prior processing.</li>
+            </ul>
+            <p>To exercise any of these rights, please contact us using the information provided in the "Contact Us" section below. We will respond to your request within the timeframe required by applicable law.</p>
+        </section>
+
+        <!-- 9 -->
+        <section id="children">
+            <h2><span class="num">9</span>Children's Privacy</h2>
+            <p>The Service is not intended for individuals under the age of 16 (or the applicable age of consent in your jurisdiction). We do not knowingly collect personal information from children. If we become aware that we have inadvertently collected personal information from a child, we will take steps to delete such information promptly. If you believe a child has provided us with personal information, please contact us immediately.</p>
+        </section>
+
+        <!-- 10 -->
+        <section id="international">
+            <h2><span class="num">10</span>International Data Transfers</h2>
+            <p>Your information may be transferred to and processed in countries other than the country in which you reside. These countries may have data protection laws that differ from those in your jurisdiction. When we transfer your information internationally, we take appropriate safeguards to ensure that your personal information remains protected in accordance with this Privacy Policy and applicable law, including the use of Standard Contractual Clauses or other approved transfer mechanisms.</p>
+        </section>
+
+        <!-- 11 -->
+        <section id="changes">
+            <h2><span class="num">11</span>Changes to This Policy</h2>
+            <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors. When we make material changes, we will notify you by posting the updated policy on the Service with a revised "Effective Date" at the top. We may also notify you via email or through a prominent notice within the Service. Your continued use of the Service after the effective date of any changes constitutes your acceptance of the revised Privacy Policy.</p>
+        </section>
+
+        <!-- 12 -->
+        <section id="contact">
+            <h2><span class="num">12</span>Contact Us</h2>
+            <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
+            <div class="contact-card">
+                <p><strong>[Your Company Name]</strong></p>
+                <p>Attn: Data Protection Officer</p>
+                <p>[Street Address, City, State/Province, ZIP/Postal Code, Country]</p>
+                <p>Email: <strong>[privacy@yourcompany.com]</strong></p>
+                <p>Phone: <strong>[+1 (000) 000-0000]</strong></p>
+            </div>
+            <div class="highlight-box" style="margin-top: 1.4rem;">
+                If you are located in the European Economic Area and believe we have not adequately addressed your data protection concerns, you have the right to lodge a complaint with your local Data Protection Authority.
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<footer>
+    &copy; 2026 [Your Company Name]. All rights reserved.
+</footer>
+
+</body>
+</html>

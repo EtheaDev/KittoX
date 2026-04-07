@@ -1,0 +1,24 @@
+Type: Data
+DisplayLabel: _(Daily Activity Trend)
+Controller: List
+  CenterController: ChartPanel
+    Chart:
+      Type: Cartesian
+      Axes:
+        Axis:
+          Position: Left
+          Title: _(Hours)
+        Axis:
+          Type: Category
+          Position: Bottom
+      Series:
+        Series:
+          Type: Line
+          XField: ACTIVITY_DATE
+          YField: TOTAL_HOURS
+          DisplayName: _(Daily Hours)
+MainTable:
+  IsReadOnly: True
+  Model: ACTIVITY_DAILY_RANGE
+  DefaultSorting: ACTIVITY_DATE
+ImageName: show_chart

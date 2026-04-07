@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="{{:lang}}"{{:themeAttr$}}>
+<head>
+  <meta charset="{{:charset}}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{:appTitle}}</title>
+  {{:iconLink$}}
+  <link rel="stylesheet" href="{{:resPath}}/css/suneditor.min.css">
+  <link rel="stylesheet" href="{{:resPath}}/css/kittox.css">
+  {{:themeStyle$}}
+  <link rel="stylesheet" href="{{:resPath}}/js/application.css">
+{{:dynamicStyles$}}
+  <script src="{{:resPath}}/js/htmx.min.js"></script>
+  <script src="{{:resPath}}/js/suneditor.min.js"></script>
+  <script src="{{:resPath}}/js/kxgrid.js"></script>
+  <script src="{{:resPath}}/js/application.js"></script>
+  <script src="{{:resPath}}/js/kxtabs.js"></script>
+  <script src="{{:resPath}}/js/kxsplitter.js"></script>
+  <script src="{{:resPath}}/js/kxfilters.js"></script>
+  <script src="{{:resPath}}/js/kxtiles.js"></script>
+  <script src="{{:resPath}}/js/kxwizard.js"></script>
+{{:dynamicScripts$}}
+  <script src="{{:resPath}}/js/alpine.min.js" defer></script>
+</head>
+<body class="{{:bodyClass}}" hx-headers='{"X-KittoX": "true"}' hx-indicator="#kx-loading">
+  <div id="kx-loading" class="kx-loading-overlay">
+    <div class="kx-loading-spinner"></div>
+  </div>
+  {{:homeContent$}}
+  <script>
+    // Detect screen dimensions and store in cookie for server-side HomeView selection
+    (function() {
+      var sw = screen.width + 'x' + screen.height;
+      var existing = document.cookie.match(/(?:^|;\s*)kx_sw=([^;]*)/);
+      if (!existing || existing[1] !== sw) {
+        document.cookie = 'kx_sw=' + sw + ';path=/;SameSite=Lax;max-age=86400';
+      }
+    })();
+
+    // Configure HTMX timeout from Config.yaml AjaxTimeout (ms)
+    htmx.config.timeout = {{:ajaxTimeout}};
+
+    // Localized strings for client-side JS (injected from Delphi via _() translation)
+    window.KX_STRINGS = {
+      appTitle: '{{:appTitle}}',
+      errorTitle: '{{:msgErrorTitle}}',
+      serverNotResponding: '{{:msgTimeout}}',
+      retry: '{{:btnRetry}}',
+      reset: '{{:btnReset}}',
+      dataSaved: '{{:msgDataSaved}}',
+      dataDeleted: '{{:msgDataDeleted}}'
+    };
+
+    document.body.addEventListener("htmx:afterSettle", function(evt) {
+      var target = evt.detail.target || evt.detail.elt;
+      if (target && target.querySelector) {
+        var el = target.querySelector(".kx-reload-trigger[data-action='reload']");
+        if (el) { window.location.reload(); }
+      }
+    });
+
+    // Handler for timeout and network errors
+    function kxTimeoutHandler(evt) {
+      var rc = evt.detail.requestConfig;
+      var S = window.KX_STRINGS || {};
+      kxGrid.showConfirm(
+        S.errorTitle || 'Error',
+        S.serverNotResponding || 'Server is not responding',
+        S.retry || 'Retry',
+        S.reset || 'Reset',
+        function() {
+          htmx.ajax(rc.verb, rc.path, {target: rc.target, swap: rc.swapStyle || 'innerHTML'});
+        },
+        function() {
+          window.location.reload();
+        }
+      );
+    }
+    document.body.addEventListener("htmx:timeout", kxTimeoutHandler);
+    document.body.addEventListener("htmx:sendError", kxTimeoutHandler);
+  </script>
+</body>
+</html>

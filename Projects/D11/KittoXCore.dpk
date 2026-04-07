@@ -1,0 +1,172 @@
+package KittoXCore;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'KittoX Core Run-Time Package'}
+{$LIBSUFFIX AUTO}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  rtl,
+  vcl,
+  dbrtl,
+  dbexpress,
+  adortl,
+  inet,
+  vclimg,
+  RESTComponents,
+  IndyCore,
+  IndySystem,
+  IndyProtocols,
+  FireDAC;
+
+contains
+  EF.Classes in '..\..\Source\EF\EF.Classes.pas',
+  EF.DB.ADO in '..\..\Source\EF\EF.DB.ADO.pas',
+  EF.DB.DBX in '..\..\Source\EF\EF.DB.DBX.pas',
+  EF.DB.FD in '..\..\Source\EF\EF.DB.FD.pas',
+  EF.DB in '..\..\Source\EF\EF.DB.pas',
+  EF.Emailer in '..\..\Source\EF\EF.Emailer.pas',
+  EF.FOP in '..\..\Source\EF\EF.FOP.pas',
+  EF.Intf in '..\..\Source\EF\EF.Intf.pas',
+  EF.JSON in '..\..\Source\EF\EF.JSON.pas',
+  EF.Localization.dxgettext in '..\..\Source\EF\EF.Localization.dxgettext.pas',
+  EF.Localization in '..\..\Source\EF\EF.Localization.pas',
+  EF.Logger in '..\..\Source\EF\EF.Logger.pas',
+  EF.Logger.TextFile in '..\..\Source\EF\EF.Logger.TextFile.pas',
+  EF.Macros in '..\..\Source\EF\EF.Macros.pas',
+  EF.ObserverIntf in '..\..\Source\EF\EF.ObserverIntf.pas',
+  EF.RegEx in '..\..\Source\EF\EF.RegEx.pas',
+  EF.Rtti in '..\..\Source\EF\EF.Rtti.pas',
+  EF.Shell in '..\..\Source\EF\EF.Shell.pas',
+  EF.SQL in '..\..\Source\EF\EF.SQL.pas',
+  EF.Streams in '..\..\Source\EF\EF.Streams.pas',
+  EF.StrUtils in '..\..\Source\EF\EF.StrUtils.pas',
+  EF.Sys in '..\..\Source\EF\EF.Sys.pas',
+  EF.Sys.Windows in '..\..\Source\EF\EF.Sys.Windows.pas',
+  EF.Tree in '..\..\Source\EF\EF.Tree.pas',
+  EF.Types in '..\..\Source\EF\EF.Types.pas',
+  EF.VariantUtils in '..\..\Source\EF\EF.VariantUtils.pas',
+  EF.XML in '..\..\Source\EF\EF.XML.pas',
+  EF.YAML in '..\..\Source\EF\EF.YAML.pas',
+  EF.YAML.Attributes in '..\..\Source\EF\EF.YAML.Attributes.pas',
+  ADOX_TypeLibrary in '..\..\Source\ThirdParty\ADOX_TypeLibrary.pas',
+  DebenuPDFLibraryLite1114_TLB in '..\..\Source\ThirdParty\DebenuPDFLibraryLite1114_TLB.pas',
+  gnugettext in '..\..\Source\ThirdParty\gnugettext.pas',
+  Kitto.Metadata.Types in '..\..\Source\Kitto.Metadata.Types.pas',
+  Kitto.Metadata.SubNodes in '..\..\Source\Kitto.Metadata.SubNodes.pas',
+  Kitto.Metadata.SubNodes2 in '..\..\Source\Kitto.Metadata.SubNodes2.pas',
+  Kitto.AccessControl.DB in '..\..\Source\Kitto.AccessControl.DB.pas',
+  Kitto.AccessControl in '..\..\Source\Kitto.AccessControl.pas',
+  Kitto.Auth.DB in '..\..\Source\Kitto.Auth.DB.pas',
+  Kitto.Auth.DBServer in '..\..\Source\Kitto.Auth.DBServer.pas',
+  Kitto.Auth.OSDB in '..\..\Source\Kitto.Auth.OSDB.pas',
+  Kitto.Auth in '..\..\Source\Kitto.Auth.pas',
+  Kitto.Auth.TextFile in '..\..\Source\Kitto.Auth.TextFile.pas',
+  Kitto.Config in '..\..\Source\Kitto.Config.pas',
+  Kitto.Config.Defaults in '..\..\Source\Kitto.Config.Defaults.pas',
+  Kitto.DatabaseRouter in '..\..\Source\Kitto.DatabaseRouter.pas',
+  Kitto.Excel in '..\..\Source\Kitto.Excel.pas',
+  Kitto.Html.All in '..\..\Source\Kitto.Html.All.pas',
+  Kitto.Html.Base in '..\..\Source\Kitto.Html.Base.pas',
+  Kitto.Html.Editors in '..\..\Source\Kitto.Html.Editors.pas',
+  Kitto.Html.Filters in '..\..\Source\Kitto.Html.Filters.pas',
+  Kitto.Html.BorderPanel in '..\..\Source\Kitto.Html.BorderPanel.pas',
+  Kitto.Html.FormController in '..\..\Source\Kitto.Html.FormController.pas',
+  Kitto.Html.ChangePassword in '..\..\Source\Kitto.Html.ChangePassword.pas',
+  Kitto.Html.Controller in '..\..\Source\Kitto.Html.Controller.pas',
+  Kitto.Html.DataPanel in '..\..\Source\Kitto.Html.DataPanel.pas',
+  Kitto.Html.Files in '..\..\Source\Kitto.Html.Files.pas',
+  Kitto.Html.Form in '..\..\Source\Kitto.Html.Form.pas',
+  Kitto.Html.GroupingList in '..\..\Source\Kitto.Html.GroupingList.pas',
+  Kitto.Html.HtmlPanel in '..\..\Source\Kitto.Html.HtmlPanel.pas',
+  Kitto.Html.List in '..\..\Source\Kitto.Html.List.pas',
+  Kitto.Html.Login in '..\..\Source\Kitto.Html.Login.pas',
+  Kitto.Html.Panel in '..\..\Source\Kitto.Html.Panel.pas',
+  Kitto.Html.ResetPassword in '..\..\Source\Kitto.Html.ResetPassword.pas',
+  Kitto.Html.Response in '..\..\Source\Kitto.Html.Response.pas',
+  Kitto.Html.StatusBar in '..\..\Source\Kitto.Html.StatusBar.pas',
+  Kitto.Html.TabPanel in '..\..\Source\Kitto.Html.TabPanel.pas',
+  Kitto.Html.TemplateDataPanel in '..\..\Source\Kitto.Html.TemplateDataPanel.pas',
+  Kitto.Html.TemplateEngine in '..\..\Source\Kitto.Html.TemplateEngine.pas',
+  Kitto.Html.ToolBar in '..\..\Source\Kitto.Html.ToolBar.pas',
+  Kitto.Html.Tools in '..\..\Source\Kitto.Html.Tools.pas',
+  Kitto.Html.TilePanel in '..\..\Source\Kitto.Html.TilePanel.pas',
+  Kitto.Html.TreePanel in '..\..\Source\Kitto.Html.TreePanel.pas',
+  Kitto.Html.Utils in '..\..\Source\Kitto.Html.Utils.pas',
+  Kitto.Html.Wizard in '..\..\Source\Kitto.Html.Wizard.pas',
+  Kitto.Html.FlexPanel in '..\..\Source\Kitto.Html.FlexPanel.pas',
+  Kitto.Rules.Wizard in '..\..\Source\Kitto.Rules.Wizard.pas',
+  Kitto.Tool.Export in '..\..\Source\Kitto.Tool.Export.pas',
+  Kitto.Tool.ADO in '..\..\Source\Kitto.Tool.ADO.pas',
+  Kitto.Tool.FOP in '..\..\Source\Kitto.Tool.FOP.pas',
+  Kitto.Tool.XSL in '..\..\Source\Kitto.Tool.XSL.pas',
+  Kitto.Tool.DebenuQuickPDF in '..\..\Source\Kitto.Tool.DebenuQuickPDF.pas',
+  Kitto.Tool.SQL in '..\..\Source\Kitto.Tool.SQL.pas',
+  Kitto.Tool.Indy in '..\..\Source\Kitto.Tool.Indy.pas',
+  Kitto.Tool.Standard in '..\..\Source\Kitto.Tool.Standard.pas',
+  Kitto.Localization.dxgettext in '..\..\Source\Kitto.Localization.dxgettext.pas',
+  Kitto.Metadata.DataView in '..\..\Source\Kitto.Metadata.DataView.pas',
+  Kitto.Metadata.ModelImplementation in '..\..\Source\Kitto.Metadata.ModelImplementation.pas',
+  Kitto.Metadata.Models in '..\..\Source\Kitto.Metadata.Models.pas',
+  Kitto.Metadata in '..\..\Source\Kitto.Metadata.pas',
+  Kitto.Metadata.ViewBuilders in '..\..\Source\Kitto.Metadata.ViewBuilders.pas',
+  Kitto.Metadata.Views in '..\..\Source\Kitto.Metadata.Views.pas',
+  Kitto.Rules in '..\..\Source\Kitto.Rules.pas',
+  Kitto.SQL in '..\..\Source\Kitto.SQL.pas',
+  Kitto.Store in '..\..\Source\Kitto.Store.pas',
+  Kitto.Types in '..\..\Source\Kitto.Types.pas',
+  Kitto.Web.Application in '..\..\Source\Kitto.Web.Application.pas',
+  Kitto.Web.Engine in '..\..\Source\Kitto.Web.Engine.pas',
+  Kitto.Web.Request in '..\..\Source\Kitto.Web.Request.pas',
+  Kitto.Web.Response in '..\..\Source\Kitto.Web.Response.pas',
+  Kitto.Web.Routes in '..\..\Source\Kitto.Web.Routes.pas',
+  Kitto.Web.Routing.Attributes in '..\..\Source\Kitto.Web.Routing.Attributes.pas',
+  Kitto.Web.Routing.Registry in '..\..\Source\Kitto.Web.Routing.Registry.pas',
+  Kitto.Web.Routing.Injection in '..\..\Source\Kitto.Web.Routing.Injection.pas',
+  Kitto.Web.Routing.Activation in '..\..\Source\Kitto.Web.Routing.Activation.pas',
+  Kitto.Web.Routing.Route in '..\..\Source\Kitto.Web.Routing.Route.pas',
+  Kitto.Web.Routing.Session in '..\..\Source\Kitto.Web.Routing.Session.pas',
+  Kitto.Web.Routing.Providers in '..\..\Source\Kitto.Web.Routing.Providers.pas',
+  Kitto.Web.Routing.Scripts in '..\..\Source\Kitto.Web.Routing.Scripts.pas',
+  Kitto.Web.Session in '..\..\Source\Kitto.Web.Session.pas',
+  Kitto.Web.Types in '..\..\Source\Kitto.Web.Types.pas',
+  Kitto.Web.URL in '..\..\Source\Kitto.Web.URL.pas',
+  Kitto.WebBroker.Handler in '..\..\Source\Kitto.WebBroker.Handler.pas',
+  Kitto.WebBroker.WebModule in '..\..\Source\Kitto.WebBroker.WebModule.pas' {KWebModule: TWebModule},
+  Kitto.DebenuQuickPDF in '..\..\Source\Kitto.DebenuQuickPDF.pas',
+  Base32U in '..\..\Source\ThirdParty\Base32U.pas',
+  Bcrypt in '..\..\Source\ThirdParty\Bcrypt.pas',
+  DelphiZXIngQRCode in '..\..\Source\ThirdParty\DelphiZXIngQRCode.pas',
+  GoogleOTP in '..\..\Source\ThirdParty\GoogleOTP.pas',
+  Kitto.ExprEvaluator in '..\..\Source\ThirdParty\Kitto.ExprEvaluator.pas',
+  Kitto.TemplatePro.Types in '..\..\Source\ThirdParty\Kitto.TemplatePro.Types.pas',
+  Kitto.TemplatePro in '..\..\Source\ThirdParty\Kitto.TemplatePro.pas',
+  Kitto.JsonDataObjects in '..\..\Source\ThirdParty\Kitto.JsonDataObjects.pas',
+  Kitto.Nullables in '..\..\Source\ThirdParty\Kitto.Nullables.pas';
+
+end.
