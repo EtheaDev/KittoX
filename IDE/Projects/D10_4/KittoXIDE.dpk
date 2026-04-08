@@ -46,7 +46,7 @@ package KittoXIDE;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'KittoX IDE Tools Package'}
+{$DESCRIPTION 'KittoX IDE Design-Time Package'}
 {$LIBSUFFIX AUTO}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
@@ -65,7 +65,7 @@ contains
   KIDE.IOTA.ModuleCreator in '..\..\Source\KIDE.IOTA.ModuleCreator.pas',
   KIDE.IOTA.MainFormCreator in '..\..\Source\KIDE.IOTA.MainFormCreator.pas',
   KIDE.YAMLHighlighter in '..\..\Source\KIDE.YAMLHighlighter.pas',
-  KIDE.Controls in '..\..\..\Kide\Source\KIDE.Controls.pas' {BaseFrame: TFrame},
+  KIDE.Controls in '..\..\..\Kide\Source\KIDE.Controls.pas',
   KIDE.BaseFrameUnit in '..\..\..\Kide\Source\KIDE.BaseFrameUnit.pas' {BaseFrame: TFrame},
   KIDE.ProjectTemplateFrameUnit in '..\..\..\Kide\Source\KIDE.ProjectTemplateFrameUnit.pas' {ProjectTemplateFrame: TFrame},
   KIDE.ProjectTemplate in '..\..\..\Kide\Source\KIDE.ProjectTemplate.pas',

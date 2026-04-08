@@ -11,7 +11,7 @@ Fields:
     DisplayLabel_Grid: _(Girl Name)
     DisplayLabel_Form: _(Name of Girl)
     Rules:
-      #ForceUpperCase:
+      ForceUpperCase:
       SubType: alpha_space
   Age: Integer not null
     DefaultValue: 10

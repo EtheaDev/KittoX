@@ -1931,6 +1931,11 @@ body.kx-mobile .kx-login-dialog {
   box-shadow: 0 0 0 2px var(--kx-accent-ring);
 }
 
+/* Field case rules (ForceUpperCase, ForceLowerCase, ForceCamelCaps) */
+.kx-form-input[data-case="upper"] { text-transform: uppercase; }
+.kx-form-input[data-case="lower"] { text-transform: lowercase; }
+.kx-form-input[data-case="capitalize"] { text-transform: capitalize; }
+
 /* SunEditor integration — theme-aware overrides */
 .kx-form-field .sun-editor {
   border: 1px solid var(--kx-input-border);

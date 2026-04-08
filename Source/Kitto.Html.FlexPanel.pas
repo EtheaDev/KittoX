@@ -285,6 +285,7 @@ begin
       // (the flex-item-title provides the title)
       if LController.AsObject is TKXPanelControllerBase then
       begin
+        TKXPanelControllerBase(LController.AsObject).IsModal := False;
         TKXPanelControllerBase(LController.AsObject).AllowClose := False;
         TKXPanelControllerBase(LController.AsObject).Header := False;
       end;

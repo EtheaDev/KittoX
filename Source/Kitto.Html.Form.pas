@@ -128,6 +128,37 @@ uses
   Kitto.Html.Utils,
   Kitto.Web.Session;
 
+/// <summary>Returns HTML attributes for client-side field rules
+/// (ForceUpperCase, ForceLowerCase, ForceCamelCaps, MinValue, MaxValue, MaxLength).
+/// These are applied as oninput/pattern/min/max attributes on the input element.</summary>
+function GetFieldRuleAttrs(AViewField: TKViewField): string;
+var
+  LRules: TKRules;
+  I: Integer;
+  LRule: TKRule;
+begin
+  Result := '';
+  // ViewField rules take priority; fall back to ModelField rules
+  LRules := AViewField.Rules;
+  if (LRules.RuleCount = 0) and Assigned(AViewField.ModelField) then
+    LRules := AViewField.ModelField.Rules;
+  for I := 0 to LRules.RuleCount - 1 do
+  begin
+    LRule := LRules[I];
+    if SameText(LRule.Name, 'ForceUpperCase') then
+      Result := Result + ' oninput="this.value=this.value.toUpperCase()" data-case="upper"'
+    else if SameText(LRule.Name, 'ForceLowerCase') then
+      Result := Result + ' oninput="this.value=this.value.toLowerCase()" data-case="lower"'
+    else if SameText(LRule.Name, 'ForceCamelCaps') then
+      Result := Result + ' oninput="this.value=this.value.replace(/\b\w/g,function(c){return c.toUpperCase()})" data-case="capitalize"'
+    else if SameText(LRule.Name, 'MinValue') and (LRule.AsString <> '') then
+      Result := Result + ' min="' + LRule.AsString + '"'
+    else if SameText(LRule.Name, 'MaxValue') and (LRule.AsString <> '') then
+      Result := Result + ' max="' + LRule.AsString + '"';
+    // MaxLength is already handled by RenderTextInput via AMaxLength parameter
+  end;
+end;
+
 { TKXFormPanelController }
 
 function TKXFormPanelController.GetDefaultIsModal: Boolean;
@@ -818,7 +849,7 @@ begin
   LCtx.IsReadOnly := LIsReadOnly;
   LCtx.IsRequired := LIsRequired;
   LCtx.IsKey := AViewField.IsKey;
-  LCtx.ExtraAttrs := '';
+  LCtx.ExtraAttrs := GetFieldRuleAttrs(AViewField);
   LCtx.CssInputClass := 'kx-form-input';
   LCtx.EffWidth := LEffWidth;
 

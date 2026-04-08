@@ -2900,6 +2900,7 @@ begin
   if LController is TKXPanelControllerBase then
   begin
     LPanel := TKXPanelControllerBase(LController);
+    LPanel.IsModal := True;
     LPanel.AllowClose := True;
     if LPanel.Title <> '' then
       LPanel.Title := Format(_('Select: %s'), [LPanel.Title]);
