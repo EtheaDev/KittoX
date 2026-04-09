@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.1 - 08 Apr 2026**
+**Latest Version 4.0.1 - 09 Apr 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -58,10 +58,11 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 
 # Release Notes
 
-## 08 Apr 2026: ver. 4.0.1 Beta
+## 09 Apr 2026: ver. 4.0.1 Beta
 - Fixed Field Rules client-side (ForceUpperCase, ForceCamelCaps, MinValue/MaxValue)
 - Fixed PackageGroup
 - Fixed modal lookup for Reference fields
+- Fixed Example for Apache modules
 
 ## 07 Apr 2026: ver. 4.0.0 Beta (first public release)
 

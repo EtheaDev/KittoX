@@ -607,7 +607,7 @@ var
   LAppName: string;
   LDefaultConfig: string;
 begin
-  LAppName := ChangeFileExt(ExtractFileName(ParamStr(0)),'');
+  LAppName := ChangeFileExt(ExtractFileName(GetModuleName(HInstance)),'');
   FConfigClass := TKConfig;
   LDefaultConfig := Format('Config_%s.yaml',[LAppName]);
   if FileExists(GetMetadataPath + LDefaultConfig) then
@@ -718,7 +718,7 @@ begin
   end;
 
   if Result = '' then
-    Result := ChangeFileExt(ExtractFileName(ParamStr(0)), '');
+    Result := ChangeFileExt(ExtractFileName(GetModuleName(HInstance)), '');
 
   FAppName := Result;
 end;

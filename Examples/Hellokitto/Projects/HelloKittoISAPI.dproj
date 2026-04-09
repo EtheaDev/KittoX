@@ -43,7 +43,7 @@
         <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=HelloKitto;FileVersion=4.0.0.0;InternalName=HelloKitto;LegalCopyright=Copyright © Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=HelloKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>HelloKitto_Icon.ico</Icon_MainIcon>
         <DCC_ExeOutput>C:\inetpub\KittoX\App\HelloKitto\Home</DCC_ExeOutput>
-        <DCC_DcuOutput>..\..\Lib\$(ProductVersion)\$(Platform)</DCC_DcuOutput>
+        <DCC_DcuOutput>..\Lib\$(ProductVersion)\$(Platform)</DCC_DcuOutput>
         <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_E>false</DCC_E>
         <DCC_ImageBase>00400000</DCC_ImageBase>

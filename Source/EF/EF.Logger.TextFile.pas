@@ -58,7 +58,7 @@ uses
 procedure TEFTextFileLogEndpoint.AfterConstruction;
 begin
   inherited;
-  FFileName := ChangeFileExt(ParamStr(0), '.log');
+  FFileName := ChangeFileExt(GetModuleName(HInstance), '.log');
 end;
 
 procedure TEFTextFileLogEndpoint.Configure(const AConfig: TEFComponentConfig;

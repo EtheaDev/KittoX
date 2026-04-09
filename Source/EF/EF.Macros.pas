@@ -761,7 +761,7 @@ begin
   if AString.Contains('%APP_FILENAME%') then
     ExpandMacros(AString, '%APP_FILENAME%', ExtractFileName(GetModuleName(HInstance)));
   if AString.Contains('%APP_BASENAME%') then
-    ExpandMacros(AString, '%APP_BASENAME%', ChangeFileExt(ExtractFileName(ParamStr(0)), ''));
+    ExpandMacros(AString, '%APP_BASENAME%', ChangeFileExt(ExtractFileName(GetModuleName(HInstance)), ''));
   {$IFDEF MSWINDOWS}
   if AString.Contains('%WIN_DIR%') then
     ExpandMacros(AString, '%WIN_DIR%', IncludeTrailingPathDelimiter(SafeGetWindowsDirectory));
@@ -769,7 +769,7 @@ begin
     ExpandMacros(AString, '%SYS_DIR%', IncludeTrailingPathDelimiter(SafeGetSystemDirectory));
   if AString.Contains('%APP_VERSION') then
   begin
-    GetVerInfo(ParamStr(0), LMajorVersion, LMinorVersion, LRelease, LBuild);
+    GetVerInfo(GetModuleName(HInstance), LMajorVersion, LMinorVersion, LRelease, LBuild);
     ExpandMacros(AString, '%APP_VERSION%', Format('%d.%d', [LMajorVersion, LMinorVersion]));
     ExpandMacros(AString, '%APP_VERSION_FULL%', Format('%d.%d.%d', [LMajorVersion, LMinorVersion, LRelease]));
   end;

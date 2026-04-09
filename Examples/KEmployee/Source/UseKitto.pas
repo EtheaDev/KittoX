@@ -1,18 +1,13 @@
 unit UseKitto;
 
-{$I Kitto.Defines.inc}
-
 interface
 
 uses
   //Core Kitto Units
   Kitto.Html.All,
   Kitto.Web.Enterprise,
-  {$IFDEF MSWINDOWS}
-  // EF.DB.ADO,
   EF.DB.DBX,
   Data.DBXFirebird,
-  {$ENDIF}
   EF.DB.FD,
   // Kitto.AccessControl.DB,
   // Kitto.Auth.DB,

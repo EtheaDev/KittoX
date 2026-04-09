@@ -1,0 +1,40 @@
+KittoX Enterprise Modules License
+==================================
+
+Copyright 2012-2026 Ethea S.r.l.
+https://www.ethea.it
+
+The KittoX Enterprise modules are dual-licensed:
+
+1. GNU Affero General Public License v3.0 (AGPL-3.0)
+   ------------------------------------------------
+   You may use, modify, and distribute the Enterprise modules under the
+   terms of the AGPL-3.0 license, provided that any application that
+   uses these modules is also released under a compatible open-source
+   license, and that the complete source code of the application is
+   made available to all users who interact with it over a network.
+
+   Full text: https://www.gnu.org/licenses/agpl-3.0.html
+
+2. Ethea Commercial License
+   ------------------------
+   For use in proprietary or closed-source applications, you must
+   purchase a commercial license from Ethea S.r.l. The commercial
+   license removes the AGPL-3.0 copyleft requirements and permits
+   distribution of your application without releasing its source code.
+
+   For pricing and licensing inquiries: info@ethea.it
+
+Enterprise modules covered by this license:
+   - Kitto.Html.ChartPanel (Chart.js integration)
+   - Kitto.Html.CalendarPanel (Event Calendar integration)
+   - Kitto.Html.GoogleMap (Google Maps integration)
+   - Kitto.Html.Dashboard (Dashboard with auto-refresh)
+   - Kitto.Web.Handler.Chart (Chart data endpoint)
+   - Kitto.Web.Handler.Calendar (Calendar data endpoint)
+   - Kitto.Web.Handler.Map (Map data endpoint)
+   - Kitto.Web.Enterprise (Enterprise umbrella unit)
+   - KIDEX (Visual IDE - closed source, commercial license only)
+
+All other KittoX source files are licensed under the Apache License 2.0
+(see LICENSE file).
