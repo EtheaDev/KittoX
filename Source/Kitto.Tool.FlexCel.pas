@@ -117,8 +117,7 @@ end;
 
 procedure TExportFlexCelToolController.AcceptRecord(ARecord: TKViewTableRecord; var AAccept: boolean);
 begin
-  if AAccept and Assigned(ServerRecord) then
-    AAccept := ARecord = ServerRecord;
+  // Accept all records in the store; the store is already filtered at load time.
 end;
 
 procedure TExportFlexCelToolController.AcceptField(AViewField: TKViewField; var AAccept: boolean);

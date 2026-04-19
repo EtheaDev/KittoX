@@ -555,7 +555,17 @@ begin
         LCtx.IsKey := False;
         LCtx.TriggerWidthStyle := '';
         if not LHasApplyButton then
-          LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="change"'
+          // 'change' fires immediately on calendar-picker selection and also
+          // when typed input is committed; some browsers fire it on partial
+          // year typing too, which would send an incomplete date to SQL
+          // Server.  The filter accepts the event only when the value is
+          // empty (filter cleared) or a complete 10-char ISO date
+          // (YYYY-MM-DD) with year >= 1000.  No 'blur' trigger: 'change'
+          // already covers every case where the filter needs to re-apply,
+          // and adding 'blur' would duplicate the request (two error
+          // dialogs for the same invalid date).
+          LCtx.ExtraAttrs := LHxAttrs +
+            'hx-trigger="change[!this.value || (this.value.length===10 && parseInt(this.value.substring(0,4))>=1000)]"'
         else
           LCtx.ExtraAttrs := '';
         SBCol.Append(TKXEditorFactory.RenderDateInput(LCtx));
@@ -575,7 +585,11 @@ begin
         LCtx.IsKey := False;
         LCtx.TriggerWidthStyle := '';
         if not LHasApplyButton then
-          LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="change"'
+          // Same rationale as DateSearch above: accept empty (cleared) or a
+          // complete time ('HH:MM' is 5 chars); no 'blur' trigger to avoid
+          // duplicate requests.
+          LCtx.ExtraAttrs := LHxAttrs +
+            'hx-trigger="change[!this.value || this.value.length>=5]"'
         else
           LCtx.ExtraAttrs := '';
         SBCol.Append(TKXEditorFactory.RenderTimeInput(LCtx));
@@ -597,7 +611,11 @@ begin
         LCtx.TriggerWidthStyle := '';
         LCtx.EffWidth := LNode.GetInteger('Width', 10);
         if not LHasApplyButton then
-          LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="change"'
+          // Same rationale as DateSearch above: accept empty (cleared) or a
+          // complete 'YYYY-MM-DDTHH:MM' (>=16 chars) datetime-local value
+          // with year >= 1000; no 'blur' trigger to avoid duplicate requests.
+          LCtx.ExtraAttrs := LHxAttrs +
+            'hx-trigger="change[!this.value || (this.value.length>=16 && parseInt(this.value.substring(0,4))>=1000)]"'
         else
           LCtx.ExtraAttrs := '';
         SBCol.Append(TKXEditorFactory.RenderDateTimeInput(LCtx));
@@ -1382,14 +1400,16 @@ var
   LUrlName: string;
   SB: TStringBuilder;
 
-  procedure AppendPagerButton(const ALabel: string; ATargetStart: Integer;
-    ADisabled: Boolean);
+  procedure AppendPagerButton(const ALabel, ATitle: string;
+    ATargetStart: Integer; ADisabled: Boolean);
   begin
     if ADisabled then
-      SB.Append('<button disabled>').Append(ALabel).Append('</button>')
+      SB.Append('<button disabled title="').Append(TNetEncoding.HTML.Encode(ATitle)).Append('">')
+        .Append(ALabel).Append('</button>')
     else
     begin
-      SB.Append('<button hx-get="kx/view/').Append(LUrlName).Append('/data" ');
+      SB.Append('<button title="').Append(TNetEncoding.HTML.Encode(ATitle)).Append('" ');
+      SB.Append('hx-get="kx/view/').Append(LUrlName).Append('/data" ');
       SB.Append('hx-target="#kx-list-body-').Append(AViewName).Append('" ');
       SB.Append('hx-include="').Append(LInc).Append('" ');
       SB.Append('hx-vals=''{"start":"').Append(IntToStr(ATargetStart)).Append('"}''>');
@@ -1415,10 +1435,10 @@ begin
   try
     SB.Append('<div class="kx-list-pager" id="kx-list-pager-').Append(AViewName).Append('">');
     // Navigation: First, Prev, Next, Last
-    AppendPagerButton(GetIconHTML('first_page'), 0, LCurrentPage <= 1);
-    AppendPagerButton(GetIconHTML('chevron_left'), LPrevStart, LCurrentPage <= 1);
-    AppendPagerButton(GetIconHTML('chevron_right'), LNextStart, LCurrentPage >= LTotalPages);
-    AppendPagerButton(GetIconHTML('last_page'), LLastStart, LCurrentPage >= LTotalPages);
+    AppendPagerButton(GetIconHTML('first_page'), _('First page') + #10 + 'CTRL+'#$2190, 0, LCurrentPage <= 1);
+    AppendPagerButton(GetIconHTML('chevron_left'), _('Previous page') + #10 + #$2190, LPrevStart, LCurrentPage <= 1);
+    AppendPagerButton(GetIconHTML('chevron_right'), _('Next page') + #10 + #$2192, LNextStart, LCurrentPage >= LTotalPages);
+    AppendPagerButton(GetIconHTML('last_page'), _('Last page') + #10 + 'CTRL+'#$2192, LLastStart, LCurrentPage >= LTotalPages);
     // Separator + Info text
     SB.Append('<span class="kx-pager-separator"></span>');
     if ATotal = 0 then

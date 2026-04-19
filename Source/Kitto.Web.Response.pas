@@ -61,6 +61,8 @@ type
     function GetItems: TKWebResponseContent;
     function GetContentType: string;
     procedure SetContentType(const Value: string);
+    function GetStatusCode: Integer;
+    procedure SetStatusCode(const Value: Integer);
     function GetCustomHeaders: TStrings;
   public
     procedure AfterConstruction; override;
@@ -72,6 +74,7 @@ type
     constructor Create(const AResponse: TWebResponse; const AOwnsResponse: Boolean = True);
 
     property ContentType: string read GetContentType write SetContentType;
+    property StatusCode: Integer read GetStatusCode write SetStatusCode;
     procedure SetCustomHeader(const AName, AValue: string);
     property CustomHeaders: TStrings read GetCustomHeaders;
     procedure SetCookie(const AName, AValue: string; const AExpires: TDateTime);
@@ -220,6 +223,16 @@ end;
 procedure TKWebResponse.SetContentType(const Value: string);
 begin
   FResponse.ContentType := Value;
+end;
+
+function TKWebResponse.GetStatusCode: Integer;
+begin
+  Result := FResponse.StatusCode;
+end;
+
+procedure TKWebResponse.SetStatusCode(const Value: Integer);
+begin
+  FResponse.StatusCode := Value;
 end;
 
 procedure TKWebResponse.SetCookie(const AName, AValue: string; const AExpires: TDateTime);

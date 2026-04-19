@@ -18,7 +18,7 @@ Databases:
       OSAuthent: No
       User_Name: SA
       Password: 12345
-      Isolation: RepeatableRead
+      Isolation: ReadCommitted
       ODBCAdvanced: TrustServerCertificate=yes
 
 Auth: DB

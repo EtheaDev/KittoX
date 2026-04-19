@@ -18,7 +18,7 @@ var kxApp = {
    */
   openView: function(el) {
     var viewName = el.getAttribute('data-view');
-    var label = el.getAttribute('data-label') || viewName;
+    var label = el.getAttribute('data-tab-label') || el.getAttribute('data-label') || viewName;
     // Desktop: if a central TabPanel exists, open in a tab
     if (document.getElementById('kx-center-tabs')) {
       if (typeof kxTabs !== 'undefined') {
@@ -85,7 +85,59 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }).observe(document.body, { childList: true, subtree: true });
+
 });
+
+/**
+ * Attaches drag-to-resize behavior to a SunEditor's bottom resize bar.
+ * Called after SUNEDITOR.create() for each editor instance.
+ * @param {HTMLElement} sunEditorRoot - the .sun-editor element
+ * @param {number} [minHeight=120] - minimum height in px
+ * @returns {Function} cleanup function to remove listeners
+ */
+function attachSunEditorResize(sunEditorRoot, minHeight) {
+  if (typeof minHeight === 'undefined') minHeight = 120;
+  var nav = sunEditorRoot.querySelector('.se-navigation.sun-editor-common');
+  var bar = sunEditorRoot.querySelector('.se-resizing-bar');
+  if (!nav || !bar) return function() {};
+
+  var dragging = false;
+  var startY = 0;
+  var startH = 0;
+
+  function onMouseDown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging = true;
+    startY = e.clientY;
+    startH = sunEditorRoot.getBoundingClientRect().height;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ns-resize';
+  }
+  function onMouseMove(e) {
+    if (!dragging) return;
+    var newH = Math.max(minHeight, startH + (e.clientY - startY));
+    sunEditorRoot.style.height = newH + 'px';
+  }
+  function onMouseUp() {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  }
+
+  nav.addEventListener('mousedown', onMouseDown);
+  bar.addEventListener('mousedown', onMouseDown);
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+
+  return function() {
+    nav.removeEventListener('mousedown', onMouseDown);
+    bar.removeEventListener('mousedown', onMouseDown);
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  };
+}
 
 /**
  * Wrapper around fetch() that applies the HTMX-configured timeout via AbortController.
@@ -170,6 +222,88 @@ function kxFetchWithTimeout(url, options) {
     drag = null;
   });
 })();
+
+/**
+ * Keyboard navigation for grid rows (like Kitto1 ExtJS grids).
+ * ArrowUp/ArrowDown: move selection between rows.
+ * ArrowLeft/ArrowRight: previous/next page.
+ * Ctrl+ArrowLeft/Ctrl+ArrowRight: first/last page.
+ * Enter: open the selected record (edit or view).
+ * Delegated on document so it works for all grids without tabindex.
+ */
+document.addEventListener('keydown', function(e) {
+  var key = e.key;
+  if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Enter'
+      && key !== 'ArrowLeft' && key !== 'ArrowRight'
+      && key !== 'Home' && key !== 'End'
+      && key !== 'PageUp' && key !== 'PageDown') return;
+  // Don't interfere with inputs, textareas, selects, or open dialogs/overlays
+  var tag = document.activeElement ? document.activeElement.tagName : '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (document.querySelector('.kx-dialog-overlay, .kx-msgbox-overlay')) return;
+  // ArrowLeft/ArrowRight: pager navigation (works even without row selection)
+  if (key === 'ArrowLeft' || key === 'ArrowRight') {
+    // Find pager from selected row's grid, or from any visible grid
+    var sel = document.querySelector('.kx-row-selected');
+    var tbody = sel ? sel.closest('tbody') : document.querySelector('tbody[id^="kx-list-body-"]');
+    if (!tbody) return;
+    var viewName = tbody.id.replace('kx-list-body-', '');
+    var pager = document.getElementById('kx-list-pager-' + viewName);
+    if (!pager) return;
+    // Pager buttons order: [First, Prev, Next, Last]
+    var buttons = pager.querySelectorAll('button');
+    if (buttons.length < 4) return;
+    var btn;
+    if (e.ctrlKey) {
+      btn = (key === 'ArrowLeft') ? buttons[0] : buttons[3]; // First / Last
+    } else {
+      btn = (key === 'ArrowLeft') ? buttons[1] : buttons[2]; // Prev / Next
+    }
+    if (btn && !btn.disabled) {
+      btn.click();
+      e.preventDefault();
+    }
+    return;
+  }
+
+  // ArrowUp/ArrowDown/Home/End/Enter: require a selected row
+  var sel = document.querySelector('.kx-row-selected');
+  if (!sel) {
+    // No row selected: select the first row of the visible grid
+    if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'Home' || key === 'End'
+        || key === 'PageUp' || key === 'PageDown') {
+      var firstRow = document.querySelector('tbody[id^="kx-list-body-"] tr[data-key]');
+      if (firstRow) {
+        e.preventDefault();
+        firstRow.click();
+        firstRow.scrollIntoView({ block: 'nearest' });
+      }
+    }
+    return;
+  }
+  var tbody = sel.closest('tbody');
+  if (!tbody) return;
+
+  if (key === 'Enter') {
+    sel.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    e.preventDefault();
+    return;
+  }
+
+  // ArrowUp/ArrowDown/Home/End: row navigation
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-key]'));
+  var idx = rows.indexOf(sel);
+  if (idx < 0) return;
+  var next;
+  if (key === 'Home' || key === 'PageUp') next = 0;
+  else if (key === 'End' || key === 'PageDown') next = rows.length - 1;
+  else next = (key === 'ArrowUp') ? idx - 1 : idx + 1;
+  if (next < 0 || next >= rows.length || next === idx) return;
+
+  e.preventDefault();
+  rows[next].click();
+  rows[next].scrollIntoView({ block: 'nearest' });
+});
 
 var kxGrid = {
 
@@ -475,6 +609,10 @@ var kxGrid = {
           });
           // Initialize SunEditor on HTMLMemo fields
           kxForm.initHtmlEditors(viewName);
+          // Focus the first editable field so arrow keys don't scroll the grid behind
+          var focusable = el.querySelector('input:not([type="hidden"]):not([disabled]):not([readonly]), select:not([disabled]), textarea:not([disabled])');
+          if (focusable) focusable.focus();
+          else { el.setAttribute('tabindex', '-1'); el.focus(); }
         }
       })
       .catch(function(err) {
@@ -691,10 +829,23 @@ var kxForm = {
         defaultTag: 'div',
         height: editorHeight,
         width: editorWidth ? editorWidth + 'ch' : '100%',
-        tabDisable: true
+        tabDisable: true,
+        resizingBar: true,
+        showPathLabel: false,
+        font: [
+          'Arial', 'Comic Sans MS', 'Courier New', 'Georgia',
+          'Impact', 'Lucida Console', 'Tahoma, sans-serif',
+          'Times New Roman', 'Trebuchet MS', 'Verdana'
+        ]
       });
       if (isReadOnly) {
         editor.disable();
+      }
+      // Attach custom drag-to-resize on the resize bar
+      var seRoot = ta.closest('.kx-form-field') ?
+        ta.closest('.kx-form-field').querySelector('.sun-editor') : null;
+      if (seRoot) {
+        seRoot._kxResizeCleanup = attachSunEditorResize(seRoot);
       }
       // Remove name from original textarea so it won't be serialized by form;
       // syncHtmlEditors will create a hidden input with the correct value.
@@ -734,6 +885,13 @@ var kxForm = {
   destroyHtmlEditors: function(viewName) {
     var form = document.getElementById('kx-form-' + viewName);
     if (!form) return;
+    // Cleanup resize handlers
+    form.querySelectorAll('.sun-editor').forEach(function(se) {
+      if (se._kxResizeCleanup) {
+        se._kxResizeCleanup();
+        delete se._kxResizeCleanup;
+      }
+    });
     form.querySelectorAll('textarea.kx-html-editor').forEach(function(ta) {
       var key = ta.dataset.fieldName || ta.name;
       var editor = kxForm._htmlEditors[key];
@@ -751,16 +909,18 @@ var kxForm = {
    * On error: server returns an error dialog overlay.
    */
   save: function(viewName, op) {
-    // If this form was opened from a detail grid context, redirect to saveDetail
-    // (detail records save to in-memory store, not to DB)
+    // If this form was opened from a detail grid context (any style: Tabs/Bottom/Popup),
+    // redirect to saveDetail (detail records save to in-memory store, not to DB).
+    // All detail styles use the session store.
     var detailCtx = kxForm._detailContext[viewName];
     if (detailCtx) {
       kxForm.saveDetail(viewName, detailCtx.masterView, detailCtx.tabIndex, op);
       return;
     }
 
-    // Detail form (has detail tables): Save goes to SaveCache (no DB persist)
-    // unless _saveAll is set (Save All button triggers full DB persist)
+    // Master form with detail tables (any style): Save goes to SaveCache (no DB persist)
+    // unless _saveAll is set (Save All button triggers full DB persist).
+    // All detail styles use SaveCache + SaveAll.
     var form = document.getElementById('kx-form-' + viewName);
     var saveAllInput = form ? form.querySelector('input[name="_saveAll"]') : null;
     if (form && form.dataset.hasDetails === 'true' && !(saveAllInput && saveAllInput.value === 'true')) {
@@ -1130,6 +1290,10 @@ var kxForm = {
         if (inp.type === 'checkbox') inp.checked = false;
         else inp.value = '';
       });
+      // Clear bottom detail panels (new master record has no details yet)
+      form.querySelectorAll('.kx-detail-bottom-panel').forEach(function(p) {
+        p.innerHTML = '';
+      });
       // Re-enable save button
       var saveBtn = form.querySelector('.kx-form-btn-save');
       if (saveBtn) saveBtn.disabled = false;
@@ -1254,10 +1418,18 @@ var kxForm = {
     form.querySelectorAll('.kx-btn-editmode').forEach(function(b) {
       b.style.display = isEdit ? '' : 'none';
     });
-    // Save All (kx-btn-pending): visible in both modes when pending, hidden otherwise
+    // Save All (kx-btn-pending): visible only in ViewMode when pending changes exist
     form.querySelectorAll('.kx-btn-pending').forEach(function(b) {
-      b.style.display = (form.dataset.hasPending === 'true') ? '' : 'none';
+      b.style.display = (!isEdit && form.dataset.hasPending === 'true') ? '' : 'none';
     });
+
+    // When entering edit from view, notify server to apply edit-record rules
+    if (isEdit && form.dataset.mode === 'view') {
+      fetch('kx/view/' + viewName + '/enter-edit', {
+        method: 'POST',
+        headers: { 'X-KittoX': 'true' }
+      }).catch(function() {});
+    }
 
     // Toggle field disabled state
     form.querySelectorAll('input:not([type=hidden]),select,textarea').forEach(function(inp) {
@@ -1614,6 +1786,92 @@ var kxForm = {
   },
 
   /**
+   * Opens a detail grid in a popup dialog (Style: Popup).
+   * Creates a modal overlay with the detail grid content loaded via AJAX.
+   * @param {string} viewName - Master view name
+   * @param {number} detailIndex - Zero-based detail table index
+   * @param {string} title - Dialog title (detail display label)
+   * @param {number} height - Panel height in pixels
+   */
+  openDetailPopup: function(viewName, detailIndex, title, height) {
+    var form = document.getElementById('kx-form-' + viewName);
+    if (!form) return;
+    var keyInput = form.querySelector('input[name="_key"]');
+    var masterKey = keyInput ? keyInput.value : '';
+
+    // Remove existing popup if any
+    var existingPopup = document.getElementById('kx-detail-popup-' + viewName + '-' + detailIndex);
+    if (existingPopup) existingPopup.remove();
+
+    // Create dialog overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'kx-detail-popup-' + viewName + '-' + detailIndex;
+    overlay.className = 'kx-dialog-overlay';
+    overlay.innerHTML =
+      '<div class="kx-dialog" style="width:700px;height:' + (height + 80) + 'px">' +
+        '<div class="kx-dialog-header">' +
+          '<span class="kx-dialog-title">' + title + '</span>' +
+          '<button class="kx-dialog-close-btn" onclick="this.closest(\'.kx-dialog-overlay\').remove();">\u00D7</button>' +
+        '</div>' +
+        '<div class="kx-dialog-body" style="overflow:auto;padding:0;">' +
+          '<div id="kx-detail-' + viewName + '-' + detailIndex + '" ' +
+            'style="height:100%;">' +
+            '<div style="padding:16px;color:var(--kx-text-muted)">Loading...</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    // Load detail content (dragging is handled automatically by event delegation)
+    kxForm.loadDetailTab(viewName, detailIndex, masterKey);
+  },
+
+  /**
+   * Switches between bottom detail panels (Style: Bottom with multiple details).
+   * @param {string} viewName - Master view name
+   * @param {number} detailIndex - Zero-based detail index to show
+   */
+  switchBottomDetail: function(viewName, detailIndex) {
+    var form = document.getElementById('kx-form-' + viewName);
+    if (!form) return;
+    var container = form.querySelector('.kx-detail-bottom-container');
+    if (!container) return;
+    // Switch active tab
+    container.querySelectorAll('.kx-detail-bottom-tabs .kx-form-tab').forEach(function(t, i) {
+      t.classList.toggle('kx-form-tab-active', i === detailIndex);
+    });
+    // Show/hide panels
+    container.querySelectorAll('.kx-detail-bottom-panel').forEach(function(p, i) {
+      p.style.display = (i === detailIndex) ? '' : 'none';
+    });
+    // Lazy load if empty
+    var panel = document.getElementById('kx-detail-' + viewName + '-' + detailIndex);
+    if (panel && !panel.children.length) {
+      var keyInput = form.querySelector('input[name="_key"]');
+      kxForm.loadDetailTab(viewName, detailIndex, keyInput ? keyInput.value : '');
+    }
+  },
+
+  /**
+   * Refreshes all loaded bottom detail panels (after master save).
+   * @param {string} viewName - Master view name
+   */
+  refreshBottomDetails: function(viewName) {
+    var form = document.getElementById('kx-form-' + viewName);
+    if (!form) return;
+    var panels = form.querySelectorAll('.kx-detail-bottom-panel');
+    if (!panels.length) return;
+    var keyInput = form.querySelector('input[name="_key"]');
+    var masterKey = keyInput ? keyInput.value : '';
+    panels.forEach(function(panel, i) {
+      // Only refresh panels that have been loaded (have content)
+      if (panel.children.length) {
+        kxForm.loadDetailTab(viewName, i, masterKey);
+      }
+    });
+  },
+
+  /**
    * Context map: tracks which detail grid context a form was opened from.
    * Used by onSaveSuccess to reload the correct detail tab after saving.
    */
@@ -1631,7 +1889,7 @@ var kxForm = {
    * @param {string} fkField - FK field name in detail model (for add pre-fill)
    */
   openDetailForm: function(detailView, op, aliasView, tabIndex, masterView, masterKey, fkField) {
-    // Register context for post-save refresh
+    // Register context for post-save refresh (all styles use session store)
     kxForm._detailContext[detailView] = {
       masterView: masterView,
       tabIndex: tabIndex,
@@ -1670,10 +1928,11 @@ var kxForm = {
     confirmTitle, confirmMsg, yesLabel, noLabel) {
     var key = kxGrid.getSelectedKey(aliasView);
     if (!key) return;
+    // All detail styles use the session store
+    var masterForm = document.getElementById('kx-form-' + masterView);
     kxGrid.showConfirm(confirmTitle, confirmMsg, yesLabel, noLabel, function() {
       var loadingEl = document.getElementById('kx-loading');
       if (loadingEl) loadingEl.classList.add('kx-busy');
-      // Delete in-memory (mark as rsDeleted in session store, not DB)
       kxFetchWithTimeout('kx/view/' + masterView + '/detail/' + tabIndex + '/delete', {
         method: 'POST',
         body: new URLSearchParams({ key: key }),
@@ -1681,10 +1940,8 @@ var kxForm = {
       })
       .then(function(response) {
         if (!response.ok) throw new Error('Delete failed (status ' + response.status + ')');
-        // Reload the detail tab from session store
         kxForm.loadDetailTab(masterView, tabIndex, masterKey);
         // Enable Save All on the master form
-        var masterForm = document.getElementById('kx-form-' + masterView);
         if (masterForm) {
           var saveAllBtn = masterForm.querySelector('.kx-form-btn-saveall');
           if (saveAllBtn) saveAllBtn.disabled = false;
@@ -1758,6 +2015,273 @@ var kxForm = {
       window.open('kx/view/' + viewName + '/blob/' + fieldName +
         '?key=' + encodeURIComponent(keyInput.value) + '&download=1');
     }
+  },
+
+  /**
+   * Opens a full-size preview popup for an IsPicture blob field.
+   * The image URL is read directly from the inline thumbnail element (DataURL or server URL),
+   * so it works both for newly selected images and for saved records.
+   * @param {string} viewName - View name
+   * @param {string} fieldName - Blob field name
+   * @param {string} title - Dialog title (field display label)
+   */
+  previewPicture: function(viewName, fieldName, title) {
+    var img = document.getElementById('kx-pic-img-' + viewName + '-' + fieldName);
+    if (!img || !img.src || img.style.display === 'none') return;
+    var url = img.src;
+    var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    var pw = Math.round(Math.min(vw * 0.75, vw - 40));
+    var ph = Math.round(Math.min(vh * 0.80, vh - 60));
+    var overlay = document.createElement('div');
+    overlay.className = 'kx-dialog-overlay';
+    var dialog = document.createElement('div');
+    dialog.className = 'kx-dialog';
+    dialog.style.width = pw + 'px';
+    dialog.style.height = ph + 'px';
+    var header = document.createElement('div');
+    header.className = 'kx-dialog-header';
+    var dialogTitle = (title && title.length > 0) ? title : fieldName;
+    var titleSpan = document.createElement('span');
+    titleSpan.className = 'kx-dialog-title';
+    titleSpan.appendChild(document.createTextNode(dialogTitle));
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'kx-dialog-close-btn';
+    closeBtn.innerHTML = KX_CLOSE_ICON;
+    closeBtn.addEventListener('click', function() { overlay.remove(); });
+    header.appendChild(titleSpan);
+    header.appendChild(closeBtn);
+    var body = document.createElement('div');
+    body.className = 'kx-dialog-body';
+    body.style.cssText = 'align-items:center;justify-content:center;background:var(--kx-bg,#f5f5f5)';
+    var previewImg = document.createElement('img');
+    previewImg.src = url;
+    previewImg.style.cssText = 'max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;min-width:0;min-height:0';
+    body.appendChild(previewImg);
+    dialog.appendChild(header);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  },
+
+  /**
+   * Opens the file picker for a FileReference / non-picture blob field.
+   * @param {string} viewName - View name
+   * @param {string} fieldName - Field name
+   */
+  uploadFile: function(viewName, fieldName) {
+    document.getElementById('kx-file-input-' + viewName + '-' + fieldName).click();
+  },
+
+  /**
+   * Handles file selection: immediately uploads to the server temp area via AJAX,
+   * enabling preview/download before the form is saved.
+   * @param {string} viewName - View name
+   * @param {string} fieldName - Field name
+   * @param {string} fileNameField - Companion field name (may be empty)
+   */
+  onFileSelected: function(viewName, fieldName, fileNameField) {
+    var fileInput = document.getElementById('kx-file-input-' + viewName + '-' + fieldName);
+    if (!fileInput || !fileInput.files[0]) return;
+    var file = fileInput.files[0];
+    var originalName = file.name;
+    var nameDisplay = document.getElementById('kx-file-name-' + viewName + '-' + fieldName);
+    // Show uploading indicator
+    if (nameDisplay) nameDisplay.value = '\u2026'; // ellipsis
+    // AJAX upload to temp endpoint
+    var formData = new FormData();
+    formData.append(fieldName, file);
+    fetch('kx/view/' + viewName + '/upload/' + fieldName, { method: 'POST', body: formData })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.ok) { if (nameDisplay) nameDisplay.value = ''; return; }
+        // Store temp filename (sent back to server on form save)
+        var tempField = document.getElementById('kx-file-temp-' + viewName + '-' + fieldName);
+        if (tempField) tempField.value = data.temp;
+        // Update display with original name
+        if (nameDisplay) nameDisplay.value = originalName;
+        // Update companion hidden field
+        if (fileNameField) {
+          var nameField = document.getElementById('kx-file-name-field-' + viewName + '-' + fieldName);
+          if (nameField) nameField.value = originalName;
+        }
+        // Reset clear flag
+        var clearFlag = document.getElementById('kx-file-clear-' + viewName + '-' + fieldName);
+        if (clearFlag) clearFlag.value = '';
+        // Enable all buttons
+        var editor = document.getElementById('kx-file-' + viewName + '-' + fieldName);
+        if (editor) {
+          editor.querySelectorAll('.kx-file-buttons .kx-toolbar-btn').forEach(function(btn) {
+            btn.disabled = false;
+          });
+        }
+      })
+      .catch(function() { if (nameDisplay) nameDisplay.value = ''; });
+  },
+
+  /**
+   * Clears the file for a FileReference / non-picture blob field.
+   * Resets temp field, sets the clear flag, disables action buttons.
+   * @param {string} viewName - View name
+   * @param {string} fieldName - Field name
+   */
+  clearFile: function(viewName, fieldName) {
+    var nameDisplay = document.getElementById('kx-file-name-' + viewName + '-' + fieldName);
+    if (nameDisplay) nameDisplay.value = '';
+    var nameField = document.getElementById('kx-file-name-field-' + viewName + '-' + fieldName);
+    if (nameField) nameField.value = '';
+    var fileInput = document.getElementById('kx-file-input-' + viewName + '-' + fieldName);
+    if (fileInput) fileInput.value = '';
+    // Reset temp (abandons the pre-uploaded file; server cleans up by age)
+    var tempField = document.getElementById('kx-file-temp-' + viewName + '-' + fieldName);
+    if (tempField) tempField.value = '';
+    var clearFlag = document.getElementById('kx-file-clear-' + viewName + '-' + fieldName);
+    if (clearFlag) clearFlag.value = '1';
+    // Disable Download/Clear/Preview; keep Upload enabled (kx-file-upload-btn class)
+    var editor = document.getElementById('kx-file-' + viewName + '-' + fieldName);
+    if (editor) {
+      editor.querySelectorAll('.kx-file-buttons .kx-toolbar-btn:not(.kx-file-upload-btn)').forEach(function(btn) {
+        btn.disabled = true;
+      });
+    }
+  },
+
+  /**
+   * Downloads the file. Uses temp URL if an AJAX upload is pending, otherwise the DB record.
+   * @param {string} viewName - View name
+   * @param {string} fieldName - Field name
+   */
+  downloadFile: function(viewName, fieldName) {
+    // Prefer temp file (AJAX-uploaded, not yet saved)
+    var tempField = document.getElementById('kx-file-temp-' + viewName + '-' + fieldName);
+    if (tempField && tempField.value) {
+      var nameDisplay = document.getElementById('kx-file-name-' + viewName + '-' + fieldName);
+      var displayName = nameDisplay ? nameDisplay.value : '';
+      window.open('kx/view/' + viewName + '/blob/' + fieldName +
+        '?temp=' + encodeURIComponent(tempField.value) +
+        '&name=' + encodeURIComponent(displayName) +
+        '&download=1');
+      return;
+    }
+    // Fall back to saved record
+    var form = document.getElementById('kx-form-' + viewName);
+    if (!form) return;
+    var keyInput = form.querySelector('input[name="_key"]');
+    if (keyInput && keyInput.value) {
+      window.open('kx/view/' + viewName + '/blob/' + fieldName +
+        '?key=' + encodeURIComponent(keyInput.value) + '&download=1');
+    }
+  },
+
+  /**
+   * Opens an inline preview popup.
+   * Images scale to fill the popup; other file types (PDF, etc.) use an iframe.
+   * The width/height params come from the YAML PreviewWindow config and size the content area.
+   * @param {string} viewName - View name
+   * @param {string} fieldName - Field name
+   * @param {number} width - Content area width in pixels (from PreviewWindow/Width YAML)
+   * @param {number} height - Content area height in pixels (from PreviewWindow/Height YAML)
+   */
+  previewFile: function(viewName, fieldName, width, height, title) {
+    var url, displayName;
+    // Prefer temp file (AJAX-uploaded, not yet saved)
+    var tempField = document.getElementById('kx-file-temp-' + viewName + '-' + fieldName);
+    var nameDisplayEl = document.getElementById('kx-file-name-' + viewName + '-' + fieldName);
+    displayName = nameDisplayEl ? nameDisplayEl.value : fieldName;
+    // Dialog title: field display label from server (Kitto1 behaviour), falls back to filename
+    var dialogTitle = (title && title.length > 0) ? title : displayName;
+    if (tempField && tempField.value) {
+      url = 'kx/view/' + viewName + '/blob/' + fieldName +
+        '?temp=' + encodeURIComponent(tempField.value) +
+        '&name=' + encodeURIComponent(displayName);
+    } else {
+      var form = document.getElementById('kx-form-' + viewName);
+      if (!form) return;
+      var keyInput = form.querySelector('input[name="_key"]');
+      if (!keyInput || !keyInput.value) return;
+      url = 'kx/view/' + viewName + '/blob/' + fieldName +
+        '?key=' + encodeURIComponent(keyInput.value);
+    }
+    // Size the popup to 75% of the viewport width, 80% height.
+    // YAML Width/Height were thumbnail dimensions in Kitto1, not popup dimensions.
+    var vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    var vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    var pw = Math.round(Math.min(vw * 0.75, vw - 40));
+    var ph = Math.round(Math.min(vh * 0.80, vh - 60));
+
+    // Use app-themed dialog classes (inherits CSS variables for dark/light theme)
+    var overlay = document.createElement('div');
+    overlay.className = 'kx-dialog-overlay';
+
+    var dialog = document.createElement('div');
+    dialog.className = 'kx-dialog';
+    dialog.style.width = pw + 'px';
+    dialog.style.height = ph + 'px';
+
+    // Header: field label as caption (Kitto1 behaviour) + themed close button
+    var header = document.createElement('div');
+    header.className = 'kx-dialog-header';
+    var safeCaption = document.createTextNode(dialogTitle || fieldName);
+    var titleSpan = document.createElement('span');
+    titleSpan.className = 'kx-dialog-title';
+    titleSpan.appendChild(safeCaption);
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'kx-dialog-close-btn';
+    closeBtn.innerHTML = KX_CLOSE_ICON;
+    closeBtn.addEventListener('click', function() { overlay.remove(); });
+    header.appendChild(titleSpan);
+    header.appendChild(closeBtn);
+
+    // Body: flex column, centers image; background matches app surface
+    var body = document.createElement('div');
+    body.className = 'kx-dialog-body';
+    body.style.cssText = 'align-items:center;justify-content:center;background:var(--kx-bg,#f5f5f5)';
+
+    var img = document.createElement('img');
+    img.src = url;
+    // min-width:0 prevents flex children from overflowing their container
+    img.style.cssText = 'max-width:100%;max-height:100%;width:auto;height:auto;' +
+      'object-fit:contain;display:block;min-width:0;min-height:0';
+    img.onerror = function() {
+      // onerror fires both for "not an image" (valid file, e.g. PDF) and for HTTP errors.
+      // Use a HEAD request to distinguish the two cases without re-downloading the file.
+      img.remove();
+      fetch(url, { method: 'HEAD' })
+        .then(function(resp) {
+          if (resp.ok) {
+            // File exists but is not an image — show in iframe (PDF, Office docs, etc.)
+            var iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;flex:1';
+            body.appendChild(iframe);
+          } else {
+            // HTTP error (404, etc.) — show a clear message instead of an iframe with HTML error
+            var errDiv = document.createElement('div');
+            errDiv.style.cssText = 'padding:24px;color:var(--kx-text);text-align:center;font-size:1.1em;opacity:0.7';
+            errDiv.textContent = resp.status === 404
+              ? (window.KX_STRINGS && KX_STRINGS.fileNotFound ? KX_STRINGS.fileNotFound : 'File not found.')
+              : 'Error ' + resp.status + ' loading file.';
+            body.appendChild(errDiv);
+          }
+        })
+        .catch(function() {
+          // Network/CORS error — fallback to iframe
+          var iframe = document.createElement('iframe');
+          iframe.src = url;
+          iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;flex:1';
+          body.appendChild(iframe);
+        });
+    };
+    body.appendChild(img);
+
+    dialog.appendChild(header);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   },
 
   /**

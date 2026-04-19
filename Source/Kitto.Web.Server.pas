@@ -96,6 +96,7 @@ procedure TKWebServer.DoCommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRe
 var
   LRequest: TWebRequest;
   LResponse: TWebResponse;
+  LStream: TStream;
 begin
   inherited;
   Assert(Assigned(FEngine));
@@ -107,6 +108,20 @@ begin
   LResponse.FreeContentStream := False;
   AResponseInfo.FreeContentStream := True;
   FEngine.SimpleHandleRequest(LRequest, LResponse, ARequestInfo.Document, True, True);
+  // After DoCommandGet returns, Indy's TIdHTTPServerContext.Run checks:
+  //   if Assigned(ContentStream) then WriteContent;
+  // This second WriteContent would seek the stream back to 0 and re-write the entire
+  // response body — a wasted duplicate send.  If the client closed the connection
+  // (e.g. a browser PDF viewer that already has what it needs), it also raises
+  // EIdSocketError.  Take unconditional ownership of the stream and nil it out so
+  // Indy skips the check entirely.
+  if Assigned(AResponseInfo.ContentStream) then
+  begin
+    LStream := AResponseInfo.ContentStream;
+    AResponseInfo.FreeContentStream := False; // we take ownership — Indy destructor won't free
+    AResponseInfo.ContentStream := nil;        // direct field write; Indy skips WriteContent
+    FreeAndNil(LStream);
+  end;
 end;
 
 procedure TKWebServer.DoCommandOther(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);

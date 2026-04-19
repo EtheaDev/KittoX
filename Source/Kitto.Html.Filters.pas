@@ -160,6 +160,20 @@ begin
     if LValue = '' then
       Continue;
 
+    // HTML date/datetime inputs return ISO values ('YYYY-MM-DD' or
+    // 'YYYY-MM-DDTHH:MM[:SS]'). For SQL Server 'datetime' columns, the
+    // 'YYYY-MM-DD' form is language-dependent: with an Italian session
+    // (DATEFORMAT dmy) '2026-04-15' is parsed as yyyy-dd-mm, i.e. day 04
+    // / month 15 -> out of range. The basic 'YYYYMMDD[ HH:MM[:SS]]' form
+    // (no separators between date components) is always parsed as
+    // year-month-day regardless of DATEFORMAT / language, so we rewrite
+    // the value here before it gets substituted into the SQL template.
+    if SameText(LFilterType, 'DateSearch') and (Length(LValue) = 10) then
+      LValue := Copy(LValue, 1, 4) + Copy(LValue, 6, 2) + Copy(LValue, 9, 2)
+    else if SameText(LFilterType, 'DateTimeSearch') and (Length(LValue) >= 16) then
+      LValue := Copy(LValue, 1, 4) + Copy(LValue, 6, 2) + Copy(LValue, 9, 2) +
+                ' ' + Copy(LValue, 12, MaxInt);
+
     // SQL injection prevention: escape single quotes
     LEscapedValue := ReplaceStr(LValue, '''', '''''');
 

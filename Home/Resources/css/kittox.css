@@ -1132,11 +1132,12 @@ select.kx-login-field-input {
   transition: background 0.15s, opacity 0.15s;
 }
 
-.kx-login-button:hover:not(:disabled) {
+.kx-login-button:hover:not(:disabled):not(.disabled) {
   background: var(--kx-chrome);
 }
 
-.kx-login-button:disabled {
+.kx-login-button:disabled,
+.kx-login-button.disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1611,12 +1612,13 @@ body.kx-mobile .kx-login-dialog {
   line-height: 1.2;
 }
 
-.kx-toolbar-btn:not(:disabled):hover {
+.kx-toolbar-btn:not(:disabled):not(.disabled):hover {
   background: var(--kx-chrome);
   border-color: var(--kx-chrome);
 }
 
-.kx-toolbar-btn:disabled {
+.kx-toolbar-btn:disabled,
+.kx-toolbar-btn.disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -1762,12 +1764,13 @@ body.kx-mobile .kx-login-dialog {
   line-height: 1;
 }
 
-.kx-list-pager button:disabled {
+.kx-list-pager button:disabled,
+.kx-list-pager button.disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-.kx-list-pager button:not(:disabled):hover {
+.kx-list-pager button:not(:disabled):not(.disabled):hover {
   background: var(--kx-chrome-btn-hover);
 }
 
@@ -1860,7 +1863,38 @@ body.kx-mobile .kx-login-dialog {
   overflow: auto;
 }
 
-/* Bottom toolbar with buttons */
+/* ===== Bottom detail panels (Style: Bottom) ===== */
+.kx-detail-bottom-container {
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid var(--kx-border);
+  flex-shrink: 0;
+}
+
+.kx-detail-bottom-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--kx-border);
+  background: var(--kx-surface);
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* Single tab (title only, no switching): default cursor */
+.kx-detail-bottom-tabs .kx-form-tab:only-child {
+  cursor: default;
+  font-weight: 700;
+  color: var(--kx-accent);
+  border-bottom-color: var(--kx-accent);
+}
+
+.kx-detail-bottom-panel {
+  overflow: auto;
+  flex-shrink: 0;
+}
+
+/* Bottom toolbar with buttons — margin-top:auto pushes it to the bottom
+   of the flex column when the dialog is taller than the content */
 .kx-form-toolbar {
   display: flex;
   align-items: center;
@@ -1869,6 +1903,7 @@ body.kx-mobile .kx-login-dialog {
   padding: 8px 16px;
   border-top: 1px solid var(--kx-border);
   flex-shrink: 0;
+  margin-top: auto;
   background: var(--kx-surface-alt);
 }
 
@@ -2045,22 +2080,85 @@ body.kx-mobile .kx-login-dialog {
   font-family: monospace;
 }
 /* Status bar */
+/* Resize bar — themed, centered drag dots, custom drag via JS */
 .sun-editor .se-resizing-bar {
   background-color: var(--kx-surface);
   border-top: 1px solid var(--kx-border);
+  border-radius: 0 0 4px 4px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  min-height: 16px !important;
+  padding: 0 !important;
+  line-height: 1 !important;
 }
-.sun-editor .se-navigation {
+.sun-editor .se-resizing-bar::after {
+  content: '\2022\00a0\00a0\2022\00a0\00a0\2022';
   color: var(--kx-text-muted);
-  font-family: var(--kx-font);
-  font-size: calc(var(--kx-font-size) - 2px);
+  font-size: 10px;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, calc(-50% - 1px)) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  height: auto !important;
+  width: auto !important;
+  pointer-events: none !important;
 }
-/* Dropdown lists (font list, size list, color picker) */
+/* .se-navigation: invisible but interactable (drag hit area) */
+.sun-editor .se-resizing-bar .se-navigation.sun-editor-common {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+  cursor: ns-resize !important;
+  background: transparent !important;
+  color: transparent !important;
+  visibility: visible !important;
+  opacity: 0 !important;
+  z-index: 3 !important;
+  pointer-events: auto !important;
+}
+.kx-form-field .sun-editor {
+  height: 300px;
+}
+/* Toolbar: rounded top corners to match sun-editor border-radius */
+.sun-editor .se-toolbar {
+  border-radius: 4px 4px 0 0;
+}
+/* Flex layout so editing area fills available space and scrolls */
+.sun-editor .se-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.sun-editor .se-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.sun-editor .se-wrapper-inner.sun-editor-editable {
+  height: 100% !important;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Dropdown lists (font list, size list, color picker) —
+   z-index high enough to appear above kx-dialog overlays */
 .sun-editor .se-list-layer {
   background-color: var(--kx-surface);
   border: 1px solid var(--kx-border);
   color: var(--kx-text);
   font-family: var(--kx-font);
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 2147483647;
+  padding: 6px;
 }
 .sun-editor .se-list-layer .se-list-basic li button {
   color: var(--kx-text);
@@ -2069,24 +2167,87 @@ body.kx-mobile .kx-login-dialog {
   background-color: var(--kx-accent-bg);
   color: var(--kx-accent);
 }
-/* Active/selected item in dropdown lists */
-.sun-editor .se-list-basic li button.active {
+/* Override all hardcoded SunEditor dropdown item backgrounds for theme consistency.
+   Uses high specificity to override both .se-list-basic and .se-list-inner selectors. */
+.sun-editor .se-btn-list.default_value {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--kx-text);
+  box-shadow: none;
+  -webkit-box-shadow: none;
+}
+.sun-editor .se-btn-list.default_value.active {
   background-color: var(--kx-accent-bg);
   border-color: var(--kx-accent);
   color: var(--kx-accent);
 }
-.sun-editor .se-list-basic li button.active:hover {
+
+/* Active/selected item in all dropdown lists (font, align, size, etc.) */
+.sun-editor .se-list-layer .se-list-basic li button.active,
+.sun-editor .se-list-inner .se-list-basic li button.active {
+  background-color: var(--kx-accent-bg);
+  border: 1px solid var(--kx-accent);
+  color: var(--kx-accent);
+  box-shadow: none;
+  -webkit-box-shadow: none;
+}
+.sun-editor .se-list-layer .se-list-basic li button.active:hover,
+.sun-editor .se-list-inner .se-list-basic li button.active:hover {
   background-color: var(--kx-accent);
   border-color: var(--kx-accent);
   color: var(--kx-surface);
 }
-.sun-editor .se-list-basic li button.active:active {
+.sun-editor .se-list-layer .se-list-basic li button.active:active,
+.sun-editor .se-list-inner .se-list-basic li button.active:active {
   background-color: var(--kx-accent);
   border-color: var(--kx-accent);
   color: var(--kx-surface);
   box-shadow: none;
   -webkit-box-shadow: none;
 }
+/* Color picker — theme-aware overrides */
+.sun-editor .se-form-group {
+  padding: 6px;
+  gap: 4px;
+}
+.sun-editor .se-form-group input.se-color-input,
+.sun-editor .se-submenu .se-form-group .se-color-input {
+  background-color: var(--kx-input-bg);
+  color: var(--kx-text);
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 3px;
+  font-size: var(--kx-font-size);
+  margin: 2px 4px;
+}
+.sun-editor .se-form-group input.se-color-input:focus,
+.sun-editor .se-submenu .se-form-group .se-color-input:focus {
+  border-color: var(--kx-accent) !important;
+  border-right-width: 1px !important;
+  outline: none;
+}
+.sun-editor .se-btn-primary {
+  background-color: var(--kx-accent);
+  border-color: var(--kx-accent);
+  color: var(--kx-surface);
+  border-radius: 4px;
+}
+.sun-editor .se-btn-primary:hover,
+.sun-editor .se-btn-primary:focus {
+  background-color: var(--kx-accent);
+  border-color: var(--kx-accent);
+  color: var(--kx-surface);
+  opacity: 0.85;
+}
+.sun-editor .se-form-group button.se-btn {
+  border: 1px solid var(--kx-border);
+  color: var(--kx-text);
+  background-color: var(--kx-surface);
+}
+.sun-editor .se-form-group button.se-btn:hover {
+  background-color: var(--kx-accent-bg);
+  color: var(--kx-accent);
+}
+
 /* Dialog boxes (link, image, etc.) */
 .sun-editor .se-dialog-inner .se-dialog-content {
   background-color: var(--kx-surface);
@@ -2224,10 +2385,25 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
 
 /* Readonly / disabled fields */
 .kx-form-readonly .kx-form-input,
-.kx-form-input:disabled {
+.kx-form-input:disabled,
+.kx-form-input.disabled {
   background: var(--kx-surface-alt);
   color: var(--kx-text-muted);
   cursor: default;
+}
+
+/* Editing-mode field borders — accent color highlights editable fields */
+[data-mode="edit"] .kx-form-input:not(:disabled):not(.disabled):not(:read-only) {
+  border-color: var(--kx-accent);
+}
+[data-mode="edit"] .kx-form-lookup-wrapper .kx-form-lookup-display {
+  border-color: var(--kx-accent);
+}
+[data-mode="edit"] .kx-form-lookup-wrapper .kx-form-lookup-btn {
+  border-color: var(--kx-accent);
+}
+[data-mode="edit"] .sun-editor {
+  border-color: var(--kx-accent);
 }
 
 /* FieldSet */
@@ -2292,11 +2468,12 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   transition: background 0.15s, opacity 0.15s;
 }
 
-.kx-form-btn:hover:not(:disabled) {
+.kx-form-btn:hover:not(:disabled):not(.disabled) {
   background: var(--kx-chrome);
 }
 
-.kx-form-btn:disabled {
+.kx-form-btn:disabled,
+.kx-form-btn.disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -2308,7 +2485,7 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   background: var(--kx-chrome-dark);
   color: var(--kx-chrome-text);
 }
-.kx-form-btn-save:hover:not(:disabled) {
+.kx-form-btn-save:hover:not(:disabled):not(.disabled) {
   background: var(--kx-chrome);
 }
 
@@ -2316,7 +2493,7 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   background: var(--kx-chrome-light);
   color: var(--kx-chrome-text);
 }
-.kx-form-btn-cancel:hover:not(:disabled) {
+.kx-form-btn-cancel:hover:not(:disabled):not(.disabled) {
   background: var(--kx-chrome-hover);
 }
 
@@ -2325,7 +2502,7 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   background: var(--kx-chrome-dark);
   color: var(--kx-chrome-text);
 }
-.kx-form-btn-clone:hover:not(:disabled) {
+.kx-form-btn-clone:hover:not(:disabled):not(.disabled) {
   background: var(--kx-chrome);
 }
 
@@ -2862,6 +3039,34 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
 }
 
 .kx-picture-buttons .kx-toolbar-btn {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+/* ===== File Editor Widget (FileReference / non-picture blob fields) ===== */
+
+.kx-file-editor {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.kx-file-name-display {
+  flex: 1;
+  min-width: 0;
+  background: var(--kx-input-bg, #fff);
+  color: var(--kx-text);
+}
+
+.kx-file-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.kx-file-buttons .kx-toolbar-btn {
   font-size: 12px;
   padding: 2px 8px;
 }

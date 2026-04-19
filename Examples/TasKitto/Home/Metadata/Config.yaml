@@ -46,7 +46,7 @@ Databases:
       OSAuthent: No
       User_Name: SA
       Password: 12345
-      Isolation: RepeatableRead
+      Isolation: ReadCommitted
       ODBCAdvanced: TrustServerCertificate=yes
       POOL_MaximumItems: 50
 

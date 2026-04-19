@@ -3215,13 +3215,20 @@ end;
 function TEFDataType.ValueToDateTime(const AValue: Variant): TDateTime;
 var
   LFormatSetting: TFormatSettings;
+  LStr: string;
 begin
   if VarIsStr(AValue) then
   begin
-    LFormatSetting.ShortDateFormat := 'yyyy-mm-dd hh:mm:ss';
+    LStr := Trim(VarToStr(AValue));
+    // Accept both 'yyyy-mm-dd hh:mm:ss' and 'yyyy-mm-dd hh:mm' (no seconds)
+    if (Length(LStr) > 0) and (Length(LStr) <= 16) then
+      LStr := LStr + ':00';
+    LFormatSetting := TFormatSettings.Create('en-US');
+    LFormatSetting.ShortDateFormat := 'yyyy-mm-dd';
+    LFormatSetting.LongTimeFormat := 'hh:mm:ss';
     LFormatSetting.DateSeparator := '-';
     LFormatSetting.TimeSeparator := ':';
-    Result := StrToDateTime(AValue, LFormatSetting);
+    Result := StrToDateTime(LStr, LFormatSetting);
   end
   else if VarIsNull(AValue) then
     Result := 0

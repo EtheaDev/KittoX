@@ -251,6 +251,7 @@ procedure TKXTilePanelController.RenderViewTile(const ANode: TKTreeViewNode;
 var
   LViewName: string;
   LDisplayLabel: string;
+  LTabLabel: string;
   LImageName: string;
   LTileColor: string;
   LTileWidth: string;
@@ -261,8 +262,8 @@ var
   LShowImage: Boolean;
   LImagePosition: string;
 begin
-  LDisplayLabel := _(ANode.GetString('DisplayLabel',
-    GetDisplayLabelFromNode(ANode, AViews)));
+  LTabLabel := GetDisplayLabelFromNode(ANode, AViews);
+  LDisplayLabel := _(ANode.GetString('DisplayLabel', LTabLabel));
   LViewName := AView.PersistentName;
   if (LViewName = '') and (AView is TKDataView)
     and Assigned(TKDataView(AView).MainTable) then
@@ -329,6 +330,7 @@ begin
     ASB.Append(' role="button" tabindex="0"')
       .Append(' data-view="').Append(LViewName)
       .Append('" data-label="').Append(LDisplayLabel)
+      .Append('" data-tab-label="').Append(LTabLabel)
       .Append('" onclick="kxApp.openView(this)"');
   end
   else

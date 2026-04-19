@@ -197,7 +197,7 @@ echo =============================================
 if %ERRORS%==0 (
     echo   Build completed successfully!
 ) else (
-    echo   Build completed with %ERRORS% error(s).
+    echo   Build completed with %ERRORS% error^(s^).
     echo   Check the .log files in each Projects folder for details.
 )
 echo =============================================

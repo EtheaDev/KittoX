@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.1 - 09 Apr 2026**
+**Latest Version 4.0.2 - 19 Apr 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -20,7 +20,7 @@ A **Kitto<sup>x</sup>** application is described as a set of easily maintained *
 
 ![Ethea Logo](./images/Logo-Ethea-200x90.png)
 
-****Kitto<sup>x</sup>**** was originally designed by _Nando Dessena_.
+**Kitto** framework was originally designed by _Nando Dessena_ in 2011.
 
 **Kitto<sup>x</sup>** retained some basic concepts but was evolved by _Carlo Barazzetta_ to take advantage of the modern and advanced features provided by HTML and to eliminate the dependency on the ExtJS client library.
 
@@ -57,6 +57,17 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 19 Apr 2026: ver. 4.0.2 Beta
+- Simplified Apache/IIS deployment: static resources served internally, no RewriteRule needed
+- New deployment mode: Windows Service + reverse proxy (nginx/Apache/IIS) with install/uninstall scripts
+- Fixed ViewMode to EditMode save bug in master-detail forms
+- Implemented Apply*Rules event chain (EditRecord, NewRecord, Duplicate, AfterShowEditWindow)
+- Master-detail: "Confirm" button (save-cache) and "Save All" only visible in ViewMode
+- HTTP error feedback (htmx:responseError) with Retry/Reset dialog
+- Updated Italian localization (.po/.mo) with all KittoX strings
+- Extensive documentation updates (deploy, proxy, localization, form state machine, routing)
+- Added DDL and DML script for Example databases
 
 ## 09 Apr 2026: ver. 4.0.1 Beta
 - Fixed Field Rules client-side (ForceUpperCase, ForceCamelCaps, MinValue/MaxValue)

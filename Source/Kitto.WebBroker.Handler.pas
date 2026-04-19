@@ -71,7 +71,7 @@ var
   LPath: string;
 begin
   // Write to a fixed log file next to the DLL for early diagnostics
-  LPath := ExtractFilePath(GetModuleName(HInstance)) + 'isapi_debug.log';
+  LPath := ExtractFilePath(GetModuleName(HInstance)) + 'webbroker_debug.log';
   try
     AssignFile(LFile, LPath);
     if FileExists(LPath) then
@@ -185,9 +185,17 @@ begin
     LURL := ARequest.PathInfo                         // ISAPI
   else
     LURL := ARequest.URL;                             // Fallback
-  if (LURL <> '') and (LURL[Length(LURL)] <> '/') and not LURL.Contains('/kx/') then
-    LURL := LURL + '/';
-  TEFLogger.Instance.Log('ISAPI Request: Method=' + ARequest.Method +
+  // If the URL is the app root without trailing slash, redirect the browser
+  // so that relative URLs in the HTML (e.g. "kx/login") resolve correctly.
+  if (LURL <> '') and (LURL[Length(LURL)] <> '/')
+    and not LURL.Contains('/kx/')
+    and not LURL.Contains('/res/') then
+  begin
+    AResponse.SendRedirect(LURL + '/');
+    Result := True;
+    Exit;
+  end;
+  TEFLogger.Instance.Log('WebBroker Request: Method=' + ARequest.Method +
     ' PathInfo=' + ARequest.PathInfo +
     ' URL=' + ARequest.URL +
     ' ScriptName=' + ARequest.ScriptName, TEFLogger.LOG_DEBUG);
@@ -210,7 +218,7 @@ begin
         '<li><b>SystemHomePath:</b> ' + TKConfig.SystemHomePath + '</li>' +
         '<li><b>Config file:</b> ' + TKConfig.AppHomePath + 'Metadata\' + TKConfig.BaseConfigFileName + '</li>' +
         '</ul>' +
-        '<p>Check that Config.yaml exists and AppPath matches the IIS application alias.</p>' +
+        '<p>Check that Config.yaml exists and AppPath matches the web server application alias (IIS virtual directory or Apache Location).</p>' +
         '</body></html>';
       AResponse.SendResponse;
       Result := True;
@@ -218,7 +226,7 @@ begin
   except
     on E: Exception do
     begin
-      TEFLogger.Instance.Log('ISAPI HandleRequest error: ' + E.Message);
+      TEFLogger.Instance.Log('WebBroker HandleRequest error: ' + E.Message);
       AResponse.StatusCode := 500;
       AResponse.ContentType := 'text/html; charset=utf-8';
       AResponse.Content :=

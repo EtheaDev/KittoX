@@ -80,6 +80,8 @@ type
       ALayoutNode: TEFNode): string;
     procedure RenderPictureEditor(SB: TStringBuilder;
       AViewField: TKViewField; const AFieldName: string);
+    procedure RenderFileEditor(SB: TStringBuilder;
+      AViewField: TKViewField; const AFieldName: string);
     function GetRecordKeyString: string;
     function RenderReferenceSelect(AViewField: TKViewField): string;
     function RenderLargeReferenceEditor(AViewField: TKViewField;
@@ -89,8 +91,12 @@ type
       AViewTable: TKViewTable): string;
     function RenderTabbedLayout(ALayout: TKLayout;
       AViewTable: TKViewTable; AIncludeDetails: Boolean): string;
+    function RenderBottomDetails(AViewTable: TKViewTable;
+      AHeight: Integer): string;
     function RenderFormButtons: string;
     function RenderFormToolViews: string;
+    function RenderPopupDetailButtons(AViewTable: TKViewTable;
+      AHeight: Integer): string;
     function GetFieldValue(AField: TKViewTableField;
       AViewField: TKViewField): string;
   strict protected
@@ -248,6 +254,21 @@ begin
     FLabelAlign := 'right';
   end;
 
+  // Bottom detail style: grow dialog height to fit the detail panel.
+  // GetExtraHeight which added DetailPanelHeight + 120.
+  // Must be before inherited (which reads Config Height into FHeight).
+  if Assigned(ViewTable) and (ViewTable.DetailTableCount > 0) and
+     SameText(ViewTable.GetString('DetailTables/Controller/Style', DEFAULT_DETAIL_STYLE), 'Bottom') then
+  begin
+    var LBaseHeight := Config.GetInteger('Height', 0);
+    // If no explicit height, use Defaults/Window/Height as base for the master area
+    if LBaseHeight = 0 then
+      LBaseHeight := TKConfig.Instance.Config.GetInteger('Defaults/Window/Height', 400);
+    var LDetailPanelHeight := ViewTable.GetInteger('DetailTables/Controller/Height',
+      ViewTable.GetInteger('DetailTables/Controller/Style/Height', DEFAULT_DETAIL_PANEL_HEIGHT));
+    Config.SetInteger('Height', LBaseHeight + LDetailPanelHeight + 80);
+  end;
+
   if Assigned(View) then
     FViewName := View.PersistentName;
 
@@ -343,7 +364,8 @@ var
   LThumbW, LThumbH: Integer;
   LHasImage: Boolean;
   LRecordField: TKViewTableField;
-  LUploadIcon, LDownloadIcon, LClearIcon: string;
+  LUploadIcon, LDownloadIcon, LClearIcon, LPreviewIcon: string;
+  LPreviewTitle: string;
 begin
   LThumbW := AViewField.GetInteger('IsPicture/Thumbnail/Width', 150);
   LThumbH := AViewField.GetInteger('IsPicture/Thumbnail/Height', 150);
@@ -356,6 +378,10 @@ begin
   LUploadIcon := GetIconHTML('upload');
   LDownloadIcon := GetIconHTML('download');
   LClearIcon := GetIconHTML('clear');
+  LPreviewIcon := GetIconHTML('search');
+  LPreviewTitle := AViewField.DisplayLabel_Form;
+  if LPreviewTitle = '' then
+    LPreviewTitle := AViewField.DisplayLabel;
 
   SB.Append('<div class="kx-picture-editor" id="kx-pic-')
     .Append(FViewName).Append('-').Append(AFieldName).Append('">');
@@ -400,17 +426,32 @@ begin
     if not LHasImage then SB.Append(' disabled');
     SB.Append('>');
     SB.Append(LClearIcon).Append('</button>');
+    // Preview button
+    SB.Append('<button type="button" class="kx-toolbar-btn" title="')
+      .Append(TNetEncoding.HTML.Encode(_('Preview')))
+      .Append('" onclick="kxForm.previewPicture(''')
+      .Append(FViewName).Append(''',''').Append(AFieldName).Append(''',''')
+      .Append(ReplaceStr(LPreviewTitle, '''', '\''')).Append(''')"');
+    if not LHasImage then SB.Append(' disabled');
+    SB.Append('>');
+    SB.Append(LPreviewIcon).Append('</button>');
     SB.Append('</div>');
   end
   else if LHasImage then
   begin
-    // View mode: only Download button if there's an image
+    // View mode: Download + Preview buttons if there's an image
     SB.Append('<div class="kx-picture-buttons">');
     SB.Append('<button type="button" class="kx-toolbar-btn" title="')
       .Append(TNetEncoding.HTML.Encode(_('Download')))
       .Append('" onclick="kxForm.downloadPicture(''')
       .Append(FViewName).Append(''',''').Append(AFieldName).Append(''')">');
     SB.Append(LDownloadIcon).Append('</button>');
+    SB.Append('<button type="button" class="kx-toolbar-btn" title="')
+      .Append(TNetEncoding.HTML.Encode(_('Preview')))
+      .Append('" onclick="kxForm.previewPicture(''')
+      .Append(FViewName).Append(''',''').Append(AFieldName).Append(''',''')
+      .Append(ReplaceStr(LPreviewTitle, '''', '\''')).Append(''')">');
+    SB.Append(LPreviewIcon).Append('</button>');
     SB.Append('</div>');
   end;
 
@@ -425,6 +466,160 @@ begin
     .Append('" value="" />');
 
   SB.Append('</div>');
+end;
+
+procedure TKXFormPanelController.RenderFileEditor(SB: TStringBuilder;
+  AViewField: TKViewField; const AFieldName: string);
+var
+  LFileNameField: string;
+  LFileName: string;
+  LHasFile: Boolean;
+  LPreviewWindow: Boolean;
+  LPreviewW, LPreviewH: Integer;
+  LIsReadOnly: Boolean;
+  LRecordField, LFileNameRecordField: TKViewTableField;
+  LUploadIcon, LDownloadIcon, LClearIcon, LPreviewIcon: string;
+  LCharWidth, LEffWidth: Integer;
+  LPreviewTitle: string;
+begin
+  LFileNameField := AViewField.FileNameField;
+  LPreviewWindow := AViewField.GetBoolean('PreviewWindow', False);
+  LPreviewW := AViewField.GetInteger('PreviewWindow/Width', 600);
+  LPreviewH := AViewField.GetInteger('PreviewWindow/Height', 400);
+  LIsReadOnly := FIsViewMode or AViewField.IsReadOnly;
+  // Preview window title: field's form display label (same as Kitto1 AViewField.DisplayLabel_Form)
+  LPreviewTitle := AViewField.DisplayLabel_Form;
+  if LPreviewTitle = '' then
+    LPreviewTitle := AViewField.DisplayLabel;
+
+  LHasFile := False;
+  LFileName := '';
+  if Assigned(FRecord) then
+  begin
+    if LFileNameField <> '' then
+    begin
+      LFileNameRecordField := FRecord.FindField(LFileNameField);
+      if Assigned(LFileNameRecordField) and not LFileNameRecordField.IsNull then
+      begin
+        LFileName := LFileNameRecordField.AsString;
+        LHasFile := LFileName <> '';
+      end;
+    end;
+    if not LHasFile then
+    begin
+      LRecordField := FRecord.FindField(AFieldName);
+      if Assigned(LRecordField) and not LRecordField.IsNull then
+      begin
+        LHasFile := True;
+        // For FileReference the DB field stores the stored filename; use it as display
+        // only if no companion field provided the display name.
+        if (AViewField.DataType is TKFileReferenceDataType) and (LFileName = '') then
+          LFileName := LRecordField.AsString;
+      end;
+    end;
+  end;
+
+  // Width: same calculation as RenderEditor — respect the field's CharWidth/DisplayWidth from YAML.
+  // The outer container gets the total field width; inside, the input takes flex:1 and the
+  // buttons take their natural size (flex-shrink:0), so the input fills remaining space.
+  LCharWidth := AViewField.DisplayWidth;
+  if LCharWidth = 0 then
+    LCharWidth := Min(IfThen(AViewField.Size = 0, FMemoWidth, AViewField.Size), FMaxFieldWidth);
+  LCharWidth := Max(LCharWidth, FMinFieldWidth);
+  LEffWidth := Round(LCharWidth * FCharWidthFactor);
+
+  LUploadIcon := GetIconHTML('upload');
+  LDownloadIcon := GetIconHTML('download');
+  LClearIcon := GetIconHTML('clear');
+  LPreviewIcon := GetIconHTML('search');
+
+  // Outer container: width sized like any other field (buttons share this space)
+  SB.Append('<div class="kx-file-editor" id="kx-file-')
+    .Append(FViewName).Append('-').Append(AFieldName).Append('"')
+    .Append(' style="width:').Append(IntToStr(LEffWidth + INPUT_EXTRA_CHS)).Append('ch">');
+
+  // Read-only filename display input — flex:1 fills remaining width after buttons
+  SB.Append('<input type="text" class="kx-form-input kx-file-name-display"')
+    .Append(' id="kx-file-name-').Append(FViewName).Append('-').Append(AFieldName).Append('"')
+    .Append(' value="').Append(TNetEncoding.HTML.Encode(LFileName)).Append('"')
+    .Append(' readonly />');
+
+  // Button bar
+  SB.Append('<div class="kx-file-buttons">');
+
+  if not LIsReadOnly then
+  begin
+    // Upload button — extra class kx-file-upload-btn used by JS to skip disabling
+    SB.Append('<button type="button" class="kx-toolbar-btn kx-file-upload-btn" title="')
+      .Append(TNetEncoding.HTML.Encode(_('Upload')))
+      .Append('" onclick="kxForm.uploadFile(''')
+      .Append(FViewName).Append(''',''').Append(AFieldName).Append(''')">');
+    SB.Append(LUploadIcon).Append('</button>');
+  end;
+
+  // Download button (always visible, disabled when no file)
+  SB.Append('<button type="button" class="kx-toolbar-btn" title="')
+    .Append(TNetEncoding.HTML.Encode(_('Download')))
+    .Append('" onclick="kxForm.downloadFile(''')
+    .Append(FViewName).Append(''',''').Append(AFieldName).Append(''')"');
+  if not LHasFile then SB.Append(' disabled');
+  SB.Append('>');
+  SB.Append(LDownloadIcon).Append('</button>');
+
+  if not LIsReadOnly then
+  begin
+    // Clear button
+    SB.Append('<button type="button" class="kx-toolbar-btn" title="')
+      .Append(TNetEncoding.HTML.Encode(_('Clear')))
+      .Append('" onclick="kxForm.clearFile(''')
+      .Append(FViewName).Append(''',''').Append(AFieldName).Append(''')"');
+    if not LHasFile then SB.Append(' disabled');
+    SB.Append('>');
+    SB.Append(LClearIcon).Append('</button>');
+  end;
+
+  if LPreviewWindow then
+  begin
+    // Preview button — passes field display label as 5th param for the dialog title
+    SB.Append('<button type="button" class="kx-toolbar-btn" title="')
+      .Append(TNetEncoding.HTML.Encode(_('Preview')))
+      .Append('" onclick="kxForm.previewFile(''')
+      .Append(FViewName).Append(''',''').Append(AFieldName).Append(''',')
+      .Append(IntToStr(LPreviewW)).Append(',').Append(IntToStr(LPreviewH)).Append(',''')
+      .Append(ReplaceStr(LPreviewTitle, '''', '\''')).Append(''')"');
+    if not LHasFile then SB.Append(' disabled');
+    SB.Append('>');
+    SB.Append(LPreviewIcon).Append('</button>');
+  end;
+
+  SB.Append('</div>'); // kx-file-buttons
+
+  // Hidden inputs for form submission (edit mode only)
+  if not LIsReadOnly then
+  begin
+    SB.Append('<input type="file" id="kx-file-input-')
+      .Append(FViewName).Append('-').Append(AFieldName)
+      .Append('" name="').Append(TNetEncoding.HTML.Encode(AFieldName))
+      .Append('" style="display:none"')
+      .Append(' onchange="kxForm.onFileSelected(''').Append(FViewName).Append(''',''')
+      .Append(AFieldName).Append(''',''')
+      .Append(TNetEncoding.HTML.Encode(LFileNameField)).Append(''')" />');
+    SB.Append('<input type="hidden" name="').Append(TNetEncoding.HTML.Encode(AFieldName))
+      .Append('__clear" id="kx-file-clear-').Append(FViewName).Append('-').Append(AFieldName)
+      .Append('" value="" />');
+    // Temp: stores the GUID filename of the AJAX-uploaded file pending save
+    SB.Append('<input type="hidden" name="').Append(TNetEncoding.HTML.Encode(AFieldName))
+      .Append('__temp" id="kx-file-temp-').Append(FViewName).Append('-').Append(AFieldName)
+      .Append('" value="" />');
+    // Hidden companion field: carries original filename in the POST so the server
+    // can update the FileNameField string column via the regular field update loop.
+    if LFileNameField <> '' then
+      SB.Append('<input type="hidden" name="').Append(TNetEncoding.HTML.Encode(LFileNameField))
+        .Append('" id="kx-file-name-field-').Append(FViewName).Append('-').Append(AFieldName)
+        .Append('" value="').Append(TNetEncoding.HTML.Encode(LFileName)).Append('" />');
+  end;
+
+  SB.Append('</div>'); // kx-file-editor
 end;
 
 function TKXFormPanelController.RenderReferenceSelect(
@@ -903,6 +1098,16 @@ begin
     begin
       RenderPictureEditor(SB, AViewField, LFieldName);
     end
+    // FileReference field or non-picture blob → file editor widget
+    // Exclude TEFMemoDataType / TKHTMLMemoDataType: IsBlob=True for memos too,
+    // but they are text editors handled by the factory below.
+    else if (AViewField.DataType is TKFileReferenceDataType) or
+            (AViewField.IsBlob and not AViewField.IsPicture and
+             not (AViewField.DataType is TEFMemoDataType) and
+             not (AViewField.DataType is TKHTMLMemoDataType)) then
+    begin
+      RenderFileEditor(SB, AViewField, LFieldName);
+    end
     // Memo threshold check for large text fields
     else if not (AViewField.DataType is TEFMemoDataType)
       and not (AViewField.DataType is TKHTMLMemoDataType)
@@ -1093,11 +1298,36 @@ begin
     end
     else
     begin
-      // No layout file: render all visible fields as page 0
-      for I := 0 to AViewTable.FieldCount - 1 do
-        if AViewTable.Fields[I].IsVisible and
-           (not AViewTable.Fields[I].IsBlob or AViewTable.Fields[I].IsPicture) then
-          SBPage.Append(RenderEditor(AViewTable.Fields[I], nil));
+      // No layout file: render all visible fields as page 0.
+      // Collect FileNameField companion names used by file editor widgets —
+      // companions are embedded inside the file editor and must not appear standalone.
+      var LCompanions := TStringList.Create;
+      try
+        LCompanions.CaseSensitive := False;
+        for I := 0 to AViewTable.FieldCount - 1 do
+        begin
+          var LF := AViewTable.Fields[I];
+          if (LF.DataType is TKFileReferenceDataType) or
+             (LF.IsBlob and not LF.IsPicture and
+              not (LF.DataType is TEFMemoDataType) and
+              not (LF.DataType is TKHTMLMemoDataType)) then
+          begin
+            var LFNF := LF.FileNameField;
+            if LFNF <> '' then
+              LCompanions.Add(LFNF);
+          end;
+        end;
+        for I := 0 to AViewTable.FieldCount - 1 do
+        begin
+          var LAutoField := AViewTable.Fields[I];
+          if not LAutoField.IsVisible then Continue;
+          // Skip companion fields — displayed inside the file editor widget
+          if LCompanions.IndexOf(LAutoField.AliasedName) >= 0 then Continue;
+          SBPage.Append(RenderEditor(LAutoField, nil));
+        end;
+      finally
+        LCompanions.Free;
+      end;
     end;
     // Add the last form page
     LPageContents.Add(SBPage.ToString);
@@ -1118,10 +1348,10 @@ begin
           if Assigned(LDetailView) then
             LDisplayLabel := _(LDetailView.DisplayLabel)
           else
-            LDisplayLabel := _(LDetailTable.DisplayLabel);
+            LDisplayLabel := _(LDetailTable.PluralDisplayLabel);
         end
         else
-          LDisplayLabel := _(LDetailTable.DisplayLabel);
+          LDisplayLabel := _(LDetailTable.PluralDisplayLabel);
         LPageTitles.Add(LDisplayLabel);
         LPageContents.Add('');
       end;
@@ -1173,6 +1403,71 @@ begin
     SBPage.Free;
     FreeAndNil(LPageContents);
     FreeAndNil(LPageTitles);
+  end;
+end;
+
+function TKXFormPanelController.RenderBottomDetails(AViewTable: TKViewTable;
+  AHeight: Integer): string;
+var
+  I: Integer;
+  LDetailTable: TKViewTable;
+  LDisplayLabel: string;
+  SB: TStringBuilder;
+begin
+  Result := '';
+  if not Assigned(AViewTable) or (AViewTable.DetailTableCount = 0) then
+    Exit;
+
+  SB := TStringBuilder.Create;
+  try
+    // Container for all bottom detail panels
+    SB.Append('<div class="kx-detail-bottom-container">');
+
+    // Always render tabs header (shows title even with a single detail)
+    SB.Append('<div class="kx-detail-bottom-tabs">');
+    for I := 0 to AViewTable.DetailTableCount - 1 do
+    begin
+      LDetailTable := AViewTable.DetailTables[I];
+      // Kitto1 used ViewTable.PluralDisplayLabel for detail tab titles
+      LDisplayLabel := _(LDetailTable.PluralDisplayLabel);
+      SB.Append('<button type="button" class="kx-form-tab');
+      if I = 0 then
+        SB.Append(' kx-form-tab-active');
+      if AViewTable.DetailTableCount > 1 then
+        SB.Append('" onclick="kxForm.switchBottomDetail(''').Append(FViewName).Append(''',')
+          .Append(IntToStr(I)).Append(')">')
+      else
+        SB.Append('">');
+      SB.Append(TNetEncoding.HTML.Encode(LDisplayLabel));
+      SB.Append('</button>');
+    end;
+    SB.Append('</div>');
+
+    // Render detail panels (empty, lazy loaded)
+    for I := 0 to AViewTable.DetailTableCount - 1 do
+    begin
+      SB.Append('<div class="kx-detail-bottom-panel" id="kx-detail-');
+      SB.Append(FViewName).Append('-').Append(IntToStr(I)).Append('"');
+      SB.Append(' style="height:').Append(IntToStr(AHeight)).Append('px');
+      if I > 0 then
+        SB.Append(';display:none');
+      SB.Append('">');
+      SB.Append('</div>');
+    end;
+
+    SB.Append('</div>');
+
+    // Auto-load the first bottom detail panel via inline script
+    SB.Append('<script>');
+    SB.Append('(function(){var f=document.getElementById("kx-form-').Append(FViewName).Append('");');
+    SB.Append('if(f){var k=f.querySelector(''input[name="_key"]'');');
+    SB.Append('kxForm.loadDetailTab("').Append(FViewName).Append('",0,k?k.value:"");}');
+    SB.Append('})();');
+    SB.Append('</script>');
+
+    Result := SB.ToString;
+  finally
+    SB.Free;
   end;
 end;
 
@@ -1264,13 +1559,51 @@ begin
   end;
 end;
 
+function TKXFormPanelController.RenderPopupDetailButtons(
+  AViewTable: TKViewTable; AHeight: Integer): string;
+var
+  I: Integer;
+  LDetailTable: TKViewTable;
+  LDisplayLabel: string;
+  SB: TStringBuilder;
+begin
+  Result := '';
+  if not Assigned(AViewTable) or (AViewTable.DetailTableCount = 0) then
+    Exit;
+
+  SB := TStringBuilder.Create;
+  try
+    SB.Append('<div class="kx-form-toolviews">');
+    for I := 0 to AViewTable.DetailTableCount - 1 do
+    begin
+      LDetailTable := AViewTable.DetailTables[I];
+      // Kitto used ViewTable.PluralDisplayLabel for popup button text
+      LDisplayLabel := _(LDetailTable.PluralDisplayLabel);
+      SB.Append('<button type="button" class="kx-form-btn"');
+      SB.Append(' title="').Append(TNetEncoding.HTML.Encode(LDisplayLabel)).Append('"');
+      SB.Append(' onclick="kxForm.openDetailPopup(''').Append(FViewName).Append(''',');
+      SB.Append(IntToStr(I)).Append(',''');
+      SB.Append(ReplaceStr(LDisplayLabel, '''', '\''')).Append(''',');
+      SB.Append(IntToStr(AHeight)).Append(')">');
+      SB.Append(GetIconHTML('open_in_new', isMedium));
+      SB.Append(' ').Append(TNetEncoding.HTML.Encode(LDisplayLabel));
+      SB.Append('</button>');
+    end;
+    SB.Append('</div>');
+    Result := SB.ToString;
+  finally
+    SB.Free;
+  end;
+end;
+
 function TKXFormPanelController.RenderFormButtons: string;
 var
   LSaveIcon, LCancelIcon, LCloseIcon, LEditIcon: string;
   LAddIcon, LDeleteIcon, LCloneIcon: string;
   LDisplayLabel: string;
   LConfirmTitle, LConfirmMsg, LYesLabel, LNoLabel: string;
-  LHasDetails: Boolean;
+  LHasDetails, LHasTabDetails: Boolean;
+  LDetailStyle: string;
   LViewHide, LEditHide: string;
 begin
   LSaveIcon := GetIconHTML('save', isMedium);
@@ -1279,6 +1612,12 @@ begin
   LEditIcon := GetIconHTML('edit_record', isMedium);
 
   LHasDetails := Assigned(ViewTable) and (ViewTable.DetailTableCount > 0);
+  // All detail styles (Tabs/Bottom/Popup) use the same save workflow
+  // (SaveCache + SaveAll)
+  LDetailStyle := DEFAULT_DETAIL_STYLE;
+  if LHasDetails then
+    LDetailStyle := ViewTable.GetString('DetailTables/Controller/Style', DEFAULT_DETAIL_STYLE);
+  LHasTabDetails := LHasDetails;
   LDisplayLabel := '';
   if Assigned(ViewTable) then
     LDisplayLabel := _(ViewTable.DisplayLabel);
@@ -1323,15 +1662,15 @@ begin
   // ===== ViewMode buttons =====
 
   // Edit button (ViewMode) — switches to EditMode client-side
-  if LHasDetails or IsActionAllowed('Edit') then
+  if LHasTabDetails or IsActionAllowed('Edit') then
     Result := Result +
       '<button type="button" class="kx-form-btn kx-form-btn-save kx-btn-viewmode"' + LViewHide +
       ' onclick="kxForm.setMode(''' + FViewName + ''',''edit'')">' +
       LEditIcon + ' ' + TNetEncoding.HTML.Encode(_('Edit')) +
       '</button>';
 
-  // Add button (ViewMode, simple forms only)
-  if not LHasDetails and IsActionAllowed('Add') then
+  // Add button (ViewMode, simple forms only — or Bottom/Popup detail style)
+  if not LHasTabDetails and IsActionAllowed('Add') then
   begin
     LAddIcon := GetIconHTML('new_record', isMedium);
     Result := Result +
@@ -1342,8 +1681,8 @@ begin
       '</button>';
   end;
 
-  // Delete button (ViewMode, simple forms only)
-  if not LHasDetails and IsActionAllowed('Delete') then
+  // Delete button (ViewMode, simple forms only — or Bottom/Popup detail style)
+  if not LHasTabDetails and IsActionAllowed('Delete') then
   begin
     LDeleteIcon := GetIconHTML('delete_record', isMedium);
     LConfirmTitle := ReplaceStr(_('Confirm'), '''', '\''');
@@ -1361,11 +1700,11 @@ begin
       '</button>';
   end;
 
-  // Save All button (detail forms only, initially hidden, enabled when pending changes exist)
-  // Visible in BOTH ViewMode and EditMode — not tied to a mode group.
-  if LHasDetails then
+  // Save All button (Tabs-style detail forms only, initially hidden, enabled when pending changes exist)
+  // Visible only in ViewMode when pending changes exist.
+  if LHasTabDetails then
     Result := Result +
-      '<button type="button" class="kx-form-btn kx-form-btn-saveall kx-btn-pending"' +
+      '<button type="button" class="kx-form-btn kx-form-btn-saveall kx-btn-viewmode kx-btn-pending"' +
       ' style="display:none" disabled' +
       ' onclick="kxForm.saveAll(''' + FViewName + ''',''edit'')">' +
       GetIconHTML('save_as', isMedium) + ' ' + TNetEncoding.HTML.Encode(_('Save All')) +
@@ -1392,11 +1731,19 @@ begin
       '</button>';
   end;
 
-  // Save button (EditMode, type=submit for Enter key)
-  Result := Result +
-    '<button type="submit" class="kx-form-btn kx-form-btn-save kx-btn-editmode"' + LEditHide + '>' +
-    LSaveIcon + ' ' + TNetEncoding.HTML.Encode(_('Save')) +
-    '</button>';
+  // Save/Confirm button (EditMode, type=submit for Enter key)
+  // Master-detail forms use "Confirm" (save-cache, no DB persist);
+  // simple forms use "Save" (direct DB persist).
+  if LHasTabDetails then
+    Result := Result +
+      '<button type="submit" class="kx-form-btn kx-form-btn-save kx-btn-editmode"' + LEditHide + '>' +
+      GetIconHTML('check', isMedium) + ' ' + TNetEncoding.HTML.Encode(_('Confirm')) +
+      '</button>'
+  else
+    Result := Result +
+      '<button type="submit" class="kx-form-btn kx-form-btn-save kx-btn-editmode"' + LEditHide + '>' +
+      LSaveIcon + ' ' + TNetEncoding.HTML.Encode(_('Save')) +
+      '</button>';
 
   // Cancel button (EditMode)
   Result := Result +
@@ -1414,11 +1761,14 @@ var
   LViewTable: TKViewTable;
   LLayout: TKLayout;
   I: Integer;
-  LFormBodyHtml: string;
+  LFormBodyHtml, LBottomDetailsHtml: string;
   LField: TKViewField;
   LRecordField: TKViewTableField;
   J: Integer;
   LHasPageBreaks, LHasDetails, LNeedsTabs: Boolean;
+  LDetailStyle: string;
+  LDetailHeight: Integer;
+  LIncludeDetailsInTabs: Boolean;
   SB, SBBody, SBKey: TStringBuilder;
 begin
   Result := '';
@@ -1442,12 +1792,27 @@ begin
       end;
 
   LHasDetails := (LViewTable.DetailTableCount > 0);
-  LNeedsTabs := LHasPageBreaks or LHasDetails;
+
+  // Read DetailTables/Controller/Style and Height from YAML
+  LDetailStyle := DEFAULT_DETAIL_STYLE;
+  LDetailHeight := DEFAULT_DETAIL_PANEL_HEIGHT;
+  LBottomDetailsHtml := '';
+  if LHasDetails then
+  begin
+    LDetailStyle := LViewTable.GetString('DetailTables/Controller/Style', DEFAULT_DETAIL_STYLE);
+    // Height can be a child of Controller or a child of Style (both YAML formats)
+    LDetailHeight := LViewTable.GetInteger('DetailTables/Controller/Height',
+      LViewTable.GetInteger('DetailTables/Controller/Style/Height', DEFAULT_DETAIL_PANEL_HEIGHT));
+  end;
+
+  // Details go into tabs only for Tabs style; Bottom/Popup render separately
+  LIncludeDetailsInTabs := LHasDetails and SameText(LDetailStyle, 'Tabs');
+  LNeedsTabs := LHasPageBreaks or LIncludeDetailsInTabs;
 
   // Build form body from layout
   if LNeedsTabs then
     // Tabbed layout: form pages (with optional PageBreaks) + optional detail tabs
-    LFormBodyHtml := RenderTabbedLayout(LLayout, LViewTable, LHasDetails)
+    LFormBodyHtml := RenderTabbedLayout(LLayout, LViewTable, LIncludeDetailsInTabs)
   else if Assigned(LLayout) then
   begin
     // Single-page form with layout: process layout nodes
@@ -1500,25 +1865,39 @@ begin
       end;
     end;
 
+    // Build bottom-detail HTML if Style=Bottom
+    if LHasDetails and SameText(LDetailStyle, 'Bottom') then
+      LBottomDetailsHtml := RenderBottomDetails(LViewTable, LDetailHeight);
+
     // Assemble form panel
     SB := TStringBuilder.Create;
     try
       SB.Append('<form class="kx-form-panel" id="kx-form-').Append(FViewName).Append('"');
       SB.Append(' data-mode="').Append(IfThen(FIsViewMode, 'view', 'edit')).Append('"');
-      if Assigned(ViewTable) and (ViewTable.DetailTableCount > 0) then
+      if LHasDetails then
+      begin
         SB.Append(' data-has-details="true"');
+        SB.Append(' data-detail-style="').Append(TNetEncoding.HTML.Encode(LDetailStyle)).Append('"');
+      end;
       SB.Append(' onsubmit="kxForm.save(''').Append(FViewName).Append(''',''').Append(FOperation).Append(''');return false;"');
       SB.Append(' onkeydown="if(event.key===''Escape''){event.preventDefault();kxForm.cancelEdit(''').Append(FViewName).Append(''');}">');
       SB.Append(RenderFormToolViews);
-      if LNeedsTabs then
-        SB.Append(LFormBodyHtml)
-      else
-        SB.Append('<div class="kx-form-body">').Append(LFormBodyHtml).Append('</div>');
-      SB.Append(RenderFormButtons);
+      // Popup detail buttons: toolbar at top of form (one button per detail table)
+      if LHasDetails and SameText(LDetailStyle, 'Popup') then
+        SB.Append(RenderPopupDetailButtons(LViewTable, LDetailHeight));
+      // Hidden inputs placed early so inline scripts can read _key
       SB.Append('<input type="hidden" name="_op" value="').Append(TNetEncoding.HTML.Encode(FOperation)).Append('" />');
       SB.Append('<input type="hidden" name="_key" value="').Append(TNetEncoding.HTML.Encode(SBKey.ToString)).Append('" />');
       if GetConfigBoolean('KeepOpenAfterOperation') then
         SB.Append('<input type="hidden" name="_keepopen" value="true" />');
+      if LNeedsTabs then
+        SB.Append(LFormBodyHtml)
+      else
+        SB.Append('<div class="kx-form-body">').Append(LFormBodyHtml).Append('</div>');
+      // Bottom details: rendered between form body and buttons
+      if LBottomDetailsHtml <> '' then
+        SB.Append(LBottomDetailsHtml);
+      SB.Append(RenderFormButtons);
       SB.Append('</form>');
       Result := SB.ToString;
     finally

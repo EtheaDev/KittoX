@@ -66,6 +66,7 @@ var
   LView: TKView;
   LViewName: string;
   LDisplayLabel: string;
+  LTabLabel: string;
   LImageName: string;
   LChildNodes: IKTreeViewNodes;
   LChildContent: string;
@@ -76,8 +77,8 @@ begin
     for I := 0 to ANodes.TreeViewNodeCount - 1 do
     begin
       LNode := ANodes.TreeViewNodes[I];
-      LDisplayLabel := _(LNode.GetString('DisplayLabel',
-        GetDisplayLabelFromNode(LNode, AViews)));
+      LTabLabel := GetDisplayLabelFromNode(LNode, AViews);
+      LDisplayLabel := _(LNode.GetString('DisplayLabel', LTabLabel));
 
       if LNode is TKTreeViewFolder then
       begin
@@ -126,6 +127,7 @@ begin
               SB.Append('<a class="kx-menubar-item" href="#" ');
               SB.Append('data-view="').Append(LViewName).Append('" ');
               SB.Append('data-label="').Append(LDisplayLabel).Append('" ');
+              SB.Append('data-tab-label="').Append(LTabLabel).Append('" ');
               SB.Append('onclick="kxTabs.openFromMenu(this); return false;">');
               SB.Append(GetIconHTML(LImageName));
               SB.Append(' <span>').Append(LDisplayLabel).Append('</span></a>');

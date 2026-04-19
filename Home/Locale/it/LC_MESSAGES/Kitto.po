@@ -3,1074 +3,563 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "POT-Creation-Date: 2020-02-09 13:26\n"
-"PO-Revision-Date: 2022-02-03 13:19+0100\n"
+"PO-Revision-Date: 2026-04-17 15:31+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.0.1\n"
+"X-Generator: Poedit 3.9\n"
 "X-Poedit-Basepath: ../../../../Source\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#. KExtMainForm..Caption
-#: Kitto.Ext.MainFormUnit.dfm:4
-msgid "Kitto Application"
-msgstr "Applicazione Kitto"
-
-#. KExtMainForm..Font.Name
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..AppTitleLabel..Font.Name
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..ConfigLinkLabel..Font.Name
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..HomeURLLabel..Font.Name
-#. KExtMainForm..PageControl..HomeTabSheet..MainTabSet..Font.Name
-#: Kitto.Ext.MainFormUnit.dfm:11 Kitto.Ext.MainFormUnit.dfm:496
-#: Kitto.Ext.MainFormUnit.dfm:513 Kitto.Ext.MainFormUnit.dfm:539
-#: Kitto.Ext.MainFormUnit.dfm:580
-msgid "Tahoma"
-msgstr "Tahoma"
-
-#. KExtMainForm..PageControl..HomeTabSheet..Caption
-#: Kitto.Ext.MainFormUnit.dfm:433 Kitto.Ext.TilePanel.pas:146
-msgid "Home"
-msgstr "Home"
-
-#. KExtMainForm..PageControl..HomeTabSheet..LogMemo..Font.Name
-#: Kitto.Ext.MainFormUnit.dfm:444
-msgid "Courier New"
-msgstr "Courier Niew"
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..SessionCountLabel..Caption
-#: Kitto.Ext.MainFormUnit.dfm:467
-msgid "SessionCountLabel"
-msgstr "SessionCountLabel"
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..AppTitleLabel..Caption
-#: Kitto.Ext.MainFormUnit.dfm:492
-msgid "No config loaded. Please select one."
-msgstr "Selezionare una configurazione."
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..ConfigLinkLabel..Hint
-#: Kitto.Ext.MainFormUnit.dfm:507
-msgid "Click to change Application Home"
-msgstr "Click per cambiare il nome dell'applicazione"
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..ConfigLinkLabel..Caption
-#: Kitto.Ext.MainFormUnit.dfm:508
-msgid "Config File Name"
-msgstr "Nome file config"
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..HomeURLLabel..Hint
-#: Kitto.Ext.MainFormUnit.dfm:533
-msgid "Click to launch application in default browser"
-msgstr "Clicca per lanciare l'applicazione nel browser di default"
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..HomeURLLabel..Caption
-#: Kitto.Ext.MainFormUnit.dfm:534
-msgid "HomeURLLabel"
-msgstr "HomeURLLabel"
-
-#. KExtMainForm..PageControl..HomeTabSheet..ControlPanel..AppIcon..Hint
-#: Kitto.Ext.MainFormUnit.dfm:551
-msgid "Config.AppIcon"
-msgstr "Config.AppIcon"
-
-#. KExtMainForm..PageControl..HomeTabSheet..MainTabSet....Tabs.Strings
-#: Kitto.Ext.MainFormUnit.dfm:585
-msgid "Log"
-msgstr "Log"
-
-#. KExtMainForm..PageControl..HomeTabSheet..MainTabSet....Tabs.Strings
-#: Kitto.Ext.MainFormUnit.dfm:586
-msgid "Sessions"
-msgstr "Sessioni"
-
-#. KExtMainForm..PageControl..HomeTabSheet..SessionPanel..Button1..Caption
-#: Kitto.Ext.MainFormUnit.dfm:616
-msgid "Refresh"
-msgstr "Aggiorna"
-
-#. KExtMainForm..PageControl..HomeTabSheet..SessionPanel..SessionListView......Caption
-#: Kitto.Ext.MainFormUnit.dfm:630
-msgid "Session Name"
-msgstr "Nome sessione"
-
-#. KExtMainForm..PageControl..HomeTabSheet..SessionPanel..SessionListView......Caption
-#: Kitto.Ext.MainFormUnit.dfm:634
-msgid "Start Time"
-msgstr "Tempo di avvio"
-
-#. KExtMainForm..PageControl..HomeTabSheet..SessionPanel..SessionListView......Caption
-#: Kitto.Ext.MainFormUnit.dfm:638
-msgid "Last Request"
-msgstr "Ultima richiesta"
-
-#. KExtMainForm..PageControl..HomeTabSheet..SessionPanel..SessionListView......Caption
-#: Kitto.Ext.MainFormUnit.dfm:642 Kitto.Ext.Login.pas:277
-#: Kitto.Ext.ResetPassword.pas:164
-msgid "User Name"
-msgstr "Nome utente"
-
-#. KExtMainForm..PageControl..HomeTabSheet..SessionPanel..SessionListView......Caption
-#: Kitto.Ext.MainFormUnit.dfm:646
-msgid "Origin"
-msgstr "Origine"
-
-#. KExtMainForm..ActionList..StartAction..Hint
-#: Kitto.Ext.MainFormUnit.dfm:663
-msgid "Start FastCGI Listener"
-msgstr "Avvia server FastCGI"
-
-#. KExtMainForm..ActionList..StopAction..Hint
-#: Kitto.Ext.MainFormUnit.dfm:669
-msgid "Stop FastCGI Listener"
-msgstr "Arresta server FastCGI"
-
-#. KExtMainForm..ActionList..RestartAction..Hint
-#: Kitto.Ext.MainFormUnit.dfm:675
-msgid "Stop and Start FCGI Listener again"
-msgstr "Arresta e riavvia server FastCGI"
-
-#. KExtMainForm..OpenConfigDialog..DefaultExt
-#: Kitto.Ext.MainFormUnit.dfm:825
-msgid ".yaml"
-msgstr ".yaml"
-
-#. KExtMainForm..OpenConfigDialog..Filter
-#: Kitto.Ext.MainFormUnit.dfm:826
-msgid "Yaml files (*.yaml)|*.yaml"
-msgstr "File Yaml (*.yaml)|*.yaml"
-
-#. KExtMainForm..OpenConfigDialog..Title
-#: Kitto.Ext.MainFormUnit.dfm:828
-msgid "Select Config file"
-msgstr "Selezione file Config"
-
-#. KExtService..DisplayName
-#: Kitto.Ext.Service.dfm:5
-msgid "KittoService"
-msgstr "KittoService"
-
-#: Kitto.Auth.DB.pas:325 Kitto.Auth.DB.pas:512
+# ===== Kitto.Auth.DB =====
+#: Kitto.Auth.DB.pas
 msgid "Wrong authentication query text: %s"
 msgstr "Query di autenticazione errata: %s"
 
-#: Kitto.Auth.DB.pas:557
+#: Kitto.Auth.DB.pas
 msgid "UserName not specified."
 msgstr "Username non specificato."
 
-#: Kitto.Auth.DB.pas:561
+#: Kitto.Auth.DB.pas
 msgid "E-mail address not specified."
 msgstr "Indirizzo E-mail non specificato."
 
-#: Kitto.Auth.DB.pas:582
+#: Kitto.Auth.DB.pas
 msgid "Error: user name and email address not found."
 msgstr "Errore: Nome utente o indirizzo email non trovato."
 
-#: Kitto.Auth.DB.pas:615
+#: Kitto.Auth.DB.pas
 msgid "Error changing password."
 msgstr "Errore durante la modifica della password."
 
-#: Kitto.Auth.TextFile.pas:156
+# ===== Kitto.Auth.TextFile =====
+#: Kitto.Auth.TextFile.pas
 msgid "File %s not found."
 msgstr "File %s non trovato."
 
-#: Kitto.Config.pas:495
+# ===== Kitto.Config =====
+#: Kitto.Config.pas
 msgid "Help..."
-msgstr "Guida…"
+msgstr "Guida..."
 
-#: Kitto.Config.pas:496
+#: Kitto.Config.pas
 msgid "Help guide for \"%s\"..."
 msgstr "Guida per \"%s\"..."
 
-#: Kitto.Config.pas:513
+#: Kitto.Config.pas
 msgid "DB connection type \"%s\" for database \"%s\" not available"
-msgstr ""
-"T\n"
-"ipo di connessione DB \"%s\" per il database \"%s\" non disponibile"
+msgstr "Tipo di connessione DB \"%s\" per il database \"%s\" non disponibile"
 
-#: Kitto.Config.pas:577 Kitto.Config.pas:616
+#: Kitto.Config.pas
 msgid "Resource %s not found."
 msgstr "Risorsa %s non trovata."
 
-#: Kitto.Config.pas:652
+#: Kitto.Config.pas
 msgid "Access denied. The user is not allowed to perform this operation."
-msgstr ""
-"Accesso negato. L'utente non ha il permesso di effettuare questa operazione."
+msgstr "Accesso negato. L'utente non ha il permesso di effettuare questa operazione."
 
-#: Kitto.Config.pas:655
+#: Kitto.Config.pas
 msgid "Resource URI: %s; access mode: %s."
-msgstr "URI della risorsa: %s; modalità di accesso: %s."
+msgstr "URI della risorsa: %s; modalita' di accesso: %s."
 
-#: Kitto.DebenuQuickPDF.pas:184
-msgid "The Strength parameter passed to the Encrypt function was invalid"
-msgstr ""
-"Il livello di protezione passato alla funzione di crittazione non è valido"
-
-#: Kitto.DebenuQuickPDF.pas:185
-msgid "The Permissions parameter passed to the Encrypt function was invalid."
-msgstr ""
-"Il parametro dei permessi di protezione passato alla funzione di crittazione "
-"non è valido."
-
-#: Kitto.DebenuQuickPDF.pas:186
-msgid "The Encrypt function was used on a document that was already encrypted"
-msgstr "La funzione di crittazione è usata su un documento già protetto"
-
-#: Kitto.DebenuQuickPDF.pas:187
-msgid "The Encrypt function failed for an unknown reason"
-msgstr "La funzione di crittazione è fallita per cause sconosciute"
-
-#: Kitto.DebenuQuickPDF.pas:188
-msgid "The SetInformation function failed because the document is encrypted"
-msgstr "La funzione SetInformation è fallita perché il documento è protetto"
-
-#: Kitto.DebenuQuickPDF.pas:189
-msgid ""
-"The Key parameter passed to the SetInformation function was out of range"
-msgstr "Il parametro Key della funzione SetInformation è fuori dai limiti"
-
-#: Kitto.DebenuQuickPDF.pas:190
-msgid ""
-"An invalid combination of barcode and option was sent to the DrawBarcode "
-"function"
-msgstr ""
-"Una combinazione non valida di barcode e opzioni è stata inviata alla "
-"funzione DrawBarcode"
-
-#: Kitto.DebenuQuickPDF.pas:191
-msgid "Non-numeric characters were sent to DrawBarcode using EAN-13"
-msgstr "Non usare caratteri numerici quando si chiama DrawBarcode con EAN-13"
-
-#: Kitto.DebenuQuickPDF.pas:192
-msgid "The EAN-13 barcode has an invalid checksum character"
-msgstr "Il barcode EAN-13 ha un carattere di checksum non valido"
-
-#: Kitto.DebenuQuickPDF.pas:193
-msgid "Could not open input file"
-msgstr "Impossibile aprire il file di input"
-
-#: Kitto.DebenuQuickPDF.pas:194
-msgid "Output file already exists and could not be deleted"
-msgstr "Il file di destinazione esiste già e non può essere cancellato"
-
-#: Kitto.DebenuQuickPDF.pas:195
-msgid "Could not open output file"
-msgstr "Impossibile aprire il file di destinazione"
-
-#: Kitto.DebenuQuickPDF.pas:196
-msgid "Invalid password"
-msgstr "Password non valida"
-
-#: Kitto.DebenuQuickPDF.pas:197
-msgid "Document is not encrypted"
-msgstr "Il documento non è protetto"
-
-#: Kitto.DebenuQuickPDF.pas:198
-msgid "Document is already encrypted"
-msgstr "Il documento è già protetto"
-
-#: Kitto.DebenuQuickPDF.pas:199
-msgid "Invalid encryption strength"
-msgstr "Livello di crittografazione non valido"
-
-#: Kitto.DebenuQuickPDF.pas:200
-msgid "Invalid permissions"
-msgstr "Permessi non validi"
-
-#: Kitto.DebenuQuickPDF.pas:201
-msgid "Invalid file structure, file is damaged"
-msgstr "Struttura del file non valida, file danneggiato"
-
-#: Kitto.DebenuQuickPDF.pas:202
-msgid "One of the input files is encrypted"
-msgstr "Uno dei file in input è protetto"
-
-#: Kitto.DebenuQuickPDF.pas:203
-msgid "File not found"
-msgstr "File non trovato"
-
-#: Kitto.DebenuQuickPDF.pas:204
-msgid "Invalid page range list"
-msgstr "Lista di intervallo di pagine non valida"
-
-#: Kitto.DebenuQuickPDF.pas:205
-msgid "The specified FileHandle was invalid"
-msgstr "Il FileHandle specificato non è valido"
-
-#: Kitto.DebenuQuickPDF.pas:206
-msgid "The function could not be used because the library is not unlocked"
-msgstr "La funzione non può essere usata perché la libreria non è sbloccata"
-
-#: Kitto.DebenuQuickPDF.pas:208
-msgid ""
-"Error unknown of Debenu Quick PDF Library (DebenuPDFLibraryLite1114.dll)"
-msgstr ""
-"Errore sconosciuto di Debenu Quick PDF Library (DebenuPDFLibraryLite1114.dll)"
-
-#: Kitto.DebenuQuickPDF.pas:211
-msgid "Error on file \"%s\": %s"
-msgstr "Errore \"%s nel file \"%s\""
-
-#: Kitto.DebenuQuickPDF.pas:276
-msgid "Error using DebenuPDFLibraryLite1114.dll library: %s"
-msgstr "Errore usando la libreria DebenuPDFLibraryLite1114.dll: %s"
-
-#: Kitto.Ext.AccordionPanel.pas:89
-msgid ""
-"AccordionPanel's SubViews node may only contain View or Controller subnodes."
-msgstr ""
-"Il nodo SubViews di un AccordionPanel può contenere solo sotto-nodi View o "
-"Controller."
-
-#. alLeft, alRight, alCenter
-#: Kitto.Ext.Base.pas:487
-msgid "Invalid value %s. Valid values: \"Left\", \"Right\", \"Center\"."
-msgstr "Valore %s non valido. Deve essere  \"Left\", \"Right\", \"Center\"."
-
-#: Kitto.Ext.Base.pas:499
-msgid "Invalid value %s. Valid values: \"Left\", \"Top\", \"Right\"."
-msgstr "Valore %s non valido. Deve essere \"Left\", \"Top\" o \"Right\"."
-
-#: Kitto.Ext.Base.pas:1180 Kitto.Ext.CalendarPanel.pas:149
-#: Kitto.Ext.GridPanel.pas:1104 Kitto.Ext.TemplateDataPanel.pas:89
-msgid "Confirm operation"
-msgstr "Conferma operazione"
-
-#: Kitto.Ext.Base.pas:1700
-msgid "Confirm"
-msgstr "Conferma"
-
-#: Kitto.Ext.Base.pas:1701
-msgid "Confirm action and close window"
-msgstr "Conferma l'azione e chiude la finestra"
-
-#: Kitto.Ext.Base.pas:1706 Kitto.Ext.Form.pas:868 Kitto.Ext.GridPanel.pas:795
-#: Kitto.Ext.GridPanel.pas:810
-msgid "Cancel"
-msgstr "Annulla"
-
-#: Kitto.Ext.Base.pas:1707 Kitto.Ext.Form.pas:869 Kitto.Ext.GridPanel.pas:811
-msgid "Cancel changes"
-msgstr "Annulla modifiche"
-
-#: Kitto.Ext.CalendarPanel.pas:79
-msgid "Day"
-msgstr "Giorno"
-
-#: Kitto.Ext.CalendarPanel.pas:80
-msgid "Month"
-msgstr "Mese"
-
-#: Kitto.Ext.CalendarPanel.pas:81
-msgid "Go"
-msgstr "Vai"
-
-#: Kitto.Ext.CalendarPanel.pas:82
-msgid "Jump to:"
-msgstr "Vai a:"
-
-#: Kitto.Ext.ChangePassword.pas:77
-msgid "Old Password is wrong."
-msgstr "La vecchia password non è corretta."
-
-#: Kitto.Ext.ChangePassword.pas:82
-msgid "New Password must be different than old password."
-msgstr "La nuova password deve essere diversa dalla vecchia."
-
-#: Kitto.Ext.ChangePassword.pas:87
-msgid "Confirm New Password is wrong."
-msgstr "La nuova password deve essere digitata uguale due volte per conferma."
-
-#: Kitto.Ext.ChangePassword.pas:109
-msgid "Change Password"
-msgstr "Modifica Password"
-
-#: Kitto.Ext.ChangePassword.pas:130 Kitto.Ext.Login.pas:244
-msgid "Caps On"
-msgstr "Maiuscolo"
-
-#: Kitto.Ext.ChangePassword.pas:185
-msgid "Changing password..."
-msgstr "Modifica password in corso..."
-
-#: Kitto.Ext.ChangePassword.pas:199
-msgid "Change password"
-msgstr "Cambia password"
-
-#. FOldPassword.Value := FOldPasswordHash;
-#: Kitto.Ext.ChangePassword.pas:206
-msgid "Old Password"
-msgstr "Vecchia password"
-
-#. FNewPassword.Value := ...
-#: Kitto.Ext.ChangePassword.pas:218
-msgid "New Password"
-msgstr "Nuova password"
-
-#. FConfirmNewPassword.Value := ...
-#: Kitto.Ext.ChangePassword.pas:227
-msgid "Confirm New Password"
-msgstr "Conferma nuova password"
-
-#: Kitto.Ext.ChartPanel.pas:309
-msgid "Unknown chart type %s."
-msgstr "Tipo di grafico %s sconosciuto."
-
-#. when we save master/detail changes to the database.
-#: Kitto.Ext.DataPanel.pas:285
-msgid "%s deleted."
-msgstr "%s cancellato."
-
-#. Simple EKValidationError exception
-#. Simple generic exception
-#: Kitto.Ext.DataPanel.pas:290 Kitto.Ext.DataPanel.pas:1182
-#: Kitto.Ext.DataPanel.pas:1189
-msgid "Error"
-msgstr "Errore"
-
-#: Kitto.Ext.DataPanel.pas:401 Kitto.Ext.DataPanel.pas:997
-msgid "Add %s"
-msgstr "Aggiungi %s"
-
-#: Kitto.Ext.DataPanel.pas:403 Kitto.Ext.DataPanel.pas:1007
-#: Kitto.Ext.Form.pas:636
-msgid "Edit %s"
-msgstr "Modifica %s"
-
-#: Kitto.Ext.DataPanel.pas:405 Kitto.Ext.DataPanel.pas:1017
-msgid "View %s"
-msgstr "Mostra %s"
-
-#: Kitto.Ext.DataPanel.pas:478 Kitto.Ext.DataPanel.pas:483
-msgid "Actions that require selection are not supported in this controller."
-msgstr "Questo controller non supporta azioni con RequireSelection=True."
-
-#: Kitto.Ext.DataPanel.pas:1002
-msgid "Duplicate %s"
-msgstr "%s duplicato"
-
-#: Kitto.Ext.DataPanel.pas:1012
-msgid "Delete %s"
-msgstr "Elimina %s"
-
-#: Kitto.Ext.DataPanel.pas:1015
-msgid "Selected %s {caption} will be deleted. Are you sure?"
-msgstr "Il record {caption} di tipo %s sarà eliminato. Continuo?"
-
-#. Get uploaded files.
-#: Kitto.Ext.DataPanel.pas:1163
-msgid "Data type %s does not support file upload."
-msgstr "Il tipo di dato %s non supporta l'upload di file."
-
-#. Save record.
-#: Kitto.Ext.DataPanel.pas:1172 Kitto.Ext.GridPanel.pas:878
-msgid "Changes saved succesfully."
-msgstr "Dati registrati."
-
-#: Kitto.Ext.DataPanelLeaf.pas:165
-msgid "Refresh data"
-msgstr "Aggiorna i dati"
-
-#: Kitto.Ext.DataTool.pas:278
-msgid "Command executed succesfully."
-msgstr "Comando eseguito con successo."
-
-#: Kitto.Ext.Editors.pas:805
-msgid "Unknown or misplaced option %s: %s."
-msgstr "Opzione sconosciuta o errata %s: %s."
-
-#: Kitto.Ext.Editors.pas:816 Kitto.Ext.Editors.pas:821
-msgid "Invalid value %s. Valid values: whole numbers or percentages."
-msgstr "Valore %s non valido. Deve essere un numero intero o una percentuale."
-
-#: Kitto.Ext.Editors.pas:818
-msgid "Invalid percentage %s. Valid percentages are 0% to 100%."
-msgstr "Percentuale %s non valida. Deve essere compresa tra 0% e 100%."
-
-#: Kitto.Ext.Editors.pas:839
-msgid "Invalid value %s. Valid values: %s"
-msgstr "Valore %s non valido. Valori ammessi: %s"
-
-#: Kitto.Ext.Editors.pas:890
-msgid "Unknown transient property: %s = %s."
-msgstr "Operazione transiente sconosciuta:%s: %s."
-
-#: Kitto.Ext.Editors.pas:909
-msgid "Layout parsing error. %s."
-msgstr "Errore durante l'elaborazione del layout. %s."
-
-#. Unknown name - must be an option.
-#: Kitto.Ext.Editors.pas:1035
-msgid "Option %s must have a value."
-msgstr "L'opzione %s deve avere un valore."
-
-#: Kitto.Ext.Editors.pas:1037
-msgid "Option node %s cannot have child nodes."
-msgstr "Il nodo dell'opzione %s non può contenere sotto-nodi."
-
-#: Kitto.Ext.Editors.pas:1120
-msgid "Unknown edit item type %s."
-msgstr "Elemento %s sconosciuto."
-
-#: Kitto.Ext.Editors.pas:3120
-msgid "Download file"
-msgstr "Scarica file"
-
-#: Kitto.Ext.Editors.pas:3128
-msgid "Upload file"
-msgstr "Carica file"
-
-#: Kitto.Ext.Editors.pas:3134
-msgid "Clear field"
-msgstr "Cancella campo"
-
-#: Kitto.Ext.Editors.pas:3179 Kitto.Ext.Editors.pas:3281
-#: Kitto.Ext.Editors.pas:3310
-msgid "Empty"
-msgstr "Vuoto"
-
-#: Kitto.Ext.Editors.pas:3235 Kitto.Ext.StandardControllers.pas:584
-msgid "File upload"
-msgstr "Caricamento file"
-
-#: Kitto.Ext.Editors.pas:3245 Kitto.Ext.StandardControllers.pas:597
-msgid "Select a file to upload"
-msgstr "Seleziona un file da caricare"
-
-#: Kitto.Ext.Editors.pas:3249 Kitto.Ext.StandardControllers.pas:601
-msgid "Upload"
-msgstr "Carica"
-
-#: Kitto.Ext.Editors.pas:3254 Kitto.Ext.StandardControllers.pas:606
-msgid "File upload in progress..."
-msgstr "Caricamento in corso..."
-
-#: Kitto.Ext.Editors.pas:3255 Kitto.Ext.StandardControllers.pas:607
-msgid "Please wait..."
-msgstr "Attendere, prego..."
-
-#: Kitto.Ext.Editors.pas:3257 Kitto.Ext.StandardControllers.pas:609
-msgid "File upload error"
-msgstr "Errore durante il caricamento"
-
-#: Kitto.Ext.Editors.pas:3277
-msgid "Field %s is required. Please upload a file."
-msgstr "Il campo %s è obbligatorio. Si prega di caricare il file."
-
-#: Kitto.Ext.Editors.pas:3306
-msgid "%s file (%s)"
-msgstr "File %s (%s)"
-
-#: Kitto.Ext.Filters.pas:1351 Kitto.Ext.Form.pas:810
-msgid "Apply"
-msgstr "Applica"
-
-#. Navigation buttons to the left...
-#: Kitto.Ext.Form.pas:774 Kitto.Ext.Form.pas:778
-msgid "Previous page"
-msgstr "Pagina precedente"
-
-#: Kitto.Ext.Form.pas:788 Kitto.Ext.Form.pas:792
-msgid "Next page"
-msgstr "Pagina successiva"
-
-#: Kitto.Ext.Form.pas:808
-msgid "Apply all"
-msgstr "Salva"
-
-#: Kitto.Ext.Form.pas:811
-msgid "Apply changes and keep editing"
-msgstr "Applica le modifiche e continua"
-
-#. Clone button
-#: Kitto.Ext.Form.pas:825
-msgid "Save & Clone"
-msgstr "Salva e duplica"
-
-#: Kitto.Ext.Form.pas:826
-msgid "Save changes and create a new clone record"
-msgstr "Salva e crea un nuovo record duplicato"
-
-#: Kitto.Ext.Form.pas:842
-msgid "OK"
-msgstr "OK"
-
-#: Kitto.Ext.Form.pas:844
-msgid "Save all"
-msgstr "Salva e Chiudi"
-
-#: Kitto.Ext.Form.pas:846 Kitto.Ext.GridPanel.pas:803
-msgid "Save"
-msgstr "Salva"
-
-#: Kitto.Ext.Form.pas:849
-msgid "Confirm changes and finish editing"
-msgstr "Conferma le modifiche e termina"
-
-#: Kitto.Ext.Form.pas:851 Kitto.Ext.GridPanel.pas:804
-msgid "Save changes and finish editing"
-msgstr "Salva le modifiche"
-
-#: Kitto.Ext.Form.pas:861
-msgid "Edit"
-msgstr "Modifica"
-
-#: Kitto.Ext.Form.pas:862
-msgid "Switch to edit mode"
-msgstr "Abilita modifica"
-
-#: Kitto.Ext.Form.pas:875
-msgid "Close"
-msgstr "Chiudi"
-
-#: Kitto.Ext.Form.pas:876
-msgid "Close this panel"
-msgstr "Chiudi il pannello"
-
-#. the single record contained.
-#: Kitto.Ext.Form.pas:930
-msgid "Operation not available in this context."
-msgstr "Operazione non disponibile in questo contesto."
-
-#: Kitto.Ext.Form.pas:957
-msgid "Operation Add not supported on read-only data."
-msgstr "Aggiunta non consentita su dati a sola lettura."
-
-#: Kitto.Ext.Form.pas:959
-msgid "Operation Edit not supported on read-only data."
-msgstr "Operazione di modifica non consentita su dati a sola lettura."
-
-#: Kitto.Ext.Form.pas:961
-msgid "Operation Duplicate not supported on read-only data."
-msgstr "Operazione Duplicazione non consentita su dati a sola lettura."
-
-#: Kitto.Ext.GridPanel.pas:221
-msgid "Grouping value undefined."
-msgstr "Valore di gruppo non definito."
-
-#: Kitto.Ext.GridPanel.pas:241 Kitto.Ext.TemplateDataPanel.pas:112
-msgid "No data to display."
-msgstr "Nessun dato da mostrare."
-
-#: Kitto.Ext.GridPanel.pas:749 Kitto.Ext.LookupField.pas:169
-msgid "Choose %s"
-msgstr "Scegli %s"
-
-#: Kitto.Ext.GridPanel.pas:788
-msgid "Select"
-msgstr "Seleziona"
-
-#: Kitto.Ext.GridPanel.pas:789
-msgid "Select the current record and close the window"
-msgstr "Seleziona il record corrente e chiudi la finestra"
-
-#: Kitto.Ext.GridPanel.pas:796
-msgid "Close the window without selecting a record"
-msgstr "Chiudi la finestra senza selezionare un record"
-
-#: Kitto.Ext.IndyTools.pas:367
-msgid "E-mail message sent successfully."
-msgstr "Messaggio E-mail inviato con successo."
-
-#: Kitto.Ext.List.pas:141
-msgid "Invalid value %s. Valid values: whole numbers."
-msgstr "Valore %s non valido. Deve essere un numero intero."
-
-#: Kitto.Ext.List.pas:155
-msgid "Search"
-msgstr "Cerca"
-
-#: Kitto.Ext.Login.pas:259
-msgid "Logging in..."
-msgstr "Accesso in corso..."
-
-#: Kitto.Ext.Login.pas:264
-msgid "Login"
-msgstr "Accedi"
-
-#: Kitto.Ext.Login.pas:290
-msgid "Password"
-msgstr "Password"
-
-#: Kitto.Ext.Login.pas:317
-msgid "Language"
-msgstr "Lingua"
-
-#: Kitto.Ext.Login.pas:353
-msgid "Remember Credentials"
-msgstr "Ricorda credenziali"
-
-#: Kitto.Ext.Login.pas:355
-msgid "Remember User Name"
-msgstr "Ricorda Nome Utente"
-
-#: Kitto.Ext.Login.pas:403
-msgid "Password forgotten?"
-msgstr "Password dimenticata?"
-
-#: Kitto.Ext.Login.pas:422
-msgid "New User? Register..."
-msgstr "Nuovo utente? Registrati..."
-
-#: Kitto.Ext.Login.pas:441
-msgid "Privacy policy..."
-msgstr "Informativa privacy..."
-
-#: Kitto.Ext.Login.pas:473
-msgid "Invalid login."
-msgstr "Credenziali di accesso errate."
-
-#: Kitto.Ext.MainFormUnit.pas:128
-msgid "Listener stopped"
-msgstr "Listener arrestato"
-
-#: Kitto.Ext.MainFormUnit.pas:182
-msgid "Stopping listener..."
-msgstr "Arresto del listener in corso..."
-
-#. Origin.
-#: Kitto.Ext.MainFormUnit.pas:267
-msgid "None"
-msgstr "Nulla"
-
-#: Kitto.Ext.MainFormUnit.pas:348
-msgid "Build date: %s"
-msgstr "Data creazione: %s"
-
-#: Kitto.Ext.MainFormUnit.pas:374
-msgid "Application: %s"
-msgstr "Applicazione: %s"
-
-#: Kitto.Ext.MainFormUnit.pas:390
-msgid "Home URL: %s"
-msgstr "Indirizzo Home: %s"
-
-#: Kitto.Ext.MainFormUnit.pas:460
-msgid "Listener started"
-msgstr "Listener avviato"
-
-#: Kitto.Ext.ResetPassword.pas:154
-msgid "Generating new password..."
-msgstr "Generazione nuova password…"
-
-#: Kitto.Ext.ResetPassword.pas:159
-msgid "Send"
-msgstr "Invia"
-
-#: Kitto.Ext.ResetPassword.pas:165
-msgid "Email address"
-msgstr "Indirizzo Email"
-
-#: Kitto.Ext.ResetPassword.pas:200
-msgid "Reset Password"
-msgstr "Rigenera password"
-
-#: Kitto.Ext.ResetPassword.pas:200
-msgid ""
-"A new temporary password was generated and sent to the specified e-mail "
-"address."
-msgstr ""
-"Una nuova password temporanea è stata generata ed inviata all'indirizzo mail "
-"specificato."
-
-#: Kitto.Ext.Rules.pas:315
-msgid "Value too small. Minimum value is %s."
-msgstr "Valore troppo piccolo. Il minimo è %s."
-
-#: Kitto.Ext.Rules.pas:341
-msgid "Value too large. Maximum value is %s."
-msgstr "Valore troppo grande. Il massimo è %s."
-
-#: Kitto.Ext.Rules.pas:367
-msgid "Value too short. Minimum length is %s characters."
-msgstr "Valore troppo corto. Il minimo è %s caratteri."
-
-#: Kitto.Ext.Rules.pas:393
-msgid "Value too long. Maximum length is %s characters."
-msgstr "Valore troppo lungo. La lunghezza massima è di %s caratteri."
-
-#: Kitto.Ext.SQLTool.pas:190
-msgid "Command %s executed succesfully!"
-msgstr "Comando %s eseguito correttamente!"
-
-#: Kitto.Ext.SQLTool.pas:196
-msgid "Error executing command %s!"
-msgstr "Errore in esecuzione comando %s!"
-
-#: Kitto.Ext.StandardControllers.pas:527
-msgid "Logout"
-msgstr "Chiudi sessione"
-
-#: Kitto.Ext.StandardControllers.pas:595
-msgid "File matching %s"
-msgstr "File di tipo %s"
-
-#: Kitto.Ext.StandardControllers.pas:639
-msgid "Error: uploaded file don't match Wildcard (%s)"
-msgstr "Errore: il file caricato non è del tipo corretto (%s)"
-
-#: Kitto.Ext.TabPanel.pas:216
-msgid "TabPanel's SubViews node may only contain View or Controller subnodes."
-msgstr ""
-"Il nodo SubViews di un TabPanel può contenere solo sotto-nodi View o "
-"Controller."
-
-#: Kitto.Ext.TilePanel.pas:314
-msgid "Back"
-msgstr "Indietro"
-
-#: Kitto.Metadata.DataView.pas:2946
+# ===== Kitto.Metadata =====
+#: Kitto.Metadata.DataView.pas
 msgid "DetailStore %s not found."
 msgstr "DetailStore %s non trovato."
 
-#: Kitto.Metadata.Models.pas:1114
+#: Kitto.Metadata.Models.pas
 msgid "Model %s has no primary key."
 msgstr "Model %s non ha la primary key."
 
-#: Kitto.Metadata.pas:346
+#: Kitto.Metadata.pas
 msgid "Duplicate object %s."
 msgstr "Oggetto %s duplicato."
 
-#: Kitto.Metadata.pas:658
+#: Kitto.Metadata.pas
 msgid "Object %s not found."
 msgstr "Oggetto %s non trovato."
 
-#: Kitto.Metadata.ViewBuilders.pas:148
+#: Kitto.Metadata.ViewBuilders.pas
 msgid "Search %s"
 msgstr "Cerca %s"
 
-#: Kitto.Metadata.ViewBuilders.pas:150
+#: Kitto.Metadata.ViewBuilders.pas
 msgid "Free Search"
 msgstr "Ricerca libera"
 
-#: Kitto.Rules.pas:534
+# ===== Kitto.Rules =====
+#: Kitto.Rules.pas
 msgid "Rule %s failed."
 msgstr "Regola %s violata."
 
-#: Kitto.Rules.pas:612
+#: Kitto.Rules.pas
 msgid "%s must be greater than or equal to %s."
 msgstr "%s deve essere maggiore o uguale a %s."
 
-#: Kitto.Store.pas:947
+#: Kitto.Rules.pas
+msgid "Value too small. Minimum value is %s."
+msgstr "Valore troppo piccolo. Il minimo e' %s."
+
+#: Kitto.Rules.pas
+msgid "Value too large. Maximum value is %s."
+msgstr "Valore troppo grande. Il massimo e' %s."
+
+#: Kitto.Rules.pas
+msgid "Value too short. Minimum length is %s characters."
+msgstr "Valore troppo corto. Il minimo e' %s caratteri."
+
+#: Kitto.Rules.pas
+msgid "Value too long. Maximum length is %s characters."
+msgstr "Valore troppo lungo. La lunghezza massima e' di %s caratteri."
+
+# ===== Kitto.Store =====
+#: Kitto.Store.pas
 msgid "Record not found for predicate {%s}."
 msgstr "Record non trovato per la condizione {%s}."
 
-#: Kitto.Store.pas:1128 Kitto.Store.pas:1641
+#: Kitto.Store.pas
 msgid "Field %s not found."
 msgstr "Campo %s non trovato."
 
-#: EF/EF.DB.ADO.pas:322 EF/EF.DB.DBX.pas:276 EF/EF.DB.FD.pas:359
+# ===== EF layer =====
+#: EF/EF.DB.pas
 msgid "Unspecified Statement text."
 msgstr "Testo del comando non specificato."
 
-#: EF/EF.DB.DBX.pas:329
-msgid "Unspecified Sequence name."
-msgstr "Nome di sequenza non specificato."
-
-#: EF/EF.DB.pas:1346
+#: EF/EF.DB.pas
 msgid "Error %s using query: %s"
 msgstr "Errore %s nella query: %s"
 
-#: EF/EF.Emailer.pas:354
+#: EF/EF.Emailer.pas
 msgid "Missing sender name or email address."
 msgstr "Nome o indirizzo del mittente non specificato."
 
-#: EF/EF.Shell.pas:38
+#: EF/EF.Shell.pas
 msgid "Error deleting files from folder \"%s\"."
 msgstr "Errore durante la cancellazione dei file dalla cartella \"%s\"."
 
-#: EF/EF.SQL.pas:169 EF/EF.SQL.pas:198 EF/EF.SQL.pas:214 EF/EF.SQL.pas:255
-#: EF/EF.SQL.pas:293
+#: EF/EF.SQL.pas
 msgid "Unspecified table name."
 msgstr "Nome di tabella non specificato."
 
-#: EF/EF.SQL.pas:171 EF/EF.SQL.pas:259 EF/EF.SQL.pas:297
+#: EF/EF.SQL.pas
 msgid "Unspecified key field name list."
 msgstr "Nomi dei campi chiave non specificati."
 
-#: EF/EF.SQL.pas:216 EF/EF.SQL.pas:257 EF/EF.SQL.pas:295
+#: EF/EF.SQL.pas
 msgid "Unspecified field name list."
 msgstr "Nomi dei campi non specificati."
 
-#: EF/EF.SQL.pas:366
+#: EF/EF.SQL.pas
 msgid "List length mismatch between \"%s\" and \"%s\"."
 msgstr "Le liste \"%s\" e \"%s\" devono avere la stessa lunghezza."
 
-#: EF/EF.SQL.pas:487
+#: EF/EF.SQL.pas
 msgid "Unmatched SQL skip marker pair in \"%s\"."
 msgstr "Marcatori errati nell'istruzione \"%s\"."
 
-#: EF/EF.SysUtils.pas:1016
-msgid "SafeGetWindowsDirectory: buffer too small."
-msgstr "SafeGetWindowsDirectory: buffer troppo piccolo."
-
-#: EF/EF.SysUtils.pas:1028
-msgid "SafeGetSystemDirectory: buffer too small."
-msgstr "SafeGetSystemDirectory: buffer troppo piccolo."
-
-#: EF/EF.SysUtils.pas:1299
-msgid "%s: SourcePath not set."
-msgstr "%s: Valore per SourcePath non specificato."
-
-#: EF/EF.SysUtils.pas:1554
-msgid ""
-"Error while removing folder \"%s\". Perhaps the folder is not empty or is in "
-"use."
-msgstr ""
-"Errore durante l'eliminazione della cartella \"%s\". Potrebbe non essere "
-"vuota oppure in uso."
-
-#: EF/EF.SysUtils.pas:1573 EF/EF.SysUtils.pas:1616
-msgid "Error \"%s\" while removing file \"%s\". The file might be in use."
-msgstr ""
-"Errore \"%s\" durante l'eliminazione del file \"%s\". Potrebbe essere in uso."
-
-#: EF/EF.SysUtils.pas:1595
-msgid "The file \"%s\" might be in use."
-msgstr "Il file \"%s\" potrebbe essere in uso."
-
-#: EF/EF.SysUtils.pas:1646
-msgid "%s: DestinationPath not specified."
-msgstr "%s: Valore per DestinationPath non specificato."
-
-#. Recupero del messaggio di errore corretto per sollevare l'eccezione.
-#: EF/EF.SysUtils.pas:1681
-msgid ""
-"Error \"%s\" while copying from \"%s\" to \"%s\". The destination file might "
-"be in use."
-msgstr ""
-"Errore \"%s\" durante la copia da \"%s\" a \"%s\". Il file di destinazione "
-"potrebbe essere in uso."
-
-#: EF/EF.Tree.pas:2223 EF/EF.Tree.pas:2311
+#: EF/EF.Tree.pas
 msgid "Node %s not found."
 msgstr "Nodo %s non trovato."
 
-#: EF/EF.Types.pas:393
+#: EF/EF.Types.pas
 msgid "%s: Unknown class \"%s\"."
 msgstr "%s: Classe sconosciuta \"%s\"."
 
-#: EF/EF.YAML.pas:384
+#: EF/EF.YAML.pas
 msgid "Error %s while loading file %s."
 msgstr "Errore \"%s\" durante il caricamento del file \"%s\"."
 
-#. Programmer's name for it: dtlServerPage
-#. Programmer's name for it: dtlOcxPage
-#. Programmer's name for it: dtlServerPage
-#. Programmer's name for it: dtlOcxPage
-#: ThirdParty/DebenuPDFLibraryLite1112_TypeLibrary.pas:283
-#: ThirdParty/DebenuPDFLibraryLite1112_TypeLibrary.pas:285
-#: ThirdParty/DebenuPDFLibraryLite1114_TLB.pas:283
-#: ThirdParty/DebenuPDFLibraryLite1114_TLB.pas:285
-msgid "ActiveX"
-msgstr "ActiveX"
+# ===== KittoX — Kitto.Html.Form =====
+#: Kitto.Html.Form.pas
+msgid "Add %s"
+msgstr "Aggiungi %s"
 
-#: ThirdParty/ExtPascal/ExtJSWrapper/ExtUxForm.pas:873
-msgid "Browse..."
-msgstr "Sfoglia..."
+#: Kitto.Html.Form.pas
+msgid "Edit %s"
+msgstr "Modifica %s"
 
-#~ msgid "This web application requires Cookies enabled to AJAX works."
-#~ msgstr ""
-#~ "Questa applicazione web richiede i Cookie abilitati per funzionare con "
-#~ "AJAX."
+#: Kitto.Html.Form.pas
+msgid "View %s"
+msgstr "Mostra %s"
 
-#~ msgid "Session expired or lost.<br/>A new session will be created now."
-#~ msgstr "Sessione scaduta o persa<br/>Una nuova sessione verrà ora creata."
+#: Kitto.Html.Form.pas
+msgid "Duplicate %s"
+msgstr "Duplica %s"
 
-#~ msgid ""
-#~ "Object not found in session list. It could be timed out, refresh page and "
-#~ "try again"
-#~ msgstr ""
-#~ "Oggetto non trovato nella lista della sessione. Potrebbe essere scaduto, "
-#~ "rinfresca la pagina e riprova"
+#: Kitto.Html.Form.pas
+msgid "Save"
+msgstr "Salva"
 
-#~ msgid "Handler object for method %s not found in session."
-#~ msgstr "Oggetto per il metodo %s non trovato in sessione."
+#: Kitto.Html.Form.pas
+msgid "Confirm"
+msgstr "Conferma"
 
-#~ msgid "MethodURI: Method is not published"
-#~ msgstr "MethodURI: il method non è pubblicato"
+#: Kitto.Html.Form.pas
+msgid "Save All"
+msgstr "Salva tutto"
 
-#~ msgid "%s\\non Method: %s\\nParams: %s"
-#~ msgstr "%s\\nsul Metodo: %s\\nParametri: %s"
+#: Kitto.Html.Form.pas
+msgid "Save & Clone"
+msgstr "Salva e duplica"
 
-#~ msgid "Method: '%s' not found"
-#~ msgstr "Metodo %s non trovato."
+#: Kitto.Html.Form.pas
+msgid "Cancel"
+msgstr "Annulla"
 
-#~ msgid "Redirect to: "
-#~ msgstr "Dirottato verso: "
+#: Kitto.Html.Form.pas
+msgid "Close"
+msgstr "Chiudi"
 
-#~ msgid ""
-#~ "SHUTDOWN: Service is temporarily shutdown for maintenance. Please, try "
-#~ "again after a few moments."
-#~ msgstr ""
-#~ "SHUTDOWN: il servizio è temporaneamente giù per manutenzione. Si prega di "
-#~ "riprovare più tardi."
+#: Kitto.Html.Form.pas
+msgid "Edit"
+msgstr "Modifica"
 
-#~ msgid "File upload disabled."
-#~ msgstr "Caricamento file disabilitato."
+#: Kitto.Html.Form.pas
+msgid "Delete"
+msgstr "Elimina"
 
-#~ msgid "File too big. Maximum allowed size is %s."
-#~ msgstr "File troppo grande. Il massimo consentito è %s."
+#: Kitto.Html.Form.pas
+msgid "Add"
+msgstr "Aggiungi"
 
-#~ msgid "Error registering new user: user name already exists."
-#~ msgstr "Errore in registrazione: l'utente esiste già."
+#: Kitto.Html.Form.pas
+msgid "Upload"
+msgstr "Carica"
 
-#~ msgid "Creating new user..."
-#~ msgstr "Generazione nuovo utente..."
+#: Kitto.Html.Form.pas
+msgid "Download"
+msgstr "Scarica"
 
-#~ msgid "Register"
-#~ msgstr "Registra"
+#: Kitto.Html.Form.pas
+msgid "Clear"
+msgstr "Cancella"
 
-#~ msgid "Last Name"
-#~ msgstr "Cognome"
+#: Kitto.Html.Form.pas
+msgid "Preview"
+msgstr "Anteprima"
 
-#~ msgid "First Name"
-#~ msgstr "Nome"
+#: Kitto.Html.Form.pas
+msgid "General"
+msgstr "Generale"
 
-#~ msgid "Accept privacy policy"
-#~ msgstr "Accetta regole privacy"
+#: Kitto.Html.Form.pas Kitto.Html.List.pas
+msgid "Yes"
+msgstr "Si"
 
-#~ msgid "Register new user"
-#~ msgstr "Registra nuovo utente"
+#: Kitto.Html.Form.pas Kitto.Html.List.pas
+msgid "No"
+msgstr "No"
 
-#~ msgid ""
-#~ "The new user was created and must be activated by the e-mail confirmation "
-#~ "sent."
-#~ msgstr ""
-#~ "Il nuovo utente è stato creato ma deve essere attivato attraverso la mail "
-#~ "di conferma inviata."
+#: Kitto.Html.Form.pas Kitto.Html.List.pas
+msgid "Selected %s will be deleted. Are you sure?"
+msgstr "Il record selezionato di tipo %s verra' eliminato. Continuare?"
 
-#~ msgid "SearchForm"
-#~ msgstr "SearchForm"
+#: Kitto.Html.Form.pas
+msgid "Confirm operation"
+msgstr "Conferma operazione"
 
-#~ msgid "go"
-#~ msgstr "vai"
+# ===== KittoX — Kitto.Html.List =====
+#: Kitto.Html.List.pas
+msgid "Filters"
+msgstr "Filtri"
 
-#~ msgid "Google Suggest"
-#~ msgstr "Suggerimento Google"
+#: Kitto.Html.List.pas
+msgid "Apply"
+msgstr "Applica"
 
-#~ msgid "Empty Grouping value."
-#~ msgstr "Valore di gruppo vuoto."
+#: Kitto.Html.List.pas
+msgid "No records found."
+msgstr "Nessun record trovato."
 
-#~ msgid "No data to display in this group."
-#~ msgstr "Non ci sono dati da mostrare in questo gruppo."
+#: Kitto.Html.List.pas
+msgid "No records"
+msgstr "Nessun record"
 
-#, fuzzy
-#~ msgid "Panel1"
-#~ msgstr "Annulla"
+#: Kitto.Html.List.pas
+msgid "Showing %d-%d of %d"
+msgstr "Visualizzati %d-%d di %d"
 
-#~ msgid "Load failed."
-#~ msgstr "Caricamento fallito."
+#: Kitto.Html.List.pas
+msgid "Select"
+msgstr "Seleziona"
 
-#~ msgid "Active Sessions: %d"
-#~ msgstr "Sessioni attive: %d"
+#: Kitto.Html.List.pas
+msgid "Refresh"
+msgstr "Aggiorna"
 
-#~ msgid "Invalid value %s. Valid values: decimal numbers."
-#~ msgstr "Valore %s non valido. Deve essere un numero decimale."
+#: Kitto.Html.List.pas
+msgid "Refresh data"
+msgstr "Aggiorna i dati"
 
-#~ msgid "Invalid value %s. Valid values: \"True\", \"False\"."
-#~ msgstr "Valore %s non valido. Deve essere \"True\" o \"False\"."
+#: Kitto.Html.List.pas
+msgid "Search"
+msgstr "Cerca"
 
-#~ msgid "Restart"
-#~ msgstr "Riavvia"
+#: Kitto.Html.List.pas
+msgid "No data to display."
+msgstr "Nessun dato da mostrare."
+
+#: Kitto.Html.List.pas
+msgid "Choose %s"
+msgstr "Scegli %s"
+
+#: Kitto.Html.List.pas
+msgid "Delete %s"
+msgstr "Elimina %s"
+
+# ===== KittoX — Kitto.Html.Login =====
+#: Kitto.Html.Login.pas
+msgid "User Name"
+msgstr "Nome utente"
+
+#: Kitto.Html.Login.pas
+msgid "Password"
+msgstr "Password"
+
+#: Kitto.Html.Login.pas
+msgid "Language"
+msgstr "Lingua"
+
+#: Kitto.Html.Login.pas
+msgid "Remember Credentials"
+msgstr "Ricorda credenziali"
+
+#: Kitto.Html.Login.pas
+msgid "Remember User Name"
+msgstr "Ricorda Nome Utente"
+
+#: Kitto.Html.Login.pas
+msgid "Login"
+msgstr "Accedi"
+
+#: Kitto.Html.Login.pas
+msgid "Logging in..."
+msgstr "Accesso in corso..."
+
+#: Kitto.Html.Login.pas
+msgid "Logout"
+msgstr "Chiudi sessione"
+
+#: Kitto.Html.Login.pas
+msgid "Invalid login."
+msgstr "Credenziali di accesso errate."
+
+#: Kitto.Html.Login.pas
+msgid "Password forgotten?"
+msgstr "Password dimenticata?"
+
+#: Kitto.Html.Login.pas
+msgid "New User? Register..."
+msgstr "Nuovo utente? Registrati..."
+
+#: Kitto.Html.Login.pas
+msgid "Privacy policy..."
+msgstr "Informativa privacy..."
+
+#: Kitto.Html.Login.pas
+msgid "Caps On"
+msgstr "Maiuscolo"
+
+# ===== KittoX — Kitto.Html.ChangePassword =====
+#: Kitto.Html.ChangePassword.pas
+msgid "Change Password"
+msgstr "Modifica Password"
+
+#: Kitto.Html.ChangePassword.pas
+msgid "Old Password"
+msgstr "Vecchia password"
+
+#: Kitto.Html.ChangePassword.pas
+msgid "New Password"
+msgstr "Nuova password"
+
+#: Kitto.Html.ChangePassword.pas
+msgid "Confirm New Password"
+msgstr "Conferma nuova password"
+
+#: Kitto.Html.ChangePassword.pas
+msgid "Change password"
+msgstr "Cambia password"
+
+#: Kitto.Html.ChangePassword.pas
+msgid "Changing password..."
+msgstr "Modifica password in corso..."
+
+# ===== KittoX — Kitto.Html.ResetPassword =====
+#: Kitto.Html.ResetPassword.pas
+msgid "Email address"
+msgstr "Indirizzo Email"
+
+#: Kitto.Html.ResetPassword.pas
+msgid "Send"
+msgstr "Invia"
+
+#: Kitto.Html.ResetPassword.pas
+msgid "Generating new password..."
+msgstr "Generazione nuova password..."
+
+#: Kitto.Html.ResetPassword.pas
+msgid "Reset Password"
+msgstr "Rigenera password"
+
+# ===== KittoX — Kitto.Web.Application =====
+#: Kitto.Web.Application.pas
+msgid "Error"
+msgstr "Errore"
+
+#: Kitto.Web.Application.pas
+msgid "Session lost or expired, please restart!"
+msgstr "Sessione persa o scaduta, riavviare!"
+
+#: Kitto.Web.Application.pas
+msgid "Load error:"
+msgstr "Errore di caricamento:"
+
+#: Kitto.Web.Application.pas
+msgid "Data saved"
+msgstr "Dati salvati"
+
+#: Kitto.Web.Application.pas
+msgid "Data deleted"
+msgstr "Dati eliminati"
+
+#: Kitto.Web.Application.pas
+msgid "Server is not responding"
+msgstr "Il server non risponde"
+
+#: Kitto.Web.Application.pas
+msgid "Retry"
+msgstr "Riprova"
+
+#: Kitto.Web.Application.pas
+msgid "Reset"
+msgstr "Riavvia"
+
+#: Kitto.Web.Application.pas
+msgid "Server error"
+msgstr "Errore del server"
+
+#: Kitto.Web.Application.pas
+msgid "Resource not found"
+msgstr "Risorsa non trovata"
+
+#: Kitto.Web.Application.pas
+msgid "Internal server error"
+msgstr "Errore interno del server"
+
+#: Kitto.Web.Application.pas
+msgid "Loading %s..."
+msgstr "Caricamento di %s..."
+
+#: Kitto.Web.Application.pas
+msgid "Detail record not found."
+msgstr "Record di dettaglio non trovato."
+
+#: Kitto.Web.Application.pas
+msgid "Missing record key."
+msgstr "Chiave del record mancante."
+
+#: Kitto.Web.Application.pas
+msgid "Invalid record key."
+msgstr "Chiave del record non valida."
+
+#: Kitto.Web.Application.pas
+msgid "Record not found."
+msgstr "Record non trovato."
+
+#: Kitto.Web.Application.pas
+msgid "Password changed successfully. You will be redirected to the login page."
+msgstr "Password modificata con successo. Verrai reindirizzato alla pagina di accesso."
+
+#: Kitto.Web.Application.pas
+msgid "Select: %s"
+msgstr "Seleziona: %s"
+
+#: Kitto.Web.Application.pas
+msgid "A new temporary password was generated and sent to the specified e-mail address."
+msgstr "Una nuova password temporanea e' stata generata ed inviata all'indirizzo mail specificato."
+
+#: Kitto.Web.Application.pas
+msgid "Old Password is wrong."
+msgstr "La vecchia password non e' corretta."
+
+#: Kitto.Web.Application.pas
+msgid "New Password must be different than old password."
+msgstr "La nuova password deve essere diversa dalla vecchia."
+
+#: Kitto.Web.Application.pas
+msgid "Confirm New Password is wrong."
+msgstr "La nuova password deve essere digitata uguale due volte per conferma."
+
+# ===== KittoX — Kitto.Html.TilePanel =====
+#: Kitto.Html.TilePanel.pas
+msgid "Back"
+msgstr "Indietro"
+
+# ===== KittoX — Kitto.Html.TreePanel =====
+#: Kitto.Html.TreePanel.pas
+msgid "Home"
+msgstr "Home"
+
+# ===== KittoX — Kitto.Console.Start =====
+#: Kitto.Console.Start.pas
+msgid "Build date: %s"
+msgstr "Data creazione: %s"
+
+#: Kitto.Console.Start.pas
+msgid "Home URL: %s"
+msgstr "Indirizzo Home: %s"
+
+# ===== KittoX — Kitto.Vcl.MainForm =====
+#: Kitto.Vcl.MainForm.pas
+msgid "Application: %s"
+msgstr "Applicazione: %s"
+
+#: Kitto.Vcl.MainForm.pas
+msgid "Sessions"
+msgstr "Sessioni"
+
+#: Kitto.Vcl.MainForm.pas
+msgid "Log"
+msgstr "Log"
+
+#: Kitto.Vcl.MainForm.pas
+msgid "None"
+msgstr "Nulla"
+
+# ===== KittoX — Kitto.DataTool =====
+#: Kitto.DataTool.pas
+msgid "Command executed succesfully."
+msgstr "Comando eseguito con successo."
+
+#: Kitto.IndyTools.pas
+msgid "E-mail message sent successfully."
+msgstr "Messaggio E-mail inviato con successo."
+
+#: Kitto.SQLTool.pas
+msgid "Command %s executed succesfully!"
+msgstr "Comando %s eseguito correttamente!"
+
+#: Kitto.SQLTool.pas
+msgid "Error executing command %s!"
+msgstr "Errore in esecuzione comando %s!"
+
+#: Kitto.Html.List.pas
+msgid "First page"
+msgstr "Prima pagina"
+
+#: Kitto.Html.List.pas
+msgid "Previous page"
+msgstr "Pagina precedente"
+
+#: Kitto.Html.List.pas
+msgid "Next page"
+msgstr "Pagina successiva"
+
+#: Kitto.Html.List.pas
+msgid "Last page"
+msgstr "Ultima pagina"

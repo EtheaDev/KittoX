@@ -67,6 +67,7 @@ var
   LView: TKView;
   LViewName: string;
   LDisplayLabel: string;
+  LTabLabel: string;
   LImageName: string;
   LChildNodes: IKTreeViewNodes;
   LChildContent: string;
@@ -77,8 +78,12 @@ begin
     for I := 0 to ANodes.TreeViewNodeCount - 1 do
     begin
       LNode := ANodes.TreeViewNodes[I];
-      LDisplayLabel := _(LNode.GetString('DisplayLabel',
-        GetDisplayLabelFromNode(LNode, AViews)));
+      // LTabLabel: always the view's own DisplayLabel chain (no node-level override).
+      // Used as the tab caption to match Kitto1 behaviour where the panel controller
+      // set its own title independently from the menu item label.
+      LTabLabel := GetDisplayLabelFromNode(LNode, AViews);
+      // LDisplayLabel: honours a node-level DisplayLabel override (shorter menu text).
+      LDisplayLabel := _(LNode.GetString('DisplayLabel', LTabLabel));
       if LNode is TKTreeViewFolder then
       begin
         if Supports(LNode, IKTreeViewNodes, LChildNodes) then
@@ -133,6 +138,7 @@ begin
               SB.Append('<a class="kx-tree-leaf" href="#" ');
               SB.Append('data-view="').Append(LViewName).Append('" ');
               SB.Append('data-label="').Append(LDisplayLabel).Append('" ');
+              SB.Append('data-tab-label="').Append(LTabLabel).Append('" ');
               SB.Append('onclick="kxApp.openView(this); return false;">');
               SB.Append(GetIconHTML(LImageName));
               SB.Append(LDisplayLabel).Append('</a>');

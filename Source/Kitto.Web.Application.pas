@@ -100,6 +100,7 @@ type
     function HandleKXWizardFinishRequest(const AViewName: string): Boolean;
     function HandleKXSaveCacheRequest(const AViewName: string): Boolean;
     function HandleKXBlobRequest(const AViewName, AFieldName: string): Boolean;
+    function HandleKXTempUploadRequest(const AViewName, AFieldName: string): Boolean;
     function HandleKXDetailDataRequest(const AViewName: string;
       ADetailIndex: Integer): Boolean;
     function HandleKXDetailSaveRequest(const AViewName: string;
@@ -757,6 +758,26 @@ var
     end;
   end;
 
+// Enter-edit request matcher — kx/view/{ViewName}/enter-edit
+  function IsKXEnterEditRequest(out AViewName: string): Boolean;
+  var
+    LFullPath: string;
+    LPrefix: string;
+    LSuffix: string;
+  begin
+    Result := False;
+    AViewName := '';
+    LFullPath := AURL.Path + AURL.Document;
+    LPrefix := FPath + '/kx/view/';
+    LSuffix := '/enter-edit';
+    if StartsText(LPrefix, LFullPath) and EndsText(LSuffix, LFullPath) then
+    begin
+      AViewName := Copy(LFullPath, Length(LPrefix) + 1,
+        Length(LFullPath) - Length(LPrefix) - Length(LSuffix));
+      Result := AViewName <> '';
+    end;
+  end;
+
 // Save cache request matcher — kx/view/{ViewName}/save-cache
   function IsKXSaveCacheRequest(out AViewName: string): Boolean;
   var
@@ -882,6 +903,28 @@ var
     AViewName := Copy(LRest, 1, LSlashPos - 1);
     AFieldName := Copy(LRest, LSlashPos + Length(LBlobPrefix), MaxInt);
     // Strip trailing slash if present
+    if (AFieldName <> '') and (AFieldName[Length(AFieldName)] = '/') then
+      AFieldName := Copy(AFieldName, 1, Length(AFieldName) - 1);
+    Result := (AViewName <> '') and (AFieldName <> '');
+  end;
+
+// Temp upload request matcher — POST kx/view/{ViewName}/upload/{FieldName}
+  function IsKXTempUploadRequest(out AViewName, AFieldName: string): Boolean;
+  var
+    LFullPath, LPrefix, LRest: string;
+    LSlashPos: Integer;
+  begin
+    Result := False;
+    AViewName := '';
+    AFieldName := '';
+    LFullPath := AURL.Path + AURL.Document;
+    LPrefix := FPath + '/kx/view/';
+    if not StartsText(LPrefix, LFullPath) then Exit;
+    LRest := Copy(LFullPath, Length(LPrefix) + 1, MaxInt);
+    LSlashPos := Pos('/upload/', LRest);
+    if LSlashPos <= 0 then Exit;
+    AViewName := Copy(LRest, 1, LSlashPos - 1);
+    AFieldName := Copy(LRest, LSlashPos + 8, MaxInt); // 8 = Length('/upload/')
     if (AFieldName <> '') and (AFieldName[Length(AFieldName)] = '/') then
       AFieldName := Copy(AFieldName, 1, Length(AFieldName) - 1);
     Result := (AViewName <> '') and (AFieldName <> '');
@@ -1088,6 +1131,10 @@ begin
         begin
           Result := HandleKXLookupRequest(LKXViewName);
         end
+        else if IsKXTempUploadRequest(LKXViewName, LKXBlobFieldName) then
+        begin
+          Result := HandleKXTempUploadRequest(LKXViewName, LKXBlobFieldName);
+        end
         else if IsKXBlobRequest(LKXViewName, LKXBlobFieldName) then
         begin
           Result := HandleKXBlobRequest(LKXViewName, LKXBlobFieldName);
@@ -1119,6 +1166,16 @@ begin
         begin
           Result := HandleKXSaveRequest(LKXViewName);
         end
+        else if IsKXEnterEditRequest(LKXViewName) then
+        begin
+          // Apply edit-record rules when transitioning from ViewMode to EditMode.
+          // The client calls this before enabling the form fields.
+          var LEnterEditStore := TKWebSession.Current.FindStore(LKXViewName);
+          if Assigned(LEnterEditStore) and (LEnterEditStore.RecordCount > 0) then
+            LEnterEditStore.Records[0].ApplyEditRecordRules;
+          TKXWebResponse.Current.SendFragment('');
+          Result := True;
+        end
         else if IsKXFormCloseRequest(LKXViewName) then
         begin
           // Release session store when form is cancelled/closed without saving
@@ -1147,13 +1204,15 @@ begin
       except
         on E: Exception do
         begin
-          // DB errors (constraint violations, etc.) are non-fatal: show
-          // the dialog but keep the session alive. Only session-level
-          // errors should reload.
-          if E is EEFDBError then
-            Error(EEFDBError(E).SQLError, False)
-          else
-            Error(E.Message, True);
+          // Every exception bubbling out of a request handler is displayed
+          // as a NON-FATAL modal dialog so the session stays alive and the
+          // user can fix the input and retry (e.g. an invalid date in a
+          // filter that reached SQL Server). E.Message is used because, for
+          // EEFDBError, it already contains the fully-formatted
+          // "Errore <sql-error> nella query: {GUID}" wrapping built in
+          // EEFDBError.CreateForQuery (see EF.DB.pas). The "Load error:"
+          // prefix identifies the origin of the failure to the end user.
+          Error(_('Load error:') + ' ' + E.Message, False);
           Result := True;
         end;
       end;
@@ -2786,6 +2845,13 @@ begin
         LRecord := LStore.Records[0]
       else
         Exit; // Record not found
+
+      // Apply operation-specific rules (matching Kitto1 flow).
+      // ApplyAfterShowEditWindowRules is called later, after form rendering.
+      if SameText(LOperation, 'edit') then
+        LRecord.ApplyEditRecordRules
+      else if SameText(LOperation, 'dup') then
+        LRecord.ApplyDuplicateRecordRules;
     end
     else if SameText(LOperation, 'add') then
     begin
@@ -2797,7 +2863,7 @@ begin
       finally
         FreeAndNil(LAddDefaults);
       end;
-      LRecord.MarkAsNew;
+      LRecord.ApplyNewRecordRules;
 
       // FK pre-fill: when adding from a detail grid, the master record key
       // is passed as query params: fkField=REFERENCE_NAME&masterKey=PK_FIELD%3Dvalue
@@ -2874,6 +2940,12 @@ begin
     LStore := nil; // Session owns the store now; prevent finally from freeing it
 
     TKXWebResponse.Current.SendFragment(LHtml);
+
+    // Apply after-show rules (always, regardless of operation).
+    // In the unified flow, the form always "shows" first, then switches to edit if needed.
+    if Assigned(LRecord) then
+      LRecord.ApplyAfterShowEditWindowRules;
+
     Result := True;
   finally
     FreeAndNil(LStore);
@@ -2923,6 +2995,48 @@ begin
   Result := True;
 end;
 
+function TKWebApplication.HandleKXTempUploadRequest(const AViewName, AFieldName: string): Boolean;
+var
+  LView: TKView;
+  LViewTable: TKViewTable;
+  LViewField: TKViewField;
+  LFiles: TAbstractWebRequestFiles;
+  LTempDir, LStoredName: string;
+  LUploadStream: TFileStream;
+  LJson: string;
+begin
+  Result := False;
+  LView := Config.Views.FindView(AViewName);
+  if not Assigned(LView) or not (LView is TKDataView) then Exit;
+  LViewTable := TKDataView(LView).MainTable;
+  if not Assigned(LViewTable) then Exit;
+  LViewField := LViewTable.FindField(AFieldName);
+  if not Assigned(LViewField) or not (LViewField.DataType is TKFileReferenceDataType) then Exit;
+
+  LFiles := TKWebRequest.Current.Files;
+  if LFiles.Count = 0 then Exit;
+
+  // Per-session temp directory (isolated by session ID, cleaned up by age)
+  LTempDir := TPath.Combine(TPath.Combine(TPath.GetTempPath, 'kxupload'),
+    TKWebSession.Current.SessionId);
+  ForceDirectories(LTempDir);
+
+  LStoredName := CreateCompactGuidStr + ExtractFileExt(LFiles[0].FileName);
+  LUploadStream := TFileStream.Create(TPath.Combine(LTempDir, LStoredName),
+    fmCreate or fmShareExclusive);
+  try
+    LFiles[0].Stream.Position := 0;
+    LUploadStream.CopyFrom(LFiles[0].Stream, 0);
+  finally
+    LUploadStream.Free;
+  end;
+
+  LJson := '{"ok":true,"temp":"' + LStoredName + '"}';
+  TKWebResponse.Current.ReplaceContentStream(TStringStream.Create(LJson, TEncoding.UTF8));
+  TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+  Result := True;
+end;
+
 function TKWebApplication.HandleKXBlobRequest(const AViewName, AFieldName: string): Boolean;
 var
   LView: TKView;
@@ -2952,8 +3066,50 @@ begin
     Exit;
 
   LViewField := LViewTable.FindField(AFieldName);
-  if not Assigned(LViewField) or not LViewField.IsBlob then
-    Exit;
+  if not Assigned(LViewField) then Exit;
+  if not LViewField.IsBlob and not (LViewField.DataType is TKFileReferenceDataType) then Exit;
+
+  // Serve a temp file (uploaded via AJAX before form save) — no record needed
+  if LViewField.DataType is TKFileReferenceDataType then
+  begin
+    var LTempParam := TKWebRequest.Current.GetQueryField('temp');
+    if LTempParam <> '' then
+    begin
+      var LTempDir := TPath.Combine(TPath.Combine(TPath.GetTempPath, 'kxupload'),
+        TKWebSession.Current.SessionId);
+      var LTempFilePath := TPath.Combine(LTempDir, LTempParam);
+      if not TFile.Exists(LTempFilePath) then
+      begin
+        TKWebResponse.Current.StatusCode := 404;
+        TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+        TKWebResponse.Current.ReplaceContentStream(TStringStream.Create('{"error":"File not found"}', TEncoding.UTF8));
+        Result := True;
+        Exit;
+      end;
+      var LDisplayName := TNetEncoding.URL.Decode(TKWebRequest.Current.GetQueryField('name'));
+      if LDisplayName = '' then LDisplayName := LTempParam;
+      LIsDownload := SameText(TKWebRequest.Current.GetQueryField('download'), '1');
+      // Read into memory so the file handle is closed before transfer starts.
+      // This avoids EIdSocketError #10053 when PDF viewers make range requests
+      // and abort the initial connection mid-stream.
+      var LFileBytes: TBytes;
+      var LFStream := TFileStream.Create(LTempFilePath, fmOpenRead or fmShareDenyWrite);
+      try
+        SetLength(LFileBytes, LFStream.Size);
+        if Length(LFileBytes) > 0 then
+          LFStream.ReadBuffer(LFileBytes[0], Length(LFileBytes));
+      finally
+        LFStream.Free;
+      end;
+      var LTempStream := TBytesStream.Create(LFileBytes);
+      if LIsDownload then
+        DownloadStream(LTempStream, LDisplayName, '', False)
+      else
+        DownloadStream(LTempStream, LDisplayName, '', True);
+      Result := True;
+      Exit;
+    end;
+  end;
 
   LStore := nil;
 
@@ -3011,6 +3167,78 @@ begin
 
   // Re-read the view field (it may have been overwritten by the key field lookup above)
   LViewField := LViewTable.FindField(AFieldName);
+
+  // FileReference fields: file lives on disk; DB field holds the stored filename only.
+  if LViewField.DataType is TKFileReferenceDataType then
+  begin
+    try
+      var LStoredName := LRecord.FieldByName(LViewField.FieldNamesForUpdate).AsString;
+      if LStoredName = '' then
+      begin
+        if not Assigned(TKWebSession.Current.FindStore(AViewName)) then
+          FreeAndNil(LStore);
+        TKWebResponse.Current.StatusCode := 404;
+        TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+        TKWebResponse.Current.ReplaceContentStream(TStringStream.Create('{"error":"File not found"}', TEncoding.UTF8));
+        Result := True;
+        Exit;
+      end;
+      var LDirPath := LViewField.GetExpandedString('Path');
+      if LDirPath = '' then
+      begin
+        if not Assigned(TKWebSession.Current.FindStore(AViewName)) then
+          FreeAndNil(LStore);
+        Exit; // config error — leave as 404 "unknown request"
+      end;
+      var LFilePath := TPath.Combine(LDirPath, LStoredName);
+      if not TFile.Exists(LFilePath) then
+      begin
+        if not Assigned(TKWebSession.Current.FindStore(AViewName)) then
+          FreeAndNil(LStore);
+        TKWebResponse.Current.StatusCode := 404;
+        TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+        TKWebResponse.Current.ReplaceContentStream(TStringStream.Create('{"error":"File not found"}', TEncoding.UTF8));
+        Result := True;
+        Exit;
+      end;
+      // Prefer companion field value as display filename (original name)
+      var LDisplayName := LStoredName;
+      var LFNField := LViewField.FileNameField;
+      if LFNField <> '' then
+      begin
+        var LCompField := LRecord.FindField(LFNField);
+        if Assigned(LCompField) and not LCompField.IsNull and (LCompField.AsString <> '') then
+          LDisplayName := LCompField.AsString;
+      end;
+      LIsDownload := SameText(TKWebRequest.Current.GetQueryField('download'), '1');
+      // Read into memory before serving to avoid EIdSocketError #10053 when PDF
+      // viewers make Range requests and abort the initial connection mid-stream.
+      var LDiskBytes: TBytes;
+      var LDiskFS := TFileStream.Create(LFilePath, fmOpenRead or fmShareDenyWrite);
+      try
+        SetLength(LDiskBytes, LDiskFS.Size);
+        if Length(LDiskBytes) > 0 then
+          LDiskFS.ReadBuffer(LDiskBytes[0], Length(LDiskBytes));
+      finally
+        LDiskFS.Free;
+      end;
+      var LFileStream := TBytesStream.Create(LDiskBytes);
+      // Empty content type → DownloadStream calls GetFileMimeType(LDisplayName)
+      if LIsDownload then
+        DownloadStream(LFileStream, LDisplayName, '', False)
+      else
+        DownloadStream(LFileStream, LDisplayName, '', True);
+    except
+      if not Assigned(TKWebSession.Current.FindStore(AViewName)) then
+        FreeAndNil(LStore);
+      raise;
+    end;
+    if not Assigned(TKWebSession.Current.FindStore(AViewName)) then
+      FreeAndNil(LStore);
+    Result := True;
+    Exit;
+  end;
+
   try
     LBytes := LRecord.FieldByName(LViewField.FieldNamesForUpdate).AsBytes;
   except
@@ -3024,6 +3252,10 @@ begin
   begin
     if not Assigned(TKWebSession.Current.FindStore(AViewName)) then
       FreeAndNil(LStore);
+    TKWebResponse.Current.StatusCode := 404;
+    TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+    TKWebResponse.Current.ReplaceContentStream(TStringStream.Create('{"error":"File not found"}', TEncoding.UTF8));
+    Result := True;
     Exit;
   end;
 
@@ -3080,6 +3312,9 @@ begin
     end;
     if LViewField.IsBlob and not (LViewField.DataType is TEFMemoDataType) then
       Continue;
+    // FileReference fields are handled below (file save section), not here
+    if LViewField.DataType is TKFileReferenceDataType then
+      Continue;
 
     LFieldName := LViewField.FieldNamesForUpdate;
 
@@ -3088,16 +3323,21 @@ begin
     begin
       LDatePart := TKWebRequest.Current.GetField(LFieldName + '__date');
       LTimePart := TKWebRequest.Current.GetField(LFieldName + '__time');
-      if (LDatePart <> '') or (LTimePart <> '') then
+      if (LDatePart = '') and (LTimePart = '') then
+        // Both empty: set to null (allows clearing a DateTime field)
+        ARecord.FieldByName(LFieldName).SetToNull(True)
+      else if LDatePart <> '' then
       begin
+        // Date present: combine with time (default 00:00 if time is empty)
         LPostValue := LDatePart;
         if LTimePart <> '' then
-          LPostValue := LPostValue + 'T' + LTimePart;
-        ARecord.FieldByName(LFieldName).SetToNull(LPostValue = '');
-        if LPostValue <> '' then
-          ARecord.FieldByName(LFieldName).Value :=
-            LViewField.DataType.ValueToDateTime(ReplaceStr(LPostValue, 'T', ' '));
-      end;
+          LPostValue := LPostValue + ' ' + LTimePart;
+        ARecord.FieldByName(LFieldName).Value :=
+          LViewField.DataType.ValueToDateTime(LPostValue);
+      end
+      else
+        // Only time without date: set to null (time alone is not valid)
+        ARecord.FieldByName(LFieldName).SetToNull(True);
       Continue;
     end;
 
@@ -3178,6 +3418,87 @@ begin
          (LFiles[J].Stream.Size > 0) then
       begin
         ARecord.FieldByName(LFieldName).LoadBytesFromStream(LFiles[J].Stream);
+        Break;
+      end;
+    end;
+  end;
+
+  // Handle FileReference fields: save uploaded file to disk, store generated filename in DB.
+  // The companion FileNameField (original filename) is carried as a hidden POST field
+  // and updated automatically by the regular string field loop above.
+  for I := 0 to AViewTable.FieldCount - 1 do
+  begin
+    LViewField := AViewTable.Fields[I];
+    if not (LViewField.DataType is TKFileReferenceDataType) then Continue;
+    if AIsInsert and not LViewField.CanInsert then Continue;
+    if not AIsInsert and not LViewField.CanUpdate then Continue;
+    LFieldName := LViewField.FieldNamesForUpdate;
+
+    var LFinalPath := LViewField.GetExpandedString('Path');
+
+    // Priority 1: temp file from AJAX pre-save upload
+    var LTempName := TKWebRequest.Current.GetField(LFieldName + '__temp');
+    if LTempName <> '' then
+    begin
+      var LTempDir := TPath.Combine(TPath.Combine(TPath.GetTempPath, 'kxupload'),
+        TKWebSession.Current.SessionId);
+      var LTempSrc := TPath.Combine(LTempDir, LTempName);
+      if (LFinalPath <> '') and TFile.Exists(LTempSrc) then
+      begin
+        // Delete previous file (edit mode)
+        if not AIsInsert then
+        begin
+          var LOldStored := ARecord.FieldByName(LFieldName).AsString;
+          if LOldStored <> '' then
+          begin
+            var LOldFile := TPath.Combine(LFinalPath, LOldStored);
+            if TFile.Exists(LOldFile) then TFile.Delete(LOldFile);
+          end;
+        end;
+        ForceDirectories(LFinalPath);
+        TFile.Move(LTempSrc, TPath.Combine(LFinalPath, LTempName));
+        ARecord.FieldByName(LFieldName).AsString := LTempName;
+      end;
+      Continue;
+    end;
+
+    // Priority 2: clear flag
+    if not AIsInsert then
+    begin
+      var LClearFlag := TKWebRequest.Current.GetField(LFieldName + '__clear');
+      if SameText(LClearFlag, '1') then
+      begin
+        var LOldStored := ARecord.FieldByName(LFieldName).AsString;
+        if (LOldStored <> '') and (LFinalPath <> '') then
+        begin
+          var LOldFile := TPath.Combine(LFinalPath, LOldStored);
+          if TFile.Exists(LOldFile) then TFile.Delete(LOldFile);
+        end;
+        ARecord.FieldByName(LFieldName).SetToNull(True);
+        Continue;
+      end;
+    end;
+
+    // Priority 3: fallback — file uploaded directly with the form (non-AJAX)
+    for J := 0 to LFiles.Count - 1 do
+    begin
+      if SameText(LFiles[J].FieldName, LFieldName) and (LFiles[J].Stream.Size > 0) then
+      begin
+        if LFinalPath <> '' then
+        begin
+          var LOrigName := LFiles[J].FileName;
+          var LStoredName := CreateCompactGuidStr + ExtractFileExt(LOrigName);
+          ForceDirectories(LFinalPath);
+          var LDestStream := TFileStream.Create(
+            TPath.Combine(LFinalPath, LStoredName), fmCreate or fmShareExclusive);
+          try
+            LFiles[J].Stream.Position := 0;
+            LDestStream.CopyFrom(LFiles[J].Stream, 0);
+          finally
+            LDestStream.Free;
+          end;
+          ARecord.FieldByName(LFieldName).AsString := LStoredName;
+        end;
         Break;
       end;
     end;
@@ -3303,7 +3624,9 @@ begin
     LStore := LViewTable.CreateStore;
   try
     try
-      if SameText(LOperation, 'edit') then
+      // Treat 'view' as 'edit': if a save arrives from a view-mode form,
+      // the user switched to edit mode on the client side.
+      if SameText(LOperation, 'edit') or SameText(LOperation, 'view') then
       begin
         if LOwnsStore then
         begin
@@ -3338,9 +3661,13 @@ begin
 
         LRecord := LStore.Records[0];
 
-        // Update field values from POST data and persist
-        PopulateRecordFromPost(LRecord, LViewTable, False);
-        LRecord.MarkAsModified;
+        // SaveAll: record is already up-to-date from save-cache, just persist.
+        // Normal save: populate from POST data first.
+        if not SameText(TKWebRequest.Current.GetField('_saveAll'), 'true') then
+        begin
+          PopulateRecordFromPost(LRecord, LViewTable, False);
+          LRecord.MarkAsModified;
+        end;
         // SaveRecord with cascading: PersistRecord persists master, then
         // PersistDetailStores handles all attached detail stores in same transaction.
         LViewTable.Model.SaveRecord(LRecord, True, nil);
@@ -4034,6 +4361,9 @@ begin
         ATemplate.SetData('btnReset', TValue.From<string>(_('Reset')));
         ATemplate.SetData('msgDataSaved', TValue.From<string>(_('Data saved')));
         ATemplate.SetData('msgDataDeleted', TValue.From<string>(_('Data deleted')));
+        ATemplate.SetData('msgServerError', TValue.From<string>(_('Server error')));
+        ATemplate.SetData('msgNotFound', TValue.From<string>(_('Resource not found')));
+        ATemplate.SetData('msgInternalError', TValue.From<string>(_('Internal server error')));
         // Dynamic scripts/stylesheets registered by modules
         ATemplate.SetData('dynamicStyles', TValue.From<string>(
           TKXScriptRegistry.Instance.GetStylesheetTags(FResourcePath)));

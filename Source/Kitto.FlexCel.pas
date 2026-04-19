@@ -45,7 +45,7 @@ const
   MAX_EXCEL_STRING_COLUMN_SIZE = 255;
   DEF_FmtFCInt = '0';
   DEF_FmtFCDouble = '0.000000';
-  DEF_FmtFCCurrency = '#,##0.00 €;-#,##0.00 €';
+  DEF_FmtFCCurrency = '#,##0.00 '#$20AC';-#,##0.00 '#$20AC;
 
 type
   TExcelVersion = (ex2000, ex2007);
@@ -453,6 +453,8 @@ begin
       if LAcceptRecord then
       begin
         RowNum := RowNum + 1;
+        // Prevent FlexCel from auto-sizing the row height when WrapText cells are written.
+        LExcelFile.SetRowHeight(RowNum, LExcelFile.DefaultRowHeight);
         NumColExcel := 0;
         //Update ado tabel fields by the structure of the range
         for LFieldIndex := 0 to LRecord.FieldCount - 1 do
@@ -532,6 +534,8 @@ begin
         if LAcceptRecord then
         begin
           RowNum := RowNum + 1;
+          // Prevent FlexCel from auto-sizing the row height when WrapText cells are written.
+          LExcelFile.SetRowHeight(RowNum, LExcelFile.DefaultRowHeight);
           NumColExcel := 0;
           for J := 0 to FieldCount - 1 do
           begin

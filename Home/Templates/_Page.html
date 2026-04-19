@@ -48,7 +48,10 @@
       retry: '{{:btnRetry}}',
       reset: '{{:btnReset}}',
       dataSaved: '{{:msgDataSaved}}',
-      dataDeleted: '{{:msgDataDeleted}}'
+      dataDeleted: '{{:msgDataDeleted}}',
+      serverError: '{{:msgServerError}}',
+      serverNotFound: '{{:msgNotFound}}',
+      serverInternalError: '{{:msgInternalError}}'
     };
 
     document.body.addEventListener("htmx:afterSettle", function(evt) {
@@ -78,6 +81,35 @@
     }
     document.body.addEventListener("htmx:timeout", kxTimeoutHandler);
     document.body.addEventListener("htmx:sendError", kxTimeoutHandler);
+
+    // Handler for HTTP error responses (404, 500, etc.)
+    document.body.addEventListener("htmx:responseError", function(evt) {
+      var xhr = evt.detail.xhr;
+      var status = xhr ? xhr.status : 0;
+      var S = window.KX_STRINGS || {};
+      var msg = S.serverError || 'Server error';
+      if (status === 404)
+        msg += ': ' + (S.serverNotFound || 'Resource not found') + ' (' + (evt.detail.requestConfig || {}).path + ')';
+      else if (status === 500)
+        msg += ': ' + (S.serverInternalError || 'Internal server error');
+      else if (status > 0)
+        msg += ' (HTTP ' + status + ')';
+      kxGrid.showConfirm(
+        S.errorTitle || 'Error',
+        msg,
+        S.retry || 'Retry',
+        S.reset || 'Reset',
+        function() {
+          var rc = evt.detail.requestConfig;
+          if (rc) {
+            htmx.ajax(rc.verb, rc.path, {target: rc.target, swap: rc.swapStyle || 'innerHTML'});
+          }
+        },
+        function() {
+          window.location.reload();
+        }
+      );
+    });
   </script>
 </body>
 </html>

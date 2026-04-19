@@ -163,7 +163,7 @@ var kxTabs = {
   /** Called from tree menu links. Reads data-view/data-label and icon from the clicked element. */
   openFromMenu: function(el) {
     var viewName = el.getAttribute('data-view');
-    var label = el.getAttribute('data-label') || viewName;
+    var label = el.getAttribute('data-tab-label') || el.getAttribute('data-label') || viewName;
     var iconEl = el.querySelector('.kx-icon, .kx-icon-img');
     var iconHtml = iconEl ? iconEl.outerHTML : '';
     this.open(viewName, label, iconHtml);
