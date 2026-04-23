@@ -86,8 +86,8 @@ type
       AAcceptFieldEvent: TAcceptDataFieldEvent = nil;
       AUseDisplayLabels: Boolean = False); overload;
     procedure AddExcelColumn(var ExcelFile : TExcelFile; ColName : string; pos :integer);
-    procedure ForceZeroValue(Field: TField);
-    function IsFieldToForceZero(Field: TField): Boolean;
+    //procedure ForceZeroValue(Field: TField);
+    //function IsFieldToForceZero(Field: TField): Boolean;
     procedure ImpostaFormatFlexCel(AExcelFile : TExcelFile);
   strict protected
     procedure GetFormatFlexCelField(AField: TField;
@@ -277,6 +277,7 @@ begin
 
 end;
 
+(*
 function TKFlexCelExportEngine.IsFieldToForceZero(Field: TField): Boolean;
 begin
   Result := Field.DataType in [ftDate, ftTime, ftDateTime, ftTimeStamp,
@@ -294,6 +295,7 @@ begin
     ftBoolean: Field.Value := False;
   end;
 end;
+*)
 
 procedure TKFlexCelExportEngine.GetFormatFlexCelDataType(const ADataType: TEFDataType;
   const AFieldSize: integer; out AFmtFlexCel: TFlxFormat);
@@ -440,7 +442,6 @@ begin
     ImpostaFormatFlexCel(LExcelFile);
 
     CreateExcelSheet(LExcelFile, ATableStore, AExcelRangeName, AAcceptFieldEvent, AUseDisplayLabels);
-    LZeroValueForced := False;
     RowNum := 1;
     //Fill the Ado dataset using the records of the store
     for LRecordIndex := 0 to ATableStore.RecordCount -1 do
@@ -498,9 +499,7 @@ procedure TKFlexCelExportEngine.CreateFileByDataSet(const AFileName: string;
   const AUseDisplayLabels: Boolean = False);
 var
   LAcceptRecord, LAcceptField: Boolean;
-  LDestField: TField;
   LSourceField: TField;
-  LZeroValueForced: Boolean;
   LExcelFile : TExcelFile;
   RowNum : integer;
   FmtFlexCel : TFLXFormat;

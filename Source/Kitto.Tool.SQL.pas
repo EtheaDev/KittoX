@@ -137,74 +137,70 @@ var
 
 begin
   inherited;
-  LDBConnection := TKConfig.Instance.CreateDBConnection(DatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(DatabaseName);
+  LDBConnection.StartTransaction;
   try
-    LDBConnection.StartTransaction;
+    LCommandText := Config.GetString('SQLCommandText');
+    Assert(LCommandText <> '','SQLCommandText is mandatory');
+
+    LDBCommand := LDBConnection.CreateDBCommand;
     try
-      LCommandText := Config.GetString('SQLCommandText');
-      Assert(LCommandText <> '','SQLCommandText is mandatory');
-
-      LDBCommand := LDBConnection.CreateDBCommand;
-      try
-        LDBCommand.CommandText := LCommandText;
-        // Assign input param values
-        for I := 0 to LDBCommand.Params.Count - 1 do
+      LDBCommand.CommandText := LCommandText;
+      // Assign input param values
+      for I := 0 to LDBCommand.Params.Count - 1 do
+      begin
+        LParam := LDBCommand.Params[I];
+        LParamNode := Config.FindNode('InputParams/' + LParam.Name);
+        if Assigned(LParamNode) then
         begin
-          LParam := LDBCommand.Params[I];
-          LParamNode := Config.FindNode('InputParams/' + LParam.Name);
-          if Assigned(LParamNode) then
-          begin
-            LExpandedValue := LParamNode.GetString('Value');
-            ExpandExpression(LExpandedValue);
-            if not SameText(LExpandedValue, LParamNode.AsString) then
-              LParam.AsString := LExpandedValue
-            else
-              LParamNode.AssignToParam(LParam);
-          end;
+          LExpandedValue := LParamNode.GetString('Value');
+          ExpandExpression(LExpandedValue);
+          if not SameText(LExpandedValue, LParamNode.AsString) then
+            LParam.AsString := LExpandedValue
+          else
+            LParamNode.AssignToParam(LParam);
         end;
-
-        LDBCommand.Execute;
-
-        // Read output parameters
-        LSuccess := True;
-        for I := 0 to LDBCommand.Params.Count - 1 do
-        begin
-          LParam := LDBCommand.Params[I];
-          LParamNode := Config.FindNode('OutputParams/' + LParam.Name);
-          if Assigned(LParamNode) then
-          begin
-            LParamNode.Value := LParam.Value;
-            LSuccessNode := LParamNode.FindNode('SuccessValue');
-            LFailureNode := LParamNode.FindNode('FailureValue');
-            if Assigned(LFailureNode) then
-              LSuccess := LFailureNode.Value <> LParam.Value
-            else if Assigned(LSuccessNode) then
-              LSuccess := LSuccessNode.Value = LParam.Value;
-          end;
-        end;
-
-        if LSuccess then
-        begin
-          LSuccessMessage := ExpandParamNode(Config.GetString('SuccessMessageTemplate',
-            Format(_('Command %s executed succesfully!'), [DisplayLabel])));
-          TKWebApplication.Current.Toast(LSuccessMessage);
-        end
-        else
-        begin
-          LErrorMessage := ExpandParamNode(Config.GetString('ErrorMessageTemplate',
-            Format(_('Error executing command %s!'), [DisplayLabel])));
-          raise Exception.Create(LErrorMessage);
-        end;
-        LDBConnection.CommitTransaction;
-      finally
-        FreeAndNil(LDBCommand);
       end;
-    except
-      LDBConnection.RollbackTransaction;
-      raise;
+
+      LDBCommand.Execute;
+
+      // Read output parameters
+      LSuccess := True;
+      for I := 0 to LDBCommand.Params.Count - 1 do
+      begin
+        LParam := LDBCommand.Params[I];
+        LParamNode := Config.FindNode('OutputParams/' + LParam.Name);
+        if Assigned(LParamNode) then
+        begin
+          LParamNode.Value := LParam.Value;
+          LSuccessNode := LParamNode.FindNode('SuccessValue');
+          LFailureNode := LParamNode.FindNode('FailureValue');
+          if Assigned(LFailureNode) then
+            LSuccess := LFailureNode.Value <> LParam.Value
+          else if Assigned(LSuccessNode) then
+            LSuccess := LSuccessNode.Value = LParam.Value;
+        end;
+      end;
+
+      if LSuccess then
+      begin
+        LSuccessMessage := ExpandParamNode(Config.GetString('SuccessMessageTemplate',
+          Format(_('Command %s executed succesfully!'), [DisplayLabel])));
+        TKWebApplication.Current.Toast(LSuccessMessage);
+      end
+      else
+      begin
+        LErrorMessage := ExpandParamNode(Config.GetString('ErrorMessageTemplate',
+          Format(_('Error executing command %s!'), [DisplayLabel])));
+        raise Exception.Create(LErrorMessage);
+      end;
+      LDBConnection.CommitTransaction;
+    finally
+      FreeAndNil(LDBCommand);
     end;
-  finally
-    FreeAndNil(LDBConnection);
+  except
+    LDBConnection.RollbackTransaction;
+    raise;
   end;
 end;
 

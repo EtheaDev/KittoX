@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.2 - 19 Apr 2026**
+**Latest Version 4.0.5 - 23 Apr 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -57,6 +57,43 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 23 Apr 2026: ver. 4.0.5 Beta
+
+### Architectural refactor: DB connection ownership unified in TKConfig
+- New public API `TKConfig.DatabaseFor(Name)`
+- `CreateDBConnection` moved from `public` to `protected`
+- New public API `TKConfig.CreateStandaloneDBConnection(Name)`
+- `ClearDatabase` and `DestroyInstance` now clear both** `FDatabase` and `FDatabases`
+- `InDBConnection` / `InDBTransaction` helpers
+
+## 22 Apr 2026: ver. 4.0.4 Beta
+- Manual column resize in grids
+- Tooltip on truncated grid cells (only when actually truncated)
+- Fix: in-memory lookup popup closing on resize
+- Tooltip on TreePanel menu nodes
+- Multi-column sort in grids
+- Multi-page form validation
+- Edit-mode accent border for combobox and other non-text-editable fields
+- SunEditor readonly rendering
+- Checkbox styled like other form inputs
+- DetailTables Style (Tabs/Bottom/Popup)
+- Added CSS `.disabled` class
+
+## 23 Apr 2026: ver. 4.0.3 Beta
+- Editing-mode field borders
+- Form toolbar anchoring
+- DateTime field fixes
+- Fixed KittoEmailSenderSrvc
+- Grid keyboard navigation
+- SunEditor theming and resize
+- Dialog focus
+- DetailTables Style (Tabs/Bottom/Popup)
+- ExportExcel / ExportFlexCel
+- Fixed Date/time filters SQL conversion
+- Date/time filter trigger
+- Error dialog consistency
+- `Controller: Window` restored backward-compatibility
 
 ## 19 Apr 2026: ver. 4.0.2 Beta
 - Simplified Apache/IIS deployment: static resources served internally, no RewriteRule needed

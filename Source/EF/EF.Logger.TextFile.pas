@@ -44,6 +44,7 @@ type
     class procedure CreateSingletonInstance;
     class procedure FreeSingletonInstance;
     procedure AfterConstruction; override;
+    destructor Destroy; override;
     property FileName: string read FFileName write SetFileName;
   end;
 
@@ -59,6 +60,12 @@ procedure TEFTextFileLogEndpoint.AfterConstruction;
 begin
   inherited;
   FFileName := ChangeFileExt(GetModuleName(HInstance), '.log');
+end;
+
+destructor TEFTextFileLogEndpoint.Destroy;
+begin
+  FreeAndNil(FStream);
+  inherited;
 end;
 
 procedure TEFTextFileLogEndpoint.Configure(const AConfig: TEFComponentConfig;

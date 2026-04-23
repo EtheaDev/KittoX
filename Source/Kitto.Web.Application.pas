@@ -113,6 +113,10 @@ type
     /// </summary>
     procedure PopulateRecordFromPost(ARecord: TKViewTableRecord;
       AViewTable: TKViewTable; AIsInsert: Boolean);
+    /// <summary>Builds an ORDER BY expression from CSV sort/dir request fields.
+    /// Fields not in AViewTable are silently dropped (anti SQL injection).</summary>
+    function BuildSortExpression(AViewTable: TKViewTable;
+      const ASort, ADir: string): string;
     /// <summary>Adjusts controller modal/size for the current context.
     /// Mobile: forces IsModal + Maximized. Desktop non-modal: clears dimensions.</summary>
     procedure AdjustControllerForContext(const AController: IKXController);
@@ -1633,6 +1637,37 @@ end;
 // Bodies of HandleKXChartDataRequest, HandleKXMapDataRequest, HandleKXCalendarDataRequest
 // removed — migrated to Kitto.Web.Handler.Chart/Map/Calendar.
 
+function TKWebApplication.BuildSortExpression(AViewTable: TKViewTable;
+  const ASort, ADir: string): string;
+var
+  LFields, LDirs: TArray<string>;
+  LViewField: TKViewField;
+  I: Integer;
+  LSB: TStringBuilder;
+begin
+  Result := '';
+  if ASort = '' then Exit;
+  LFields := ASort.Split([',']);
+  LDirs := ADir.Split([',']);
+  LSB := TStringBuilder.Create;
+  try
+    for I := 0 to High(LFields) do
+    begin
+      LViewField := AViewTable.FindField(LFields[I].Trim);
+      if not Assigned(LViewField) then Continue; // invalid → drop (anti SQL injection)
+      if LSB.Length > 0 then LSB.Append(', ');
+      LSB.Append(LViewField.QualifiedDBNameOrExpression);
+      if (I <= High(LDirs)) and SameText(LDirs[I].Trim, 'desc') then
+        LSB.Append(' desc')
+      else
+        LSB.Append(' asc');
+    end;
+    Result := LSB.ToString;
+  finally
+    LSB.Free;
+  end;
+end;
+
 function TKWebApplication.HandleKXDataRequest(const AViewName: string): Boolean;
 var
   LView: TKView;
@@ -1855,21 +1890,8 @@ begin
   end
   else
   begin
-    // Standard List controller: paged data with sort
-    // Build sort expression — only if field exists in view table (prevents SQL injection)
-    LSortExpr := '';
-    if LSort <> '' then
-    begin
-      LViewField := LViewTable.FindField(LSort);
-      if Assigned(LViewField) then
-      begin
-        LSortExpr := LViewField.QualifiedDBNameOrExpression;
-        if SameText(LDir, 'desc') then
-          LSortExpr := LSortExpr + ' desc'
-        else
-          LSortExpr := LSortExpr + ' asc';
-      end;
-    end;
+    // Standard List controller: paged data with (possibly multi-column) sort
+    LSortExpr := BuildSortExpression(LViewTable, LSort, LDir);
 
     // Load data
     LStore := LViewTable.CreateStore;
@@ -2127,20 +2149,7 @@ begin
     LSort := TKWebRequest.Current.GetField('sort');
     LDir := TKWebRequest.Current.GetField('dir');
 
-    // Build sort expression
-    LSortExpr := '';
-    if LSort <> '' then
-    begin
-      LViewField := LViewTable.FindField(LSort);
-      if Assigned(LViewField) then
-      begin
-        LSortExpr := LViewField.QualifiedDBNameOrExpression;
-        if SameText(LDir, 'desc') then
-          LSortExpr := LSortExpr + ' desc'
-        else
-          LSortExpr := LSortExpr + ' asc';
-      end;
-    end;
+    LSortExpr := BuildSortExpression(LViewTable, LSort, LDir);
 
     // Load data and return response
     LStore := LViewTable.CreateStore;

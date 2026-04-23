@@ -38,7 +38,7 @@ MainTable:
   DetailTables:
     Controller:
       # Tabs/Popup/Bottom. Default = Tabs.
-      Style: Bottom
+      Style: Tabs
         Height: 250
     Table:
       Model: Invitation

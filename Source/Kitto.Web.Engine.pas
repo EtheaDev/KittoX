@@ -113,6 +113,7 @@ uses
   EF.Tree,
   EF.Logger,
   Kitto.Config,
+  Kitto.Html.Response,
   Kitto.Web.Types;
 
 { TKWebEngine }
@@ -214,7 +215,9 @@ begin
           AResponse.SendResponse;
         end;
       finally
+        TKXWebResponse.ClearCurrent;
         TKWebResponse.ClearCurrent;
+        TKConfig.ClearDatabase;
       end;
     finally
       TKWebRequest.ClearCurrent;

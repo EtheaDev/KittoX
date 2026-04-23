@@ -143,41 +143,37 @@ begin
   SB := TStringBuilder.Create;
   SBKey := TStringBuilder.Create;
   try
-    LDBConnection := TKConfig.Instance.CreateDBConnection(LViewTable.DatabaseName);
+    LDBConnection := TKConfig.DatabaseFor(LViewTable.DatabaseName);
+    LDBQuery := LDBConnection.CreateDBQuery;
     try
-      LDBQuery := LDBConnection.CreateDBQuery;
-      try
-        TKSQLBuilder.CreateAndExecute(
-          procedure (ASQLBuilder: TKSQLBuilder)
-          begin
-            ASQLBuilder.BuildSelectQuery(LViewTable, '', '', LDBQuery, nil);
-          end);
-
-        if LHasDateRange then
+      TKSQLBuilder.CreateAndExecute(
+        procedure (ASQLBuilder: TKSQLBuilder)
         begin
-          LCommandText := LDBQuery.CommandText;
-          if LEndDateField <> LStartDateField then
-            LDateFilter := '(' + LStartExpr + ' < :cal_end) and ' +
-              '((' + LEndExpr + ' >= :cal_start) or (' + LEndExpr + ' is null))'
-          else
-            LDateFilter := '(' + LStartExpr + ' < :cal_end) and ' +
-              '(' + LStartExpr + ' >= :cal_start)';
-          LCommandText := AddToSQLWhereClause(LCommandText, LDateFilter);
-          LDBQuery.CommandText := LCommandText;
-          LDBQuery.Params.CreateParam(ftDateTime, 'cal_start', ptInput);
-          LDBQuery.Params.CreateParam(ftDateTime, 'cal_end', ptInput);
-          LDBQuery.Params.ParamByName('cal_start').AsDateTime :=
-            StrToDateTime(StringReplace(Copy(AStartParam, 1, 19), 'T', ' ', []), LFmt);
-          LDBQuery.Params.ParamByName('cal_end').AsDateTime :=
-            StrToDateTime(StringReplace(Copy(AEndParam, 1, 19), 'T', ' ', []), LFmt);
-        end;
+          ASQLBuilder.BuildSelectQuery(LViewTable, '', '', LDBQuery, nil);
+        end);
 
-        LStore.Load(LDBQuery, False, False, nil);
-      finally
-        FreeAndNil(LDBQuery);
+      if LHasDateRange then
+      begin
+        LCommandText := LDBQuery.CommandText;
+        if LEndDateField <> LStartDateField then
+          LDateFilter := '(' + LStartExpr + ' < :cal_end) and ' +
+            '((' + LEndExpr + ' >= :cal_start) or (' + LEndExpr + ' is null))'
+        else
+          LDateFilter := '(' + LStartExpr + ' < :cal_end) and ' +
+            '(' + LStartExpr + ' >= :cal_start)';
+        LCommandText := AddToSQLWhereClause(LCommandText, LDateFilter);
+        LDBQuery.CommandText := LCommandText;
+        LDBQuery.Params.CreateParam(ftDateTime, 'cal_start', ptInput);
+        LDBQuery.Params.CreateParam(ftDateTime, 'cal_end', ptInput);
+        LDBQuery.Params.ParamByName('cal_start').AsDateTime :=
+          StrToDateTime(StringReplace(Copy(AStartParam, 1, 19), 'T', ' ', []), LFmt);
+        LDBQuery.Params.ParamByName('cal_end').AsDateTime :=
+          StrToDateTime(StringReplace(Copy(AEndParam, 1, 19), 'T', ' ', []), LFmt);
       end;
+
+      LStore.Load(LDBQuery, False, False, nil);
     finally
-      FreeAndNil(LDBConnection);
+      FreeAndNil(LDBQuery);
     end;
 
     SB.Append('[');

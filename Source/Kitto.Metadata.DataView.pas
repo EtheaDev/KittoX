@@ -1698,22 +1698,18 @@ begin
         for LDerivedField in LDerivedFields do
           LStore.Header.AddField(LDerivedField.AliasedName).DataType := LDerivedField.DataType;
         // Get data.
-        LDBConnection := TKConfig.Instance.CreateDBConnection(Table.DatabaseName);
+        LDBConnection := TKConfig.DatabaseFor(Table.DatabaseName);
+        LDBQuery := LDBConnection.CreateDBQuery;
         try
-          LDBQuery := LDBConnection.CreateDBQuery;
-          try
-            TKSQLBuilder.CreateAndExecute(
-              procedure (ASQLBuilder: TKSQLBuilder)
-              begin
-                LHasDerivedFields := ASQLBuilder.BuildDerivedSelectQuery(Self, LDBQuery, AKeyValues);
-              end);
-            if LHasDerivedFields then
-              LStore.Load(LDBQuery, False, True);
-          finally
-            FreeAndNil(LDBQuery);
-          end;
+          TKSQLBuilder.CreateAndExecute(
+            procedure (ASQLBuilder: TKSQLBuilder)
+            begin
+              LHasDerivedFields := ASQLBuilder.BuildDerivedSelectQuery(Self, LDBQuery, AKeyValues);
+            end);
+          if LHasDerivedFields then
+            LStore.Load(LDBQuery, False, True);
         finally
-          FreeAndNil(LDBConnection);
+          FreeAndNil(LDBQuery);
         end;
       end);
     Result := LStore;
@@ -1777,22 +1773,18 @@ begin
       end);
 
     // Get data.
-    LDBConnection := TKConfig.Instance.CreateDBConnection(Table.DatabaseName);
+    LDBConnection := TKConfig.DatabaseFor(Table.DatabaseName);
+    LDBQuery := LDBConnection.CreateDBQuery;
     try
-      LDBQuery := LDBConnection.CreateDBQuery;
-      try
-        with TKSQLBuilder.Create do
-          try
-            BuildSingletonSelectQuery(ModelField.ReferencedModel, LDBQuery, AKeyValues);
-          finally
-            Free;
-          end;
-        LStore.Load(LDBQuery, False, True);
-      finally
-        FreeAndNil(LDBQuery);
-      end;
+      with TKSQLBuilder.Create do
+        try
+          BuildSingletonSelectQuery(ModelField.ReferencedModel, LDBQuery, AKeyValues);
+        finally
+          Free;
+        end;
+      LStore.Load(LDBQuery, False, True);
     finally
-      FreeAndNil(LDBConnection);
+      FreeAndNil(LDBQuery);
     end;
     Result := LStore;
   except
@@ -2573,60 +2565,56 @@ var
 begin
   Assert(Assigned(FViewTable));
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(ViewTable.DatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(ViewTable.DatabaseName);
+  LDBQuery := LDBConnection.CreateDBQuery;
   try
-    LDBQuery := LDBConnection.CreateDBQuery;
-    try
-      if (AFrom = 0) and (AFor = 0) then
-      begin
-        TKSQLBuilder.CreateAndExecute(
-          procedure (ASQLBuilder: TKSQLBuilder)
-          begin
-            ASQLBuilder.BuildSelectQuery(FViewTable, AFilter, ASort, LDBQuery, FMasterRecord);
-          end);
-        inherited Load(LDBQuery, False, False,
-          procedure (ARecord: Kitto.Store.TKRecord)
-          begin
-            if Assigned(AForEachRecord) then
-              AForEachRecord(ARecord as TKViewTableRecord);
-          end);
-        // Records loaded from DB are clean (not new) — needed for correct
-        // state tracking in detail delete (rsNew vs rsClean → rsDeleted).
-        Records.MarkAsClean;
-        Result := RecordCount;
-      end
-      else
-      begin
-        TKSQLBuilder.CreateAndExecute(
-          procedure (ASQLBuilder: TKSQLBuilder)
-          begin
-            ASQLBuilder.BuildCountQuery(FViewTable, AFilter, LDBQuery, FMasterRecord);
-          end);
-        LDBQuery.Open;
-        try
-          Result := LDBQuery.DataSet.Fields[0].AsInteger;
-        finally
-          LDBQuery.Close;
-        end;
-        TKSQLBuilder.CreateAndExecute(
-          procedure (ASQLBuilder: TKSQLBuilder)
-          begin
-            ASQLBuilder.BuildSelectQuery(FViewTable, AFilter, ASort, LDBQuery, FMasterRecord, AFrom, AFor);
-          end);
-        inherited Load(LDBQuery, False, False,
-          procedure (ARecord: Kitto.Store.TKRecord)
-          begin
-            if Assigned(AForEachRecord) then
-              AForEachRecord(ARecord as TKViewTableRecord);
-          end);
-        // Records loaded from DB are clean (not new).
-        Records.MarkAsClean;
+    if (AFrom = 0) and (AFor = 0) then
+    begin
+      TKSQLBuilder.CreateAndExecute(
+        procedure (ASQLBuilder: TKSQLBuilder)
+        begin
+          ASQLBuilder.BuildSelectQuery(FViewTable, AFilter, ASort, LDBQuery, FMasterRecord);
+        end);
+      inherited Load(LDBQuery, False, False,
+        procedure (ARecord: Kitto.Store.TKRecord)
+        begin
+          if Assigned(AForEachRecord) then
+            AForEachRecord(ARecord as TKViewTableRecord);
+        end);
+      // Records loaded from DB are clean (not new) — needed for correct
+      // state tracking in detail delete (rsNew vs rsClean → rsDeleted).
+      Records.MarkAsClean;
+      Result := RecordCount;
+    end
+    else
+    begin
+      TKSQLBuilder.CreateAndExecute(
+        procedure (ASQLBuilder: TKSQLBuilder)
+        begin
+          ASQLBuilder.BuildCountQuery(FViewTable, AFilter, LDBQuery, FMasterRecord);
+        end);
+      LDBQuery.Open;
+      try
+        Result := LDBQuery.DataSet.Fields[0].AsInteger;
+      finally
+        LDBQuery.Close;
       end;
-    finally
-      FreeAndNil(LDBQuery);
+      TKSQLBuilder.CreateAndExecute(
+        procedure (ASQLBuilder: TKSQLBuilder)
+        begin
+          ASQLBuilder.BuildSelectQuery(FViewTable, AFilter, ASort, LDBQuery, FMasterRecord, AFrom, AFor);
+        end);
+      inherited Load(LDBQuery, False, False,
+        procedure (ARecord: Kitto.Store.TKRecord)
+        begin
+          if Assigned(AForEachRecord) then
+            AForEachRecord(ARecord as TKViewTableRecord);
+        end);
+      // Records loaded from DB are clean (not new).
+      Records.MarkAsClean;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LDBQuery);
   end;
 end;
 
@@ -2828,26 +2816,22 @@ var
 begin
   Assert(Assigned(ViewTable));
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(ViewTable.DatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(ViewTable.DatabaseName);
+  LDBQuery := LDBConnection.CreateDBQuery;
   try
-    LDBQuery := LDBConnection.CreateDBQuery;
-    try
-      TKSQLBuilder.CreateAndExecute(
-        procedure (ASQLBuilder: TKSQLBuilder)
-        begin
-          ASQLBuilder.BuildSingletonSelectQuery(ViewTable, LDBQuery, GetFieldValues(Store.ViewTable.Model.GetKeyFieldNames));
-        end);
-      LDBQuery.Open;
-      if AStrict and LDBQuery.DataSet.IsEmpty then
-        raise Exception.Create('Record not found');
-      if not LDBQuery.DataSet.IsEmpty then
-        ReadFromFields(LDBQuery.DataSet.Fields);
-      MarkAsClean;
-    finally
-      FreeAndNil(LDBQuery);
-    end;
+    TKSQLBuilder.CreateAndExecute(
+      procedure (ASQLBuilder: TKSQLBuilder)
+      begin
+        ASQLBuilder.BuildSingletonSelectQuery(ViewTable, LDBQuery, GetFieldValues(Store.ViewTable.Model.GetKeyFieldNames));
+      end);
+    LDBQuery.Open;
+    if AStrict and LDBQuery.DataSet.IsEmpty then
+      raise Exception.Create('Record not found');
+    if not LDBQuery.DataSet.IsEmpty then
+      ReadFromFields(LDBQuery.DataSet.Fields);
+    MarkAsClean;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LDBQuery);
   end;
 end;
 

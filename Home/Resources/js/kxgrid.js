@@ -309,9 +309,12 @@ var kxGrid = {
 
   /**
    * Prepares sort state before HTMX fires the column-header request.
-   * Updates hidden sort/dir inputs and toggles CSS classes immediately.
+   * Hidden inputs sort/dir carry CSV lists ("FIELD1,FIELD2" and "asc,desc"),
+   * same length. Plain click replaces the list with a single column (toggles
+   * direction if same column). Ctrl/Cmd/Shift+click adds the column as an
+   * additional sort key, or toggles its direction if already present.
    */
-  prepareSort: function(th, viewName) {
+  prepareSort: function(th, viewName, event) {
     var field = th.dataset.field;
     var stateDiv = document.getElementById('kx-list-state-' + viewName);
     if (!stateDiv) return;
@@ -319,36 +322,131 @@ var kxGrid = {
     var dirInput = stateDiv.querySelector('input[name="dir"]');
     if (!sortInput || !dirInput) return;
 
-    if (sortInput.value === field) {
-      dirInput.value = dirInput.value === 'asc' ? 'desc' : 'asc';
+    var fields = sortInput.value ? sortInput.value.split(',') : [];
+    var dirs = dirInput.value ? dirInput.value.split(',') : [];
+    // Keep arrays aligned in length
+    while (dirs.length < fields.length) dirs.push('asc');
+    if (dirs.length > fields.length) dirs.length = fields.length;
+
+    var additive = !!(event && (event.ctrlKey || event.metaKey || event.shiftKey));
+    var idx = fields.indexOf(field);
+
+    if (additive) {
+      if (idx >= 0) dirs[idx] = dirs[idx] === 'asc' ? 'desc' : 'asc';
+      else { fields.push(field); dirs.push('asc'); }
+    } else if (fields.length === 1 && idx === 0) {
+      dirs[0] = dirs[0] === 'asc' ? 'desc' : 'asc';
     } else {
-      sortInput.value = field;
-      dirInput.value = 'asc';
+      fields = [field];
+      dirs = ['asc'];
     }
 
+    sortInput.value = fields.join(',');
+    dirInput.value = dirs.join(',');
     this.updateSortIndicators(viewName);
   },
 
   /**
    * Updates sort arrow CSS classes on column headers to match hidden state.
+   * For multi-column sort, each active column also gets a data-sort-index
+   * attribute (1-based) used by CSS to show the sort position badge.
    */
   updateSortIndicators: function(viewName) {
     var stateDiv = document.getElementById('kx-list-state-' + viewName);
     if (!stateDiv) return;
     var sortEl = stateDiv.querySelector('input[name="sort"]');
     var dirEl = stateDiv.querySelector('input[name="dir"]');
-    var sort = sortEl ? sortEl.value : '';
-    var dir = dirEl ? dirEl.value : 'asc';
+    var fields = sortEl && sortEl.value ? sortEl.value.split(',') : [];
+    var dirs = dirEl && dirEl.value ? dirEl.value.split(',') : [];
 
     var thead = document.getElementById('kx-list-head-' + viewName);
     if (!thead) return;
 
+    var multi = fields.length > 1;
     thead.querySelectorAll('th.kx-col-sortable').forEach(function(t) {
       t.classList.remove('kx-sort-asc', 'kx-sort-desc');
-      if (t.dataset.field === sort) {
-        t.classList.add(dir === 'desc' ? 'kx-sort-desc' : 'kx-sort-asc');
+      t.removeAttribute('data-sort-index');
+      var idx = fields.indexOf(t.dataset.field);
+      if (idx >= 0) {
+        t.classList.add((dirs[idx] || 'asc') === 'desc' ? 'kx-sort-desc' : 'kx-sort-asc');
+        if (multi) t.setAttribute('data-sort-index', idx + 1);
       }
     });
+  },
+
+  /**
+   * Syncs native tooltips on grid cells so they appear only when the content
+   * is actually truncated by the column width. For each <td> carrying a
+   * data-full attribute (emitted server-side with the complete value),
+   * compares scrollWidth vs clientWidth: if overflowing, sets title to the
+   * full value; otherwise removes the title so no tooltip shows. Must run
+   * after initial render, after every HTMX swap of the tbody, and at the
+   * end of a column drag resize.
+   * @param {Element|Document} [root] Optional scope (defaults to document).
+   */
+  syncCellTitles: function(root) {
+    // Defer to next frame so the browser has settled layout — scrollWidth and
+    // clientWidth are reliable only after the reflow following a DOM swap or
+    // an inline width change.
+    requestAnimationFrame(function() {
+      var scope = root || document;
+      var cells = scope.querySelectorAll('td[data-full]');
+      for (var i = 0; i < cells.length; i++) {
+        var td = cells[i];
+        if (td.scrollWidth > td.clientWidth) {
+          td.title = td.dataset.full;
+        } else if (td.hasAttribute('title')) {
+          td.removeAttribute('title');
+        }
+      }
+    });
+  },
+
+  /**
+   * Starts a column resize drag from a <th>'s right-edge handle.
+   * Ephemeral: the width is set inline on the <th> and is discarded when
+   * the grid is re-rendered (no persistence). The handle stops propagation
+   * so it never triggers column sort. The grid container has overflow:auto,
+   * so a horizontal scrollbar appears if the user widens a column past the
+   * viewport.
+   */
+  startColResize: function(event, handle) {
+    event.preventDefault();
+    event.stopPropagation();
+    var th = handle.parentElement;
+    if (!th) return;
+    var startX = event.clientX;
+    var startWidth = th.offsetWidth;
+    handle.classList.add('kx-col-resizing');
+    // Global body class forces col-resize cursor on every element during drag,
+    // beating more specific rules (sortable headers, row hover, ...) via CSS !important.
+    document.body.classList.add('kx-col-resize-active');
+
+    function onMove(e) {
+      var w = Math.max(30, startWidth + (e.clientX - startX));
+      th.style.width = w + 'px';
+      th.style.minWidth = w + 'px';
+      th.style.maxWidth = w + 'px';
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      handle.classList.remove('kx-col-resizing');
+      document.body.classList.remove('kx-col-resize-active');
+      // Swallow the click event the browser emits after mouseup when it lands
+      // inside the <th>: without this the column's onclick would trigger a sort.
+      // Capture phase + {once:true} so the handler is removed after firing.
+      th.addEventListener('click', function swallow(e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }, { capture: true, once: true });
+      // Re-sync tooltips: cells that became fully visible lose the title,
+      // cells still truncated keep it.
+      var table = th.closest('table');
+      if (table) kxGrid.syncCellTitles(table);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   },
 
   /**
@@ -846,6 +944,10 @@ var kxForm = {
         ta.closest('.kx-form-field').querySelector('.sun-editor') : null;
       if (seRoot) {
         seRoot._kxResizeCleanup = attachSunEditorResize(seRoot);
+        // SunEditor's editor.disable() adds se-disabled to .se-wrapper-inner
+        // (the editing area), NOT to the .sun-editor root. Tag the root
+        // ourselves so CSS can hide the empty toolbar + resize bar when readonly.
+        if (isReadOnly) seRoot.classList.add('kx-se-readonly');
       }
       // Remove name from original textarea so it won't be serialized by form;
       // syncHtmlEditors will create a hidden input with the correct value.
@@ -902,6 +1004,53 @@ var kxForm = {
     });
   },
 
+  // Common prologue for save/saveCache/saveDetail: syncs HTML editors, locks
+  // the Save button to prevent concurrent submits, and validates required
+  // fields (switching to the page of the first invalid one on multi-page forms).
+  // Returns the save button element (may be null) on success, or false if the
+  // caller must abort (save already in progress or validation failed).
+  _prepareSave: function(form, viewName) {
+    kxForm.syncHtmlEditors(viewName);
+    var saveBtn = form.querySelector('.kx-form-btn-save');
+    if (saveBtn && saveBtn.disabled) return false;
+    if (saveBtn) saveBtn.disabled = true;
+    if (!kxForm._validateRequiredFields(form, viewName)) {
+      if (saveBtn) saveBtn.disabled = false;
+      return false;
+    }
+    return saveBtn;
+  },
+
+  // On multi-page forms (PageBreak), switches to the page containing the first
+  // invalid required field. Returns true if the form is valid.
+  _validateRequiredFields: function(form, viewName) {
+    var inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+    for (var i = 0; i < inputs.length; i++) {
+      var field = inputs[i];
+      if (field.value || field.type === 'checkbox') continue;
+
+      var page = field.closest('.kx-form-page');
+      if (page && page.style.display === 'none') {
+        var fieldPages = form.querySelectorAll('.kx-form-page:not(.kx-detail-page)');
+        for (var p = 0; p < fieldPages.length; p++) {
+          if (fieldPages[p] === page) {
+            kxForm.switchPage(viewName, p);
+            break;
+          }
+        }
+      }
+
+      // rAF: wait for reflow so reportValidity() can anchor the tooltip to the
+      // now-visible field (display:none elements have 0x0 rect).
+      requestAnimationFrame(function() {
+        field.focus();
+        field.reportValidity();
+      });
+      return false;
+    }
+    return true;
+  },
+
   /**
    * Saves form data by POSTing to the server.
    * Collects all inputs from the form, sends as URL-encoded form data.
@@ -930,36 +1079,9 @@ var kxForm = {
 
     if (!form) return;
 
-    // Sync HTML editors before collecting form data
-    kxForm.syncHtmlEditors(viewName);
-
-    // Browser validation for required fields
-    // Prevent double-click / concurrent saves
-    var saveBtn = form.querySelector('.kx-form-btn-save');
-    if (saveBtn && saveBtn.disabled) return;
-    if (saveBtn) saveBtn.disabled = true;
-
-    var inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    for (var i = 0; i < inputs.length; i++) {
-      if (!inputs[i].value && inputs[i].type !== 'checkbox') {
-        // If the invalid field is on a hidden page, switch to that page first
-        var page = inputs[i].closest('.kx-form-page');
-        if (page && page.style.display === 'none') {
-          var pageId = page.id; // e.g. "kx-form-page-Dolls-1"
-          var allPages = form.querySelectorAll('.kx-form-page');
-          for (var p = 0; p < allPages.length; p++) {
-            if (allPages[p] === page) {
-              kxForm.switchPage(viewName, p);
-              break;
-            }
-          }
-        }
-        inputs[i].focus();
-        inputs[i].reportValidity();
-        if (saveBtn) saveBtn.disabled = false;
-        return;
-      }
-    }
+    // Browser validation for required fields (multi-page aware)
+    var saveBtn = kxForm._prepareSave(form, viewName);
+    if (saveBtn === false) return;
 
     // Check if any file inputs have files selected (for IsPicture blob upload)
     var fileInputs = form.querySelectorAll('input[type="file"]');
@@ -1114,22 +1236,9 @@ var kxForm = {
     var form = document.getElementById('kx-form-' + viewName);
     if (!form) return;
 
-    kxForm.syncHtmlEditors(viewName);
-
-    var saveBtn = form.querySelector('.kx-form-btn-save');
-    if (saveBtn && saveBtn.disabled) return;
-    if (saveBtn) saveBtn.disabled = true;
-
-    // Browser validation
-    var inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    for (var i = 0; i < inputs.length; i++) {
-      if (!inputs[i].value && inputs[i].type !== 'checkbox') {
-        inputs[i].focus();
-        inputs[i].reportValidity();
-        if (saveBtn) saveBtn.disabled = false;
-        return;
-      }
-    }
+    // Browser validation for required fields (multi-page aware)
+    var saveBtn = kxForm._prepareSave(form, viewName);
+    if (saveBtn === false) return;
 
     var body = new URLSearchParams();
     form.querySelectorAll('input, select, textarea').forEach(function(inp) {
@@ -1311,22 +1420,9 @@ var kxForm = {
     var form = document.getElementById('kx-form-' + detailView);
     if (!form) return;
 
-    kxForm.syncHtmlEditors(detailView);
-
-    var saveBtn = form.querySelector('.kx-form-btn-save');
-    if (saveBtn && saveBtn.disabled) return;
-    if (saveBtn) saveBtn.disabled = true;
-
-    // Browser validation
-    var inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    for (var i = 0; i < inputs.length; i++) {
-      if (!inputs[i].value && inputs[i].type !== 'checkbox') {
-        inputs[i].focus();
-        inputs[i].reportValidity();
-        if (saveBtn) saveBtn.disabled = false;
-        return;
-      }
-    }
+    // Browser validation for required fields (multi-page aware)
+    var saveBtn = kxForm._prepareSave(form, detailView);
+    if (saveBtn === false) return;
 
     var body = new URLSearchParams();
     form.querySelectorAll('input, select, textarea').forEach(function(inp) {
@@ -1635,9 +1731,16 @@ var kxForm = {
     popup.appendChild(body);
     overlay.appendChild(popup);
 
-    // Close on overlay click
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) overlay.remove();
+    // Close on overlay click: require BOTH mousedown and mouseup on the overlay,
+    // otherwise a drag-resize from the popup's corner (mousedown inside popup,
+    // mouseup outside) would be interpreted as a click-outside and close it.
+    var downOnOverlay = false;
+    overlay.addEventListener('mousedown', function(e) {
+      downOnOverlay = (e.target === overlay);
+    });
+    overlay.addEventListener('mouseup', function(e) {
+      if (downOnOverlay && e.target === overlay) overlay.remove();
+      downOnOverlay = false;
     });
 
     // Close on Escape key
@@ -2700,12 +2803,17 @@ var kxCalendar = {
     var viewName = target.id.replace('kx-list-body-', '');
     kxGrid.clearSelection(viewName);
     kxGrid.applyRowClasses(viewName);
+    kxGrid.syncCellTitles(target);
     htmx.process(target);
   } else if (target) {
     // Initial render: target is tab pane containing the grid; find tbodys inside
     target.querySelectorAll('tbody[data-row-class-provider]').forEach(function(tbody) {
       var viewName = tbody.id.replace('kx-list-body-', '');
       kxGrid.applyRowClasses(viewName);
+    });
+    // Sync tooltips on any tbody present (row-class-provider is optional)
+    target.querySelectorAll('tbody[id^="kx-list-body-"]').forEach(function(tbody) {
+      kxGrid.syncCellTitles(tbody);
     });
   }
 });

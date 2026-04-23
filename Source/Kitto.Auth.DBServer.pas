@@ -77,7 +77,10 @@ var
   LDBConnection: TEFDBConnection;
 begin
   try
-    LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+    // Standalone: DBServer authentication resolves dynamic credentials
+    // via %Auth:UserName%/%Auth:Password% macros — a cached connection
+    // would let subsequent logins reuse the first caller's credentials.
+    LDBConnection := TKConfig.CreateStandaloneDBConnection(GetDatabaseName);
     try
       LDBConnection.Open;
       Result := True;

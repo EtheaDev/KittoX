@@ -312,48 +312,43 @@ begin
   try
     LEmptyRecord := LStore.Records.AppendAndInitialize;
 
-    LDBConnection := TKConfig.Instance.CreateDBConnection(
-      ViewTable.DatabaseName);
+    LDBConnection := TKConfig.DatabaseFor(ViewTable.DatabaseName);
+    LDBQuery := LDBConnection.CreateDBQuery;
     try
-      LDBQuery := LDBConnection.CreateDBQuery;
+      LSQLBuilder := TKSQLBuilder.Create;
       try
-        LSQLBuilder := TKSQLBuilder.Create;
+        LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '', LEmptyRecord);
+      finally
+        FreeAndNil(LSQLBuilder);
+      end;
+
+      LDBQuery.Open;
+      try
+        SB := TStringBuilder.Create;
         try
-          LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '', LEmptyRecord);
-        finally
-          FreeAndNil(LSQLBuilder);
-        end;
+          SB.Append('<option value="">--</option>');
+          while not LDBQuery.DataSet.Eof do
+          begin
+            LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+            if LDBQuery.DataSet.FieldCount > 1 then
+              LCaptionValue := LDBQuery.DataSet.Fields[LDBQuery.DataSet.FieldCount - 1].AsString
+            else
+              LCaptionValue := LKeyValue;
 
-        LDBQuery.Open;
-        try
-          SB := TStringBuilder.Create;
-          try
-            SB.Append('<option value="">--</option>');
-            while not LDBQuery.DataSet.Eof do
-            begin
-              LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
-              if LDBQuery.DataSet.FieldCount > 1 then
-                LCaptionValue := LDBQuery.DataSet.Fields[LDBQuery.DataSet.FieldCount - 1].AsString
-              else
-                LCaptionValue := LKeyValue;
+            SB.Append('<option value="').Append(TNetEncoding.HTML.Encode(LKeyValue)).Append('"');
+            SB.Append('>').Append(TNetEncoding.HTML.Encode(LCaptionValue)).Append('</option>');
 
-              SB.Append('<option value="').Append(TNetEncoding.HTML.Encode(LKeyValue)).Append('"');
-              SB.Append('>').Append(TNetEncoding.HTML.Encode(LCaptionValue)).Append('</option>');
-
-              LDBQuery.DataSet.Next;
-            end;
-            Result := SB.ToString;
-          finally
-            SB.Free;
+            LDBQuery.DataSet.Next;
           end;
+          Result := SB.ToString;
         finally
-          LDBQuery.Close;
+          SB.Free;
         end;
       finally
-        FreeAndNil(LDBQuery);
+        LDBQuery.Close;
       end;
     finally
-      FreeAndNil(LDBConnection);
+      FreeAndNil(LDBQuery);
     end;
   finally
     FreeAndNil(LStore);
@@ -427,53 +422,48 @@ begin
     try
       LEmptyRecord := LStore.Records.AppendAndInitialize;
 
-      LDBConnection := TKConfig.Instance.CreateDBConnection(
-        ViewTable.DatabaseName);
+      LDBConnection := TKConfig.DatabaseFor(ViewTable.DatabaseName);
+      LDBQuery := LDBConnection.CreateDBQuery;
       try
-        LDBQuery := LDBConnection.CreateDBQuery;
+        LSQLBuilder := TKSQLBuilder.Create;
         try
-          LSQLBuilder := TKSQLBuilder.Create;
+          LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '',
+            LEmptyRecord);
+        finally
+          FreeAndNil(LSQLBuilder);
+        end;
+
+        LDBQuery.Open;
+        try
+          SB := TStringBuilder.Create;
           try
-            LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '',
-              LEmptyRecord);
-          finally
-            FreeAndNil(LSQLBuilder);
-          end;
+            SB.Append('[');
+            while not LDBQuery.DataSet.Eof do
+            begin
+              LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+              if LDBQuery.DataSet.FieldCount > 1 then
+                LCaptionValue := LDBQuery.DataSet.Fields[
+                  LDBQuery.DataSet.FieldCount - 1].AsString
+              else
+                LCaptionValue := LKeyValue;
 
-          LDBQuery.Open;
-          try
-            SB := TStringBuilder.Create;
-            try
-              SB.Append('[');
-              while not LDBQuery.DataSet.Eof do
-              begin
-                LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
-                if LDBQuery.DataSet.FieldCount > 1 then
-                  LCaptionValue := LDBQuery.DataSet.Fields[
-                    LDBQuery.DataSet.FieldCount - 1].AsString
-                else
-                  LCaptionValue := LKeyValue;
+              if SB.Length > 1 then
+                SB.Append(',');
+              SB.Append('{"k":"').Append(JSONEncodeStr(LKeyValue));
+              SB.Append('","c":"').Append(JSONEncodeStr(LCaptionValue)).Append('"}');
 
-                if SB.Length > 1 then
-                  SB.Append(',');
-                SB.Append('{"k":"').Append(JSONEncodeStr(LKeyValue));
-                SB.Append('","c":"').Append(JSONEncodeStr(LCaptionValue)).Append('"}');
-
-                LDBQuery.DataSet.Next;
-              end;
-              SB.Append(']');
-              LOptionsJSON := SB.ToString;
-            finally
-              SB.Free;
+              LDBQuery.DataSet.Next;
             end;
+            SB.Append(']');
+            LOptionsJSON := SB.ToString;
           finally
-            LDBQuery.Close;
+            SB.Free;
           end;
         finally
-          FreeAndNil(LDBQuery);
+          LDBQuery.Close;
         end;
       finally
-        FreeAndNil(LDBConnection);
+        FreeAndNil(LDBQuery);
       end;
     finally
       FreeAndNil(LStore);

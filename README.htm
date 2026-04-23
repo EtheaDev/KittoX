@@ -32,7 +32,7 @@ td{
 <h1>Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX</h1>
 <p><a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg" alt="Core License"/></a>
 <a href="KittoLicensing"><img src="https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg" alt="Enterprise License"/></a></p>
-<p><strong>Latest Version 4.0.2 - 19 Apr 2026</strong></p>
+<p><strong>Latest Version 4.0.5 - 23 Apr 2026</strong></p>
 <p><img src="./images/kittoX_logo_200.png" alt="KittoX_logo.png"/></p>
 <p><strong>Kitto<sup>x</sup></strong> allows to create <strong>Rich Internet Applications</strong> based on a data model that can be mapped onto any database. The client-side part uses <strong>HTMX</strong> (through webbroker technology) to create a fully <strong>AJAX</strong> application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.</p>
 <p><strong>Kitto<sup>x</sup></strong> uses <strong>HTMX</strong> as its client-side library: the server generates HTML fragments and HTMX handles partial page updates via AJAX, with no need for a heavy JavaScript framework.</p>
@@ -68,6 +68,45 @@ td{
 <p>Visit <a href="https://ethea.it/Kitto-Demo/">this site</a> for online demos.</p>
 <hr />
 <h1>Release Notes</h1>
+<h2>23 Apr 2026: ver. 4.0.5 Beta</h2>
+<h3>Architectural refactor: DB connection ownership unified in TKConfig</h3>
+<ul>
+<li>New public API <code>TKConfig.DatabaseFor(Name)</code></li>
+<li><code>CreateDBConnection</code> moved from <code>public</code> to <code>protected</code></li>
+<li>New public API <code>TKConfig.CreateStandaloneDBConnection(Name)</code></li>
+<li><code>ClearDatabase</code> and <code>DestroyInstance</code> now clear both** <code>FDatabase</code> and <code>FDatabases</code></li>
+<li><code>InDBConnection</code> / <code>InDBTransaction</code> helpers</li>
+</ul>
+<h2>22 Apr 2026: ver. 4.0.4 Beta</h2>
+<ul>
+<li>Manual column resize in grids</li>
+<li>Tooltip on truncated grid cells (only when actually truncated)</li>
+<li>Fix: in-memory lookup popup closing on resize</li>
+<li>Tooltip on TreePanel menu nodes</li>
+<li>Multi-column sort in grids</li>
+<li>Multi-page form validation</li>
+<li>Edit-mode accent border for combobox and other non-text-editable fields</li>
+<li>SunEditor readonly rendering</li>
+<li>Checkbox styled like other form inputs</li>
+<li>DetailTables Style (Tabs/Bottom/Popup)</li>
+<li>Added CSS <code>.disabled</code> class</li>
+</ul>
+<h2>23 Apr 2026: ver. 4.0.3 Beta</h2>
+<ul>
+<li>Editing-mode field borders</li>
+<li>Form toolbar anchoring</li>
+<li>DateTime field fixes</li>
+<li>Fixed KittoEmailSenderSrvc</li>
+<li>Grid keyboard navigation</li>
+<li>SunEditor theming and resize</li>
+<li>Dialog focus</li>
+<li>DetailTables Style (Tabs/Bottom/Popup)</li>
+<li>ExportExcel / ExportFlexCel</li>
+<li>Fixed Date/time filters SQL conversion</li>
+<li>Date/time filter trigger</li>
+<li>Error dialog consistency</li>
+<li><code>Controller: Window</code> restored backward-compatibility</li>
+</ul>
 <h2>19 Apr 2026: ver. 4.0.2 Beta</h2>
 <ul>
 <li>Simplified Apache/IIS deployment: static resources served internally, no RewriteRule needed</li>

@@ -48,6 +48,7 @@ uses
   System.SysUtils,
   System.Classes,
   System.StrUtils,
+  System.NetEncoding,
   System.Rtti,
   EF.Tree,
   EF.Localization,
@@ -95,7 +96,8 @@ begin
             SB.Append('<details class="kx-tree-folder"');
             if not TKTreeViewFolder(LNode).IsInitiallyCollapsed then
               SB.Append(' open');
-            SB.Append('><summary class="kx-tree-folder-label">');
+            SB.Append('><summary class="kx-tree-folder-label" title="');
+            SB.Append(TNetEncoding.HTML.Encode(LTabLabel)).Append('">');
             SB.Append('<span class="kx-toggle-icon">');
             SB.Append(GetIconHTML('chevron_right'));
             SB.Append('</span>');
@@ -139,6 +141,7 @@ begin
               SB.Append('data-view="').Append(LViewName).Append('" ');
               SB.Append('data-label="').Append(LDisplayLabel).Append('" ');
               SB.Append('data-tab-label="').Append(LTabLabel).Append('" ');
+              SB.Append('title="').Append(TNetEncoding.HTML.Encode(LTabLabel)).Append('" ');
               SB.Append('onclick="kxApp.openView(this); return false;">');
               SB.Append(GetIconHTML(LImageName));
               SB.Append(LDisplayLabel).Append('</a>');
@@ -148,6 +151,7 @@ begin
               // Modal, Wizard, non-DataView: always append to body as overlay
               SB.Append('<a class="kx-tree-leaf" ');
               SB.Append('hx-get="kx/view/').Append(LViewName).Append('" ');
+              SB.Append('title="').Append(TNetEncoding.HTML.Encode(LTabLabel)).Append('" ');
               SB.Append('hx-target="body" hx-swap="beforeend">');
               SB.Append(GetIconHTML(LImageName));
               SB.Append(LDisplayLabel).Append('</a>');

@@ -452,29 +452,25 @@ begin
         LCommandText := ReplaceStr(LCommandText, '{query}', '');
         if LCommandText <> '' then
         begin
-          LDBConnection := TKConfig.Instance.CreateDBConnection(
+          LDBConnection := TKConfig.DatabaseFor(
             LNode.GetString('DatabaseName', AViewTable.DatabaseName));
+          LDBQuery := LDBConnection.CreateDBQuery;
           try
-            LDBQuery := LDBConnection.CreateDBQuery;
+            LDBQuery.CommandText := LCommandText;
+            LDBQuery.Open;
             try
-              LDBQuery.CommandText := LCommandText;
-              LDBQuery.Open;
-              try
-                while not LDBQuery.DataSet.Eof do
-                begin
-                  SetLength(LPairs, Length(LPairs) + 1);
-                  LPairs[High(LPairs)].Key := LDBQuery.DataSet.Fields[0].AsString;
-                  LPairs[High(LPairs)].Value := LDBQuery.DataSet.Fields[1].AsString;
-                  LDBQuery.DataSet.Next;
-                end;
-              finally
-                LDBQuery.Close;
+              while not LDBQuery.DataSet.Eof do
+              begin
+                SetLength(LPairs, Length(LPairs) + 1);
+                LPairs[High(LPairs)].Key := LDBQuery.DataSet.Fields[0].AsString;
+                LPairs[High(LPairs)].Value := LDBQuery.DataSet.Fields[1].AsString;
+                LDBQuery.DataSet.Next;
               end;
             finally
-              FreeAndNil(LDBQuery);
+              LDBQuery.Close;
             end;
           finally
-            FreeAndNil(LDBConnection);
+            FreeAndNil(LDBQuery);
           end;
         end;
         var LCtx: TKXEditorContext;
@@ -1016,6 +1012,7 @@ var
   LDisplayWidth: Integer;
   LSortable: Boolean;
   LSortClass: string;
+  LSortIndexAttr: string;
   LFieldName: string;
   LInc: string;
   LUrlName: string;
@@ -1108,33 +1105,48 @@ begin
 
       LSortable := True;
 
-      // Determine initial sort CSS class (arrows rendered via CSS ::after)
+      // Determine initial sort CSS class (arrows rendered via CSS ::after).
+      // ACurrentSort/ACurrentDir are CSV lists supporting multi-column sort:
+      // a column is marked with kx-sort-asc/desc when its name matches any
+      // element, and with data-sort-index (1-based) when more than one key
+      // is active.
       LSortClass := '';
-      if SameText(ACurrentSort, LFieldName) then
-      begin
-        if SameText(ACurrentDir, 'asc') then
-          LSortClass := ' kx-sort-asc'
-        else if SameText(ACurrentDir, 'desc') then
-          LSortClass := ' kx-sort-desc';
-      end;
+      LSortIndexAttr := '';
+      var LSortFields: TArray<string> := ACurrentSort.Split([',']);
+      var LSortDirs: TArray<string> := ACurrentDir.Split([',']);
+      for var K := 0 to High(LSortFields) do
+        if SameText(LSortFields[K].Trim, LFieldName) then
+        begin
+          if (K <= High(LSortDirs)) and SameText(LSortDirs[K].Trim, 'desc') then
+            LSortClass := ' kx-sort-desc'
+          else
+            LSortClass := ' kx-sort-asc';
+          if Length(LSortFields) > 1 then
+            LSortIndexAttr := ' data-sort-index="' + IntToStr(K + 1) + '"';
+          Break;
+        end;
 
       if LSortable then
       begin
         SB.Append('<th class="kx-col-sortable').Append(LSortClass).Append('" ');
-        SB.Append('data-field="').Append(LFieldName).Append('" ');
+        SB.Append('data-field="').Append(LFieldName).Append('"').Append(LSortIndexAttr).Append(' ');
         SB.Append('style="text-align:').Append(LAlign).Append(';').Append(LWidthStyle).Append('" ');
         SB.Append('hx-get="kx/view/').Append(LUrlName).Append('/data" ');
         SB.Append('hx-target="#kx-list-body-').Append(AViewName).Append('" ');
         SB.Append('hx-include="').Append(LInc).Append('" ');
-        SB.Append('onclick="kxGrid.prepareSort(this,''').Append(AViewName).Append(''')" ');
+        SB.Append('onclick="kxGrid.prepareSort(this,''').Append(AViewName).Append(''',event)" ');
         SB.Append('>');
         SB.Append(TNetEncoding.HTML.Encode(LLabel));
+        // Resize handle: user-adjustable column width (ephemeral, no persistence).
+        SB.Append('<span class="kx-col-resize" onmousedown="kxGrid.startColResize(event,this)"></span>');
         SB.Append('</th>');
       end
       else
       begin
         SB.Append('<th style="text-align:').Append(LAlign).Append(';').Append(LWidthStyle).Append('">');
-        SB.Append(TNetEncoding.HTML.Encode(LLabel)).Append('</th>');
+        SB.Append(TNetEncoding.HTML.Encode(LLabel));
+        SB.Append('<span class="kx-col-resize" onmousedown="kxGrid.startColResize(event,this)"></span>');
+        SB.Append('</th>');
       end;
     end;
     SB.Append('</tr></thead>');
@@ -1335,27 +1347,33 @@ begin
             LValue := LField.DataType.NodeToJSONValue(True, LRecordField, LUserFmt, False);
             if SameText(LValue, 'null') then
               LValue := '';
-            SB.Append('<td style="text-align:').Append(LAlign).Append('">');
-            SB.Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
+            SB.Append('<td style="text-align:').Append(LAlign).Append('"');
+            if LValue <> '' then
+              SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+            SB.Append('>').Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
           end
           else if LIsCurrency then
           begin
             LValue := LField.DataType.NodeToJSONValue(True, LRecordField, LUserFmt, False);
             if SameText(LValue, 'null') then
               LValue := '';
-            SB.Append('<td style="text-align:right">');
             if (LValue <> '') and (LCurrSymbol <> '') then
-              SB.Append(TNetEncoding.HTML.Encode(LCurrSymbol + ' ' + LValue))
-            else
-              SB.Append(TNetEncoding.HTML.Encode(LValue));
-            SB.Append('</td>');
+              LValue := LCurrSymbol + ' ' + LValue;
+            SB.Append('<td style="text-align:right"');
+            if LValue <> '' then
+              SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+            SB.Append('>').Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
           end
           else
           begin
             LValue := LRecordField.GetAsJSONValue(True, False);
             if SameText(LValue, 'null') then
               LValue := '';
-            SB.Append('<td style="text-align:').Append(LAlign).Append('">');
+            SB.Append('<td style="text-align:').Append(LAlign).Append('"');
+            // HTMLMemo fields contain HTML markup: no tooltip (raw tags would show).
+            if (LValue <> '') and not (LField.DataType is TKHTMLMemoDataType) then
+              SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+            SB.Append('>');
             // HTMLMemo fields contain trusted HTML content — render without encoding
             if LField.DataType is TKHTMLMemoDataType then
               SB.Append(LValue)

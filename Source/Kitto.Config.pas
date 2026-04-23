@@ -65,6 +65,12 @@ type
     FViews: TKViews;
     FUserFormatSettings: TFormatSettings;
 
+    // Per-thread cached connections, released by ClearDatabase at end of each
+    // unit of work (web request, email thread, etc.). FDatabase is a fast-path
+    // slot for the default database (the 99% case); FDatabases holds connections
+    // to non-default databases, lazily created on first DatabaseFor() call.
+    class threadvar FDatabase: TEFDBConnection;
+    class threadvar FDatabases: TObjectDictionary<string, TEFDBConnection>;
     class function GetInstance: TKConfig; static;
     class function GetAppName: string; static;
     class function GetAppHomePath: string; static;
@@ -96,6 +102,17 @@ type
     function GetUploadPath: string;
     function GetConfigFileName: string; override;
     class function FindSystemHomePath: string;
+  protected
+    /// <summary>
+    ///  Creates a NEW DB connection for the specified configured database.
+    ///  Ownership is transferred to the caller. Application code should NOT
+    ///  use this directly: use <see cref="Database" /> or
+    ///  <see cref="DatabaseFor" /> to get a cached, per-request connection
+    ///  with consistent identity across callers in the same unit of work.
+    ///  Exposed as protected for framework internals and for design-time
+    ///  tools that subclass TKConfig and genuinely need isolated lifecycle.
+    /// </summary>
+    function CreateDBConnection(const ADatabaseName: string): TEFDBConnection;
   public
     /// <summary>Returns the directory of the current module (DLL) or executable.
     /// For ISAPI/Apache DLLs returns the DLL path; for EXEs same as ParamStr(0) path.</summary>
@@ -191,9 +208,46 @@ type
     class property Instance: TKConfig read GetInstance;
 
     /// <summary>
-    ///   Returns the database instance.
+    ///   Returns the per-thread cached connection for the default database.
+    ///   The connection is lazily created on first access and released by
+    ///   ClearDatabase at the end of each web request (the engine does it
+    ///   automatically). Do NOT FreeAndNil it: the reference is shared by
+    ///   all callers inside the same request. Shortcut for DatabaseFor('').
     /// </summary>
     class property Database: TEFDBConnection read GetDatabase;
+
+    /// <summary>
+    ///   Returns the per-thread cached connection for the specified database.
+    ///   The connection is lazily created on first access and released by
+    ///   ClearDatabase at the end of each web request (the engine does it
+    ///   automatically). Do NOT FreeAndNil it: the reference is shared by
+    ///   all callers inside the same request.
+    ///   If ADatabaseName is empty or matches the default database name,
+    ///   returns the same instance as the Database property (single cached
+    ///   connection per DB per thread).
+    /// </summary>
+    class function DatabaseFor(const ADatabaseName: string): TEFDBConnection; static;
+
+    /// <summary>
+    ///   Releases all per-thread cached database connections, if any.
+    ///   Called by the web engine at the end of each request. Non-web
+    ///   entry points (background threads, console tools) must call this
+    ///   at the end of their unit of work.
+    /// </summary>
+    class procedure ClearDatabase;
+
+    /// <summary>
+    ///   Creates a NEW, isolated DB connection for the specified database.
+    ///   The caller OWNS the result and is responsible for FreeAndNil'ing it.
+    ///   Use ONLY when the cached-per-request contract of Database / DatabaseFor
+    ///   is unsuitable. Typical legitimate cases:
+    ///     - Authentication with dynamic credentials (DBServer authenticator)
+    ///       where macros resolve to different user credentials per login.
+    ///     - Design-time test connections that must not pollute the app cache.
+    ///     - Objects whose lifetime genuinely exceeds a single request.
+    ///   For normal data access, prefer Database / DatabaseFor.
+    /// </summary>
+    class function CreateStandaloneDBConnection(const ADatabaseName: string): TEFDBConnection; static;
 
     /// <summary>
     ///  A reference to the model catalog, opened on first access.
@@ -215,14 +269,11 @@ type
     property DBConnectionNames: TStringDynArray read GetDBConnectionNames;
 
     /// <summary>
-    ///  Creates a DB connection for the specified configured database.
-    ///  The caller is responsible for the life cycle of the object.
-    /// </summary>
-    function CreateDBConnection(const ADatabaseName: string): TEFDBConnection;
-    /// <summary>
-    ///  Helper function that creates a DB connection, passes it to an anonymous method
-    ///  then destroys it. Use it for DB read access and single update instructions.
-    ///  For multiple update instructions please use <seealso>InDBTransaction</seealso>.
+    ///  Helper function that invokes the specified anonymous method with the
+    ///  cached per-request connection for the given database. The connection
+    ///  is borrowed from the thread-local cache; it is not freed at the end
+    ///  of the method (it is released by ClearDatabase at end of request).
+    ///  For single-transaction units of work prefer <seealso>InDBTransaction</seealso>.
     /// </summary>
     procedure InDBConnection(const ADatabaseName: string; const AProc: TProc<TEFDBConnection>);
     /// <summary>
@@ -423,17 +474,12 @@ begin
 end;
 
 procedure TKConfig.InDBConnection(const ADatabaseName: string; const AProc: TProc<TEFDBConnection>);
-var
-  LDBConnection: TEFDBConnection;
 begin
   Assert(Assigned(AProc));
 
-  LDBConnection := CreateDBConnection(ADatabaseName);
-  try
-    AProc(LDBConnection);
-  finally
-    FreeAndNil(LDBConnection);
-  end;
+  // The connection is borrowed from the per-thread cache; not freed here.
+  // It will be released by TKConfig.ClearDatabase at end of unit of work.
+  AProc(DatabaseFor(ADatabaseName));
 end;
 
 procedure TKConfig.InDBTransaction(const ADatabaseName: string; const AProc: TProc<TEFDBConnection>);
@@ -627,6 +673,10 @@ end;
 
 class destructor TKConfig.Destroy;
 begin
+  // Clean up the per-thread cached connections for the main thread.
+  // Worker threads are expected to call ClearDatabase themselves at the
+  // end of each unit of work (the web engine does it automatically).
+  ClearDatabase;
   FreeAndNil(FInstance);
 end;
 
@@ -670,7 +720,52 @@ end;
 
 class function TKConfig.GetDatabase: TEFDBConnection;
 begin
-  Result := TKConfig.Instance.CreateDBConnection(TKConfig.Instance.DatabaseName);
+  // Fast path for the default database: no dictionary lookup.
+  if not Assigned(FDatabase) then
+    FDatabase := TKConfig.Instance.CreateDBConnection(TKConfig.Instance.DatabaseName);
+  Result := FDatabase;
+end;
+
+class function TKConfig.DatabaseFor(const ADatabaseName: string): TEFDBConnection;
+var
+  LDefaultName: string;
+  LResolvedName: string;
+begin
+  LDefaultName := TKConfig.Instance.DatabaseName;
+  if ADatabaseName = '' then
+    LResolvedName := LDefaultName
+  else
+    LResolvedName := ADatabaseName;
+
+  // Default DB: fast path via dedicated threadvar (deduplication: asking for
+  // the default by explicit name returns the SAME instance as TKConfig.Database).
+  if SameText(LResolvedName, LDefaultName) then
+  begin
+    if not Assigned(FDatabase) then
+      FDatabase := TKConfig.Instance.CreateDBConnection(LResolvedName);
+    Exit(FDatabase);
+  end;
+
+  // Non-default DB: cached in the threadvar dictionary.
+  if FDatabases = nil then
+    FDatabases := TObjectDictionary<string, TEFDBConnection>.Create([doOwnsValues]);
+  if not FDatabases.TryGetValue(LResolvedName, Result) then
+  begin
+    Result := TKConfig.Instance.CreateDBConnection(LResolvedName);
+    FDatabases.Add(LResolvedName, Result);
+  end;
+end;
+
+class procedure TKConfig.ClearDatabase;
+begin
+  FreeAndNil(FDatabase);
+  // doOwnsValues releases all cached non-default connections.
+  FreeAndNil(FDatabases);
+end;
+
+class function TKConfig.CreateStandaloneDBConnection(const ADatabaseName: string): TEFDBConnection;
+begin
+  Result := TKConfig.Instance.CreateDBConnection(ADatabaseName);
 end;
 
 function TKConfig.GetLanguagePerSession: Boolean;
@@ -803,6 +898,9 @@ end;
 
 class procedure TKConfig.DestroyInstance;
 begin
+  // Release any per-thread cached connections first: they hold references
+  // that may depend on FInstance's config tree.
+  ClearDatabase;
   FreeAndNil(FInstance);
 end;
 

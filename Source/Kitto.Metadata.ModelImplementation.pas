@@ -347,47 +347,43 @@ begin
   ARecord.HandleSetToNullInstructions;
 
   // BEFORE rules are applied before calling this method.
-  LDBConnection := TKConfig.Instance.CreateDBConnection(ARecord.Store.ViewTable.DatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(ARecord.Store.ViewTable.DatabaseName);
+  if AUseTransactions then
+    LDBConnection.StartTransaction;
   try
-    if AUseTransactions then
-      LDBConnection.StartTransaction;
+    LDBCommand := LDBConnection.CreateDBCommand;
     try
-      LDBCommand := LDBConnection.CreateDBCommand;
-      try
-        TKSQLBuilder.CreateAndExecute(
-          procedure (ASQLBuilder: TKSQLBuilder)
-          begin
-            case ARecord.State of
-              rsNew: ASQLBuilder.BuildInsertCommand(LDBCommand, ARecord);
-              rsDirty: ASQLBuilder.BuildUpdateCommand(LDBCommand, ARecord);
-              rsDeleted: ASQLBuilder.BuildDeleteCommand(LDBCommand, ARecord);
-            else
-              raise EKError.CreateFmt('Unexpected record state %s.', [GetEnumName(TypeInfo(TKRecordState), Ord(ARecord.State))]);
-            end;
-          end);
-        if LDBCommand.CommandText <> '' then
+      TKSQLBuilder.CreateAndExecute(
+        procedure (ASQLBuilder: TKSQLBuilder)
         begin
-          LRowsAffected := LDBCommand.Execute;
-          if LRowsAffected <> 1 then
-            raise EKError.CreateFmt('Update error. Rows affected: %d.', [LRowsAffected]);
-        end;
-        PersistDetailStores;
-        ARecord.ApplyAfterRules;
-        if AUseTransactions then
-          LDBConnection.CommitTransaction;
-        // Take care of any cleared external files.
-        ARecord.HandleDeleteFileInstructions;
-        ARecord.MarkAsClean;
-      finally
-        FreeAndNil(LDBCommand);
+          case ARecord.State of
+            rsNew: ASQLBuilder.BuildInsertCommand(LDBCommand, ARecord);
+            rsDirty: ASQLBuilder.BuildUpdateCommand(LDBCommand, ARecord);
+            rsDeleted: ASQLBuilder.BuildDeleteCommand(LDBCommand, ARecord);
+          else
+            raise EKError.CreateFmt('Unexpected record state %s.', [GetEnumName(TypeInfo(TKRecordState), Ord(ARecord.State))]);
+          end;
+        end);
+      if LDBCommand.CommandText <> '' then
+      begin
+        LRowsAffected := LDBCommand.Execute;
+        if LRowsAffected <> 1 then
+          raise EKError.CreateFmt('Update error. Rows affected: %d.', [LRowsAffected]);
       end;
-    except
+      PersistDetailStores;
+      ARecord.ApplyAfterRules;
       if AUseTransactions then
-        LDBConnection.RollbackTransaction;
-      raise;
+        LDBConnection.CommitTransaction;
+      // Take care of any cleared external files.
+      ARecord.HandleDeleteFileInstructions;
+      ARecord.MarkAsClean;
+    finally
+      FreeAndNil(LDBCommand);
     end;
-  finally
-    FreeAndNil(LDBConnection);
+  except
+    if AUseTransactions then
+      LDBConnection.RollbackTransaction;
+    raise;
   end;
 end;
 
@@ -453,24 +449,20 @@ var
   LDBConnection: TEFDBConnection;
   LUseTransaction: Boolean;
 begin
-  LDBConnection := TKConfig.Instance.CreateDBConnection(AStore.ViewTable.DatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(AStore.ViewTable.DatabaseName);
+  if AUseTransaction then
+    LDBConnection.StartTransaction;
   try
+    //Save any record in a single transaction only if the connection is not is transaction
+    LUseTransaction := not LDBConnection.IsInTransaction;
+    for I := 0 to AStore.RecordCount - 1 do
+      SaveRecord(AStore.Records[I], APersist, AAfterPersist, LUseTransaction);
     if AUseTransaction then
-      LDBConnection.StartTransaction;
-    try
-      //Save any record in a single transaction only if the connection is not is transaction
-      LUseTransaction := not LDBConnection.IsInTransaction;
-      for I := 0 to AStore.RecordCount - 1 do
-        SaveRecord(AStore.Records[I], APersist, AAfterPersist, LUseTransaction);
-      if AUseTransaction then
-        LDBConnection.CommitTransaction;
-    except
-      if AUseTransaction then
-        LDBConnection.RollbackTransaction;
-      raise;
-    end;
-  finally
-    FreeAndNil(LDBConnection);
+      LDBConnection.CommitTransaction;
+  except
+    if AUseTransaction then
+      LDBConnection.RollbackTransaction;
+    raise;
   end;
 end;
 

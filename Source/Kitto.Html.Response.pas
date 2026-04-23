@@ -42,6 +42,7 @@ type
     class procedure SetCurrent(const AValue: TKXWebResponse); static;
   public
     class property Current: TKXWebResponse read GetCurrent write SetCurrent;
+    class procedure ClearCurrent;
 
     /// <summary>
     ///  Sends a full HTML page response (for initial page load).
@@ -63,6 +64,11 @@ type
 implementation
 
 { TKXWebResponse }
+
+class procedure TKXWebResponse.ClearCurrent;
+begin
+  FreeAndNil(FCurrent);
+end;
 
 class function TKXWebResponse.GetCurrent: TKXWebResponse;
 begin

@@ -1669,6 +1669,33 @@ body.kx-mobile .kx-login-dialog {
   font-weight: 600;
   white-space: nowrap;
   user-select: none;
+  position: relative; /* anchor for the column resize handle */
+}
+
+/* Column resize handle: thin strip on the right edge of each header.
+   Effemeral: no persistence, width resets on grid reload. */
+.kx-grid-table th .kx-col-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 2; /* above sort indicators */
+}
+.kx-grid-table th .kx-col-resize:hover,
+.kx-grid-table th .kx-col-resize.kx-col-resizing {
+  background: var(--kx-accent);
+  opacity: 0.35;
+}
+
+/* During a column drag-resize, force col-resize cursor everywhere on the page.
+   !important is required to beat more specific cursor rules on sortable
+   headers (.kx-col-sortable { cursor: pointer }), hovered rows, etc. */
+body.kx-col-resize-active,
+body.kx-col-resize-active * {
+  cursor: col-resize !important;
 }
 .kx-grid-table th:last-child,
 .kx-grid-table td:last-child {
@@ -1734,6 +1761,18 @@ body.kx-mobile .kx-login-dialog {
 .kx-sort-desc::after {
   -webkit-mask-image: url('../icons/filled/arrow_downward.svg');
   mask-image: url('../icons/filled/arrow_downward.svg');
+}
+
+/* Multi-column sort: position badge (1, 2, 3, ...) shown only when
+   more than one key is active. Set client-side via data-sort-index. */
+.kx-col-sortable[data-sort-index]::before {
+  content: attr(data-sort-index);
+  display: inline-block;
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--kx-accent);
+  margin-right: 3px;
+  vertical-align: middle;
 }
 
 /* Pager */
@@ -2142,6 +2181,7 @@ body.kx-mobile .kx-login-dialog {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  border-radius: 4px;
 }
 .sun-editor .se-wrapper-inner.sun-editor-editable {
   height: 100% !important;
@@ -2276,6 +2316,17 @@ body.kx-mobile .kx-login-dialog {
   color: var(--kx-text-muted);
   opacity: 0.6;
 }
+/* In readonly mode the toolbar is rendered empty (no buttons built) but still
+   takes space — both .se-toolbar.sun-editor-common and its sibling
+   .se-toolbar.sun-editor-common.se-toolbar-shadow. Hide both, plus the resize
+   bar (no resizing while readonly). The always-rounded .se-wrapper then fills
+   the outer .sun-editor cleanly on all 4 corners.
+   NOTE: .kx-se-readonly is added by kxgrid.js (initHtmlEditors) — SunEditor's
+   own .se-disabled goes on .se-wrapper-inner, not on the .sun-editor root. */
+.sun-editor.kx-se-readonly .se-toolbar,
+.sun-editor.kx-se-readonly .se-resizing-bar {
+  display: none;
+}
 
 /* --- Per-type input classes --- */
 
@@ -2290,10 +2341,60 @@ body.kx-mobile .kx-login-dialog {
   appearance: auto;
 }
 
-/* Checkbox (Boolean) */
-.kx-input-checkbox {
-  width: auto !important;
-  padding: 0;
+/* Checkbox (Boolean) — renders as a 16x16 square with accent border in edit mode
+   and gray border in readonly, matching the behavior of the other kx-form-input
+   fields. appearance:none disables the native checkbox rendering so border,
+   background and checkmark glyph can be fully themed. The more specific
+   input.kx-form-input.kx-input-checkbox selector wins over the generic
+   input.kx-form-input height rule below (which would otherwise stretch the
+   checkbox to the height of a text input). */
+input.kx-form-input.kx-input-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin: 3px 4px;
+  border: 1px solid var(--kx-input-border);
+  border-radius: 4px;
+  background: var(--kx-input-bg);
+  vertical-align: middle;
+  position: relative;
+  cursor: pointer;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+[data-mode="edit"] input.kx-form-input.kx-input-checkbox:not(:disabled):not(.disabled):not([readonly]) {
+  border-color: var(--kx-accent);
+}
+input.kx-form-input.kx-input-checkbox:focus {
+  border-color: var(--kx-accent);
+  box-shadow: 0 0 0 2px var(--kx-accent-ring);
+}
+input.kx-form-input.kx-input-checkbox:disabled,
+input.kx-form-input.kx-input-checkbox.disabled,
+input.kx-form-input.kx-input-checkbox[readonly] {
+  border-color: var(--kx-input-border);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+input.kx-form-input.kx-input-checkbox:checked {
+  background: var(--kx-accent);
+  border-color: var(--kx-accent);
+}
+/* Centered white check glyph. translate(-50%, -60%) (not -50%) compensates for
+   the visual asymmetry of the rotated check — a pure -50% looks too high. */
+input.kx-form-input.kx-input-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid var(--kx-input-bg);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
 }
 
 /* Force identical height on all single-line inputs, selects, date and time pickers
@@ -2392,8 +2493,11 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   cursor: default;
 }
 
-/* Editing-mode field borders — accent color highlights editable fields */
-[data-mode="edit"] .kx-form-input:not(:disabled):not(.disabled):not(:read-only) {
+/* Editing-mode field borders — accent color highlights editable fields.
+   Use [readonly] attribute check instead of :read-only pseudo-class because
+   <select>, checkbox, radio, file, etc. match :read-only by default per spec,
+   which would wrongly exclude them from the accent border. */
+[data-mode="edit"] .kx-form-input:not(:disabled):not(.disabled):not([readonly]) {
   border-color: var(--kx-accent);
 }
 [data-mode="edit"] .kx-form-lookup-wrapper .kx-form-lookup-display {
@@ -2616,8 +2720,10 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   margin-right: 4px;
 }
 
-/* Group data rows participate in zebra striping within their group */
-.kx-group-data:nth-child(even) {
+/* Group data rows participate in zebra striping within their group,
+   unless the app applies a custom row class via RowClassProvider
+   (flagged by kx-custom-row — kxGrid.applyRowClasses adds it). */
+.kx-group-data:not(.kx-custom-row):nth-child(even) {
   background: var(--kx-surface);
 }
 

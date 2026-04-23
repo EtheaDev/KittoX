@@ -318,23 +318,19 @@ begin
   Assert(AGranteeId <> '');
   Assert(FReadPermissionsCommandText <> '');
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LPermissionDBQuery := LDBConnection.CreateDBQuery;
   try
-    LPermissionDBQuery := LDBConnection.CreateDBQuery;
+    LPermissionDBQuery.CommandText := FReadPermissionsCommandText;
+    LPermissionDBQuery.Params[0].AsString := AGranteeId;
+    LPermissionDBQuery.Open;
     try
-      LPermissionDBQuery.CommandText := FReadPermissionsCommandText;
-      LPermissionDBQuery.Params[0].AsString := AGranteeId;
-      LPermissionDBQuery.Open;
-      try
-        FPermissions.Load(LPermissionDBQuery, True);
-      finally
-        LPermissionDBQuery.Close;
-      end;
+      FPermissions.Load(LPermissionDBQuery, True);
     finally
-      FreeAndNil(LPermissionDBQuery);
+      LPermissionDBQuery.Close;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LPermissionDBQuery);
   end;
 end;
 
@@ -396,27 +392,23 @@ begin
   Assert(Assigned(ARoleList));
   Assert(FReadRolesCommandText <> '');
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LRoleDBQuery := LDBConnection.CreateDBQuery;
   try
-    LRoleDBQuery := LDBConnection.CreateDBQuery;
+    LRoleDBQuery.CommandText := FReadRolesCommandText;
+    LRoleDBQuery.Params[0].AsString := AUserId;
+    LRoleDBQuery.Open;
     try
-      LRoleDBQuery.CommandText := FReadRolesCommandText;
-      LRoleDBQuery.Params[0].AsString := AUserId;
-      LRoleDBQuery.Open;
-      try
-        while not LRoleDBQuery.DataSet.Eof do
-        begin
-          ARoleList.Add(LRoleDBQuery.DataSet.Fields[0].AsString);
-          LRoleDBQuery.DataSet.Next;
-        end;
-      finally
-        LRoleDBQuery.Close;
+      while not LRoleDBQuery.DataSet.Eof do
+      begin
+        ARoleList.Add(LRoleDBQuery.DataSet.Fields[0].AsString);
+        LRoleDBQuery.DataSet.Next;
       end;
     finally
-      FreeAndNil(LRoleDBQuery);
+      LRoleDBQuery.Close;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LRoleDBQuery);
   end;
 end;
 

@@ -25,12 +25,19 @@ uses
   Kitto.Store;
 
 type
+  /// <summary>
+  ///   Bridge between Kitto and InstantObjects persistence. Reuses the
+  ///   per-request cached TKConfig.Database connection â€” InstantObjects rules
+  ///   share the same TFDConnection as the rest of the request, avoiding lock
+  ///   contention from parallel connections of the same user.
+  ///   Must be created and destroyed inside a single unit of work: it does
+  ///   NOT own the TEFDBConnection, only the TInstantFireDACConnector wrapper.
+  /// </summary>
   TInstantKittoConnector = class
   private
-    FConnection: TEFDBConnection;
     FInstantFireDACConnector: TInstantFireDACConnector;
     function GetInstantFireDACConnector: TInstantFireDACConnector;
-    procedure EnsureConnection;
+    procedure EnsureConnector;
   public
     destructor Destroy; override;
 
@@ -126,8 +133,8 @@ begin
         if (not ARecord.Fields[I].IsCompositeField) and
            ARecord.Fields[I].IsModified then
         begin
-          //Se è stato modificato da ISF e
-          //il campo del record è null tengo il valore modificato
+          //Se Ã¨ stato modificato da ISF e
+          //il campo del record Ã¨ null tengo il valore modificato
           if Assigned(LInstantAttribute) and
              LInstantAttribute.IsChanged and
              ARecord.Fields[I].IsNull then
@@ -245,45 +252,48 @@ end;
 
 destructor TInstantKittoConnector.Destroy;
 begin
+  // We own only FInstantFireDACConnector; the TEFDBConnection is borrowed
+  // from TKConfig.Database (per-request cache), not owned.
   FreeAndNil(FInstantFireDACConnector);
-  FreeAndNil(FConnection);
   inherited;
 end;
 
 function TInstantKittoConnector.GetInstantFireDACConnector: TInstantFireDACConnector;
 begin
-  EnsureConnection;
+  EnsureConnector;
   Result := FInstantFireDACConnector;
 end;
 
-procedure TInstantKittoConnector.EnsureConnection;
+procedure TInstantKittoConnector.EnsureConnector;
+var
+  LConnection: TEFDBConnection;
+  LFDConnection: TFDConnection;
 begin
-  if not Assigned(FConnection) then
+  // Always read the current per-request cached connection. Holding it in a
+  // field would risk a dangling reference if the cache is cleared between
+  // uses of this connector; reading on demand keeps us correct regardless.
+  LConnection := TKConfig.Database;
+  if not (LConnection is TEFDBFDConnection) then
+    raise Exception.Create('TKConfig.Database is not a TEFDBFDConnection');
+  if not LConnection.IsOpen then
+    LConnection.Open;
+  LFDConnection := LConnection.GetConnection as TFDConnection;
+
+  if not Assigned(FInstantFireDACConnector) then
   begin
-    FConnection := TKConfig.Database; // Crea un'istanza nuova.
+    FInstantFireDACConnector := TInstantFireDACConnector.Create(nil);
     try
-      if not (FConnection is TEFDBFDConnection) then
-        raise Exception.Create('TKConfig.Database is not a TEFDBFDConnection');
-
-      if not FConnection.IsOpen then
-        // Necessario per configurare la connection interna.
-        FConnection.Open;
-
-      var LFDConnection := FConnection.GetConnection as TFDConnection;
-      FInstantFireDACConnector := TInstantFireDACConnector.Create(nil);
-      try
-        FInstantFireDACConnector.BlobStreamFormat := sfXML;
-        FInstantFireDACConnector.Connection := LFDConnection;
-        FInstantFireDACConnector.LoginPrompt := False;
-      except
-        FreeAndNil(FInstantFireDACConnector);
-        raise;
-      end;
+      FInstantFireDACConnector.BlobStreamFormat := sfXML;
+      FInstantFireDACConnector.LoginPrompt := False;
     except
-      FreeAndNil(FConnection);
+      FreeAndNil(FInstantFireDACConnector);
       raise;
     end;
   end;
+  // Rebind every time: if the cached TEFDBConnection was recreated between
+  // calls, the underlying TFDConnection is a different object.
+  if FInstantFireDACConnector.Connection <> LFDConnection then
+    FInstantFireDACConnector.Connection := LFDConnection;
 end;
 
 end.

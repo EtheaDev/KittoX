@@ -255,20 +255,20 @@ var
   LDBConnection: TEFDBConnection;
   LInternalConnection: TObject;
 begin
-  LDBConnection := TKConfig.Instance.CreateDBConnection(ADatabaseName);
-  try
-    if not LDBConnection.IsOpen then
-      LDBConnection.Open;
-    LInternalConnection := LDBConnection.GetConnection;
-    if LInternalConnection is TSQLConnection then
-      Result := TSQLConnection(LInternalConnection)
-    else if LInternalConnection is TADOConnection then
-      Result := TADOConnection(LInternalConnection)
-    else
-      Result := nil;
-  finally
-    FreeAndNil(LDBConnection);
-  end;
+  // Cached per-request: the wrapper stays alive until ClearDatabase, so the
+  // inner TSQLConnection/TADOConnection we return remains valid for the
+  // caller's use. Previous code freed the wrapper here, which would have
+  // left a dangling pointer — the bug was masked only because nobody hit it.
+  LDBConnection := TKConfig.DatabaseFor(ADatabaseName);
+  if not LDBConnection.IsOpen then
+    LDBConnection.Open;
+  LInternalConnection := LDBConnection.GetConnection;
+  if LInternalConnection is TSQLConnection then
+    Result := TSQLConnection(LInternalConnection)
+  else if LInternalConnection is TADOConnection then
+    Result := TADOConnection(LInternalConnection)
+  else
+    Result := nil;
 end;
 
 procedure TKReportBuilderEngine.BuildReport(const ATemplateFileName, APDFFileName: string;

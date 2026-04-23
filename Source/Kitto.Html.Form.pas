@@ -666,21 +666,19 @@ begin
       LEmptyRecord := LStore.Records.AppendAndInitialize;
     end;
 
-    LDBConnection := TKConfig.Instance.CreateDBConnection(
-      ViewTable.DatabaseName);
+    LDBConnection := TKConfig.DatabaseFor(ViewTable.DatabaseName);
+    LDBQuery := LDBConnection.CreateDBQuery;
     try
-      LDBQuery := LDBConnection.CreateDBQuery;
+      LSQLBuilder := TKSQLBuilder.Create;
       try
-        LSQLBuilder := TKSQLBuilder.Create;
-        try
-          LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '', LEmptyRecord);
-        finally
-          FreeAndNil(LSQLBuilder);
-        end;
+        LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '', LEmptyRecord);
+      finally
+        FreeAndNil(LSQLBuilder);
+      end;
 
-        LDBQuery.Open;
-        try
-          SB := TStringBuilder.Create;
+      LDBQuery.Open;
+      try
+        SB := TStringBuilder.Create;
           try
             SB.Append('<option value="">--</option>');
             var LFound := False;
@@ -736,18 +734,15 @@ begin
                 .Append('" selected>').Append(TNetEncoding.HTML.Encode(LCaptionValue))
                 .Append('</option>');
             end;
-            Result := SB.ToString;
-          finally
-            SB.Free;
-          end;
+          Result := SB.ToString;
         finally
-          LDBQuery.Close;
+          SB.Free;
         end;
       finally
-        FreeAndNil(LDBQuery);
+        LDBQuery.Close;
       end;
     finally
-      FreeAndNil(LDBConnection);
+      FreeAndNil(LDBQuery);
     end;
   finally
     // Always free the temp lookup store (FRecord belongs to a different store)
@@ -840,28 +835,23 @@ begin
     // Load caption for the current FK value (single record lookup)
     if (LCurrentKeyValue <> '') and (LCaptionFieldName <> '') then
     begin
-      LDBConnection := TKConfig.Instance.CreateDBConnection(
-        LRefModel.DatabaseName);
+      LDBConnection := TKConfig.DatabaseFor(LRefModel.DatabaseName);
+      LDBQuery := LDBConnection.CreateDBQuery;
       try
-        LDBQuery := LDBConnection.CreateDBQuery;
+        LDBQuery.CommandText :=
+          'SELECT ' + LCaptionField.DBColumnNameOrExpression +
+          ' FROM ' + LRefModel.DBTableName +
+          ' WHERE ' + LRefModel.KeyFields[0].DBColumnNameOrExpression +
+          ' = ''' + ReplaceStr(LCurrentKeyValue, '''', '''''') + '''';
+        LDBQuery.Open;
         try
-          LDBQuery.CommandText :=
-            'SELECT ' + LCaptionField.DBColumnNameOrExpression +
-            ' FROM ' + LRefModel.DBTableName +
-            ' WHERE ' + LRefModel.KeyFields[0].DBColumnNameOrExpression +
-            ' = ''' + ReplaceStr(LCurrentKeyValue, '''', '''''') + '''';
-          LDBQuery.Open;
-          try
-            if not LDBQuery.DataSet.Eof then
-              LCurrentCaption := LDBQuery.DataSet.Fields[0].AsString;
-          finally
-            LDBQuery.Close;
-          end;
+          if not LDBQuery.DataSet.Eof then
+            LCurrentCaption := LDBQuery.DataSet.Fields[0].AsString;
         finally
-          FreeAndNil(LDBQuery);
+          LDBQuery.Close;
         end;
       finally
-        FreeAndNil(LDBConnection);
+        FreeAndNil(LDBQuery);
       end;
     end;
 
@@ -881,58 +871,53 @@ begin
       else
         LEmptyRecord := LStore.Records.AppendAndInitialize;
 
-      LDBConnection := TKConfig.Instance.CreateDBConnection(
-        ViewTable.DatabaseName);
+      LDBConnection := TKConfig.DatabaseFor(ViewTable.DatabaseName);
+      LDBQuery := LDBConnection.CreateDBQuery;
       try
-        LDBQuery := LDBConnection.CreateDBQuery;
+        LSQLBuilder := TKSQLBuilder.Create;
         try
-          LSQLBuilder := TKSQLBuilder.Create;
+          LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '',
+            LEmptyRecord);
+        finally
+          FreeAndNil(LSQLBuilder);
+        end;
+
+        LDBQuery.Open;
+        try
+          SB := TStringBuilder.Create;
           try
-            LSQLBuilder.BuildLookupSelectStatement(AViewField, LDBQuery, '',
-              LEmptyRecord);
-          finally
-            FreeAndNil(LSQLBuilder);
-          end;
+            SB.Append('[');
+            while not LDBQuery.DataSet.Eof do
+            begin
+              LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+              if LDBQuery.DataSet.FieldCount > 1 then
+                LCaptionValue := LDBQuery.DataSet.Fields[
+                  LDBQuery.DataSet.FieldCount - 1].AsString
+              else
+                LCaptionValue := LKeyValue;
 
-          LDBQuery.Open;
-          try
-            SB := TStringBuilder.Create;
-            try
-              SB.Append('[');
-              while not LDBQuery.DataSet.Eof do
-              begin
-                LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
-                if LDBQuery.DataSet.FieldCount > 1 then
-                  LCaptionValue := LDBQuery.DataSet.Fields[
-                    LDBQuery.DataSet.FieldCount - 1].AsString
-                else
-                  LCaptionValue := LKeyValue;
+              // Match current FK value to get display caption
+              if SameText(LKeyValue, LCurrentKeyValue) then
+                LCurrentCaption := LCaptionValue;
 
-                // Match current FK value to get display caption
-                if SameText(LKeyValue, LCurrentKeyValue) then
-                  LCurrentCaption := LCaptionValue;
+              // Build JSON option entry
+              if SB.Length > 1 then
+                SB.Append(',');
+              SB.Append('{"k":"').Append(JSONEncodeStr(LKeyValue));
+              SB.Append('","c":"').Append(JSONEncodeStr(LCaptionValue)).Append('"}');
 
-                // Build JSON option entry
-                if SB.Length > 1 then
-                  SB.Append(',');
-                SB.Append('{"k":"').Append(JSONEncodeStr(LKeyValue));
-                SB.Append('","c":"').Append(JSONEncodeStr(LCaptionValue)).Append('"}');
-
-                LDBQuery.DataSet.Next;
-              end;
-              SB.Append(']');
-              LOptionsJSON := SB.ToString;
-            finally
-              SB.Free;
+              LDBQuery.DataSet.Next;
             end;
+            SB.Append(']');
+            LOptionsJSON := SB.ToString;
           finally
-            LDBQuery.Close;
+            SB.Free;
           end;
         finally
-          FreeAndNil(LDBQuery);
+          LDBQuery.Close;
         end;
       finally
-        FreeAndNil(LDBConnection);
+        FreeAndNil(LDBQuery);
       end;
     finally
       FreeAndNil(LStore);
@@ -1872,7 +1857,9 @@ begin
     // Assemble form panel
     SB := TStringBuilder.Create;
     try
-      SB.Append('<form class="kx-form-panel" id="kx-form-').Append(FViewName).Append('"');
+      // novalidate: HTML5 suppresses submit silently when a required field on a
+      // display:none page (PageBreak) cannot anchor a tooltip; JS validates instead.
+      SB.Append('<form class="kx-form-panel" novalidate id="kx-form-').Append(FViewName).Append('"');
       SB.Append(' data-mode="').Append(IfThen(FIsViewMode, 'view', 'edit')).Append('"');
       if LHasDetails then
       begin

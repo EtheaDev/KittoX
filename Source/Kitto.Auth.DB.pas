@@ -427,34 +427,30 @@ var
   LQuery: TEFDBQuery;
 begin
   Result := nil;
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LQuery := LDBConnection.CreateDBQuery;
   try
-    LQuery := LDBConnection.CreateDBQuery;
+    LQuery.CommandText := GetReadUserCommandText(AUserName);
+    if LQuery.Params.Count <> 1 then
+      raise EKError.CreateFmt(_('Wrong authentication query text: %s'), [LQuery.CommandText]);
+    LQuery.Params[0].AsString := AUserName;
+    LQuery.Open;
     try
-      LQuery.CommandText := GetReadUserCommandText(AUserName);
-      if LQuery.Params.Count <> 1 then
-        raise EKError.CreateFmt(_('Wrong authentication query text: %s'), [LQuery.CommandText]);
-      LQuery.Params[0].AsString := AUserName;
-      LQuery.Open;
-      try
-        if not LQuery.DataSet.IsEmpty then
-        begin
-          Result := TKAuthUser.Create;
-          try
-            ReadUserFromRecord(Result, LQuery, AAuthData);
-          except
-            Result.Free;
-            raise;
-          end;
+      if not LQuery.DataSet.IsEmpty then
+      begin
+        Result := TKAuthUser.Create;
+        try
+          ReadUserFromRecord(Result, LQuery, AAuthData);
+        except
+          Result.Free;
+          raise;
         end;
-      finally
-        LQuery.Close;
       end;
     finally
-      FreeAndNil(LQuery);
+      LQuery.Close;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LQuery);
   end;
 end;
 
@@ -550,12 +546,8 @@ begin
 
   if LAfterAuthenticateCommandText <> '' then
   begin
-    LDBConnection := TKConfig.Instance.CreateDBConnection(GetLocalDatabaseName);
-    try
-      LDBConnection.ExecuteImmediate(LAfterAuthenticateCommandText);
-    finally
-      FreeAndNil(LDBConnection);
-    end;
+    LDBConnection := TKConfig.DatabaseFor(GetLocalDatabaseName);
+    LDBConnection.ExecuteImmediate(LAfterAuthenticateCommandText);
   end;
 end;
 
@@ -637,25 +629,21 @@ var
   LDBConnection: TEFDBConnection;
   LQuery: TEFDBQuery;
 begin
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LQuery := LDBConnection.CreateDBQuery;
   try
-    LQuery := LDBConnection.CreateDBQuery;
+    LQuery.CommandText := GetReadUserCommandText(AUserName);
+    if LQuery.Params.Count <> 1 then
+      raise EKError.CreateFmt(_('Wrong authentication query text: %s'), [LQuery.CommandText]);
+    LQuery.Params[0].AsString := AUserName;
+    LQuery.Open;
     try
-      LQuery.CommandText := GetReadUserCommandText(AUserName);
-      if LQuery.Params.Count <> 1 then
-        raise EKError.CreateFmt(_('Wrong authentication query text: %s'), [LQuery.CommandText]);
-      LQuery.Params[0].AsString := AUserName;
-      LQuery.Open;
-      try
-        Result := not LQuery.DataSet.IsEmpty;
-      finally
-        LQuery.Close;
-      end;
+      Result := not LQuery.DataSet.IsEmpty;
     finally
-      FreeAndNil(LQuery);
+      LQuery.Close;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LQuery);
   end;
 end;
 
@@ -709,30 +697,26 @@ begin
 
   LCommandText := GetResetPasswordCommandText;
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LCommand := LDBConnection.CreateDBCommand;
   try
-    LCommand := LDBConnection.CreateDBCommand;
+    LCommand.Connection.StartTransaction;
     try
-      LCommand.Connection.StartTransaction;
-      try
-        //Codice originale problematico
-        LCommand.CommandText := LCommandText;
-        LCommand.Params.ParamByName('USER_NAME').AsString := LUserName;
-        LCommand.Params.ParamByName('EMAIL_ADDRESS').AsString := LEmailAddress;
-        LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
-        if LCommand.Execute <> 1 then
-          raise EKError.Create(_('Error: user name and email address not found.'));
-        AfterResetPassword(LCommand.Connection, AParams);
-        LCommand.Connection.CommitTransaction;
-      except
-        LCommand.Connection.RollbackTransaction;
-        raise;
-      end;
-    finally
-      FreeAndNil(LCommand);
+      //Codice originale problematico
+      LCommand.CommandText := LCommandText;
+      LCommand.Params.ParamByName('USER_NAME').AsString := LUserName;
+      LCommand.Params.ParamByName('EMAIL_ADDRESS').AsString := LEmailAddress;
+      LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
+      if LCommand.Execute <> 1 then
+        raise EKError.Create(_('Error: user name and email address not found.'));
+      AfterResetPassword(LCommand.Connection, AParams);
+      LCommand.Connection.CommitTransaction;
+    except
+      LCommand.Connection.RollbackTransaction;
+      raise;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LCommand);
   end;
 end;
 
@@ -758,26 +742,22 @@ begin
   if LEmailAddress = '' then
     raise Exception.Create(_('E-mail address not specified.'));
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LQuery := LDBConnection.CreateDBQuery;
   try
-    LQuery := LDBConnection.CreateDBQuery;
+    LQuery.CommandText := GetReadUserCommandText(LUserName);
+    if LQuery.Params.Count <> 1 then
+      raise EKError.CreateFmt(_('Wrong authentication query text: %s'), [LQuery.CommandText]);
+    LQuery.Params[0].AsString := LUserName;
+    LQuery.Open;
     try
-      LQuery.CommandText := GetReadUserCommandText(LUserName);
-      if LQuery.Params.Count <> 1 then
-        raise EKError.CreateFmt(_('Wrong authentication query text: %s'), [LQuery.CommandText]);
-      LQuery.Params[0].AsString := LUserName;
-      LQuery.Open;
-      try
-        if LQuery.DataSet.IsEmpty then
-          raise EKError.Create(_('Error: user name and email address not found.'));
-      finally
-        LQuery.Close;
-      end;
+      if LQuery.DataSet.IsEmpty then
+        raise EKError.Create(_('Error: user name and email address not found.'));
     finally
-      FreeAndNil(LQuery);
+      LQuery.Close;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LQuery);
   end;
   // Using Base32 encoded username as shared secret
   LSecretCode := Base32.EncodeWithoutPadding(UpperCase(LUserName));
@@ -830,28 +810,24 @@ begin
 
   LCommandText := GetSetPasswordCommandText;
 
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LCommand := LDBConnection.CreateDBCommand;
   try
-    LCommand := LDBConnection.CreateDBCommand;
+    LCommand.CommandText := LCommandText;
+    LCommand.Params.ParamByName('USER_NAME').AsString := UserName;
+    LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
+    LCommand.Connection.StartTransaction;
     try
-      LCommand.CommandText := LCommandText;
-      LCommand.Params.ParamByName('USER_NAME').AsString := UserName;
-      LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
-      LCommand.Connection.StartTransaction;
-      try
-        if LCommand.Execute <> 1 then
-          raise EKError.Create(_('Error changing password.'));
-        LCommand.Connection.CommitTransaction;
-      AuthData.SetString('Password', LPasswordHash);
-      except
-        LCommand.Connection.RollbackTransaction;
-        raise;
-      end;
-    finally
-      FreeAndNil(LCommand);
+      if LCommand.Execute <> 1 then
+        raise EKError.Create(_('Error changing password.'));
+      LCommand.Connection.CommitTransaction;
+    AuthData.SetString('Password', LPasswordHash);
+    except
+      LCommand.Connection.RollbackTransaction;
+      raise;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LCommand);
   end;
 end;
 
@@ -866,7 +842,7 @@ function TKDBCryptAuthenticator.GetRandomSpecialChar: char;
 var
   LSpecialChars: string;
 begin
-  LSpecialChars := '\<>!£$%&/()=?^*°[]{}-+@#€';
+  LSpecialChars := '\<>!ï¿½$%&/()=?^*ï¿½[]{}-+@#ï¿½';
   Result := LSpecialChars[Random(LSpecialChars.Length)+1];
 end;
 
@@ -952,28 +928,24 @@ begin
     LPasswordHash := GetBCryptedString(AValue);
 
   LCommandText := GetSetPasswordCommandText;
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LCommand := LDBConnection.CreateDBCommand;
   try
-    LCommand := LDBConnection.CreateDBCommand;
+    LCommand.CommandText := LCommandText;
+    LCommand.Params.ParamByName('USER_NAME').AsString := UserName;
+    LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
+    LCommand.Connection.StartTransaction;
     try
-      LCommand.CommandText := LCommandText;
-      LCommand.Params.ParamByName('USER_NAME').AsString := UserName;
-      LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
-      LCommand.Connection.StartTransaction;
-      try
-        if LCommand.Execute <> 1 then
-          raise EKError.Create(_('Error changing password.'));
-        LCommand.Connection.CommitTransaction;
-        AuthData.SetString('Password', LPasswordHash);
-      except
-        LCommand.Connection.RollbackTransaction;
-        raise;
-      end;
-    finally
-      FreeAndNil(LCommand);
+      if LCommand.Execute <> 1 then
+        raise EKError.Create(_('Error changing password.'));
+      LCommand.Connection.CommitTransaction;
+      AuthData.SetString('Password', LPasswordHash);
+    except
+      LCommand.Connection.RollbackTransaction;
+      raise;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LCommand);
   end;
 end;
 
@@ -1104,29 +1076,25 @@ begin
     LPasswordHash := GetBCryptedString(LPassword);
 
   LCommandText := GetResetPasswordCommandText;
-  LDBConnection := TKConfig.Instance.CreateDBConnection(GetDatabaseName);
+  LDBConnection := TKConfig.DatabaseFor(GetDatabaseName);
+  LCommand := LDBConnection.CreateDBCommand;
   try
-    LCommand := LDBConnection.CreateDBCommand;
+    LCommand.Connection.StartTransaction;
     try
-      LCommand.Connection.StartTransaction;
-      try
-        LCommand.CommandText := LCommandText;
-        LCommand.Params.ParamByName('USER_NAME').AsString := LUserName;
-        LCommand.Params.ParamByName('EMAIL_ADDRESS').AsString := LEmailAddress;
-        LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
-        if LCommand.Execute <> 1 then
-          raise EKError.Create(_('Error: user name and email address not found.'));
-        AfterResetPassword(LCommand.Connection, AParams);
-        LCommand.Connection.CommitTransaction;
-      except
-        LCommand.Connection.RollbackTransaction;
-        raise;
-      end;
-    finally
-      FreeAndNil(LCommand);
+      LCommand.CommandText := LCommandText;
+      LCommand.Params.ParamByName('USER_NAME').AsString := LUserName;
+      LCommand.Params.ParamByName('EMAIL_ADDRESS').AsString := LEmailAddress;
+      LCommand.Params.ParamByName('PASSWORD_HASH').AsString := LPasswordHash;
+      if LCommand.Execute <> 1 then
+        raise EKError.Create(_('Error: user name and email address not found.'));
+      AfterResetPassword(LCommand.Connection, AParams);
+      LCommand.Connection.CommitTransaction;
+    except
+      LCommand.Connection.RollbackTransaction;
+      raise;
     end;
   finally
-    FreeAndNil(LDBConnection);
+    FreeAndNil(LCommand);
   end;
 end;
 

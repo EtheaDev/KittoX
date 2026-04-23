@@ -65,6 +65,7 @@ uses
   System.NetEncoding,
   Data.DB,
   EF.DB,
+  EF.JSON,
   EF.StrUtils,
   EF.Localization,
   Kitto.Config,
@@ -118,6 +119,7 @@ var
   LSortExpr: string;
   LFilterPanelHtml: string;
   LDefaultFilterExpr: string;
+  LRowClassProvider: string;
   SB: TStringBuilder;
 begin
   Result := '';
@@ -158,6 +160,7 @@ begin
       SB.Append(BuildToolbar(LViewName));
 
       // Grid table: thead + tbody with grouped rows
+      LRowClassProvider := LViewTable.GetExpandedString('Controller/RowClassProvider');
       SB.Append('<div class="kx-list-grid"><table class="kx-grid-table">');
       SB.Append(BuildColumnHeaders(LViewTable, LViewName, '', ''));
       SB.Append('<tbody id="kx-list-body-').Append(LViewName).Append('"');
@@ -165,6 +168,8 @@ begin
         SB.Append(' data-dblclick="edit"')
       else if IsActionVisible('View') then
         SB.Append(' data-dblclick="view"');
+      if LRowClassProvider <> '' then
+        SB.Append(' data-row-class-provider="').Append(TNetEncoding.HTML.Encode(LRowClassProvider)).Append('"');
       SB.Append('>');
       SB.Append(BuildGroupedRows(LStore, LViewTable, LViewName,
         LGroupingFieldName, LGroupingNode));
@@ -213,7 +218,56 @@ var
   LDisplayStyle: string;
   LCountText: string;
   LHeaderText: string;
+  LHasRowClassProvider: Boolean;
   SB, SBKey: TStringBuilder;
+
+  // Builds the ' data-fields="{...}"' attribute for a record so that the
+  // client-side kxGrid.applyRowClasses can feed the values to the
+  // RowClassProvider JS function. Returns '' when no RowClassProvider is
+  // defined on the view. For data rows the record is the row's own record;
+  // for group header rows it is the first record of the group (all records
+  // of a group share the same value of the grouping field, so any record
+  // that depends only on that field returns a constant class — this is what
+  // lets the header receive the same colour as its data rows).
+  function BuildRowDataFieldsAttr(ARecord: TKViewTableRecord): string;
+  var
+    K: Integer;
+    LFld: TKViewField;
+    LRecFld: TKViewTableField;
+    SBF: TStringBuilder;
+  begin
+    Result := '';
+    if not LHasRowClassProvider then
+      Exit;
+    SBF := TStringBuilder.Create;
+    try
+      SBF.Append('{');
+      for K := 0 to AViewTable.FieldCount - 1 do
+      begin
+        LFld := AViewTable.Fields[K];
+        if LFld.IsBlob and not (LFld.DataType is TEFMemoDataType) then
+          Continue;
+        LRecFld := ARecord.FindField(LFld.AliasedName);
+        if not Assigned(LRecFld) then
+          Continue;
+        if SBF.Length > 1 then
+          SBF.Append(',');
+        SBF.Append('"').Append(LFld.AliasedName).Append('":');
+        if LRecFld.IsNull then
+          SBF.Append('null')
+        else if LFld.DataType is TEFBooleanDataType then
+          SBF.Append(IfThen(LRecFld.AsBoolean, 'true', 'false'))
+        else if LFld.DataType is TEFNumericDataTypeBase then
+          SBF.Append(LRecFld.GetAsJSONValue(False, False))
+        else
+          SBF.Append(QuoteJSONValue(LRecFld.AsString));
+      end;
+      SBF.Append('}');
+      Result := ' data-fields="' + TNetEncoding.HTML.Encode(SBF.ToString) + '"';
+    finally
+      SBF.Free;
+    end;
+  end;
 
   // Pre-scan to count records per group
   procedure CountGroups;
@@ -242,6 +296,7 @@ var
 begin
   LUserFmt := TKConfig.Instance.UserFormatSettings;
   LCurrSymbol := LUserFmt.CurrencyString;
+  LHasRowClassProvider := AViewTable.GetExpandedString('Controller/RowClassProvider') <> '';
 
   // Read grouping config
   LStartCollapsed := False;
@@ -356,10 +411,15 @@ begin
             end;
           end;
 
-          // Emit group header row
+          // Emit group header row. data-fields is built from the first record
+          // of the group (LRecord on the iteration where the group changed) so
+          // the client-side RowClassProvider, if any, can assign the same class
+          // to the header as to the data rows of this group.
           SB.Append('<tr class="kx-group-row" id="kx-grp-hdr-')
             .Append(AViewName).Append('-').Append(IntToStr(LGroupIndex))
-            .Append('" onclick="kxGrid.toggleGroup(''')
+            .Append('"');
+          SB.Append(BuildRowDataFieldsAttr(LRecord));
+          SB.Append(' onclick="kxGrid.toggleGroup(''')
             .Append(AViewName).Append(''',').Append(IntToStr(LGroupIndex)).Append(')">');
           SB.Append('<td colspan="').Append(IntToStr(LColCount)).Append('" class="kx-group-header">');
           SB.Append('<span class="kx-group-toggle">').Append(LToggleIcon).Append('</span>');
@@ -400,6 +460,7 @@ begin
         SB.Append(LDisplayStyle);
         SB.Append(' data-key="').Append(SBKey.ToString).Append('"');
         SB.Append(' data-caption="').Append(TNetEncoding.HTML.Encode(LCaptionValue)).Append('"');
+        SB.Append(BuildRowDataFieldsAttr(LRecord));
         SB.Append(' onclick="kxGrid.select(this,''').Append(AViewName).Append(''')"');
         SB.Append(' ondblclick="kxGrid.rowDblClick(this,''').Append(AViewName).Append(''')">');
 
@@ -434,28 +495,32 @@ begin
               LValue := LField.DataType.NodeToJSONValue(True, LRecordField, LUserFmt, False);
               if SameText(LValue, 'null') then
                 LValue := '';
-              SB.Append('<td style="text-align:').Append(LAlign).Append('">');
-              SB.Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
+              SB.Append('<td style="text-align:').Append(LAlign).Append('"');
+              if LValue <> '' then
+                SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+              SB.Append('>').Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
             end
             else if LIsCurrency then
             begin
               LValue := LField.DataType.NodeToJSONValue(True, LRecordField, LUserFmt, False);
               if SameText(LValue, 'null') then
                 LValue := '';
-              SB.Append('<td style="text-align:right">');
               if (LValue <> '') and (LCurrSymbol <> '') then
-                SB.Append(TNetEncoding.HTML.Encode(LCurrSymbol + ' ' + LValue))
-              else
-                SB.Append(TNetEncoding.HTML.Encode(LValue));
-              SB.Append('</td>');
+                LValue := LCurrSymbol + ' ' + LValue;
+              SB.Append('<td style="text-align:right"');
+              if LValue <> '' then
+                SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+              SB.Append('>').Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
             end
             else
             begin
               LValue := LRecordField.GetAsJSONValue(True, False);
               if SameText(LValue, 'null') then
                 LValue := '';
-              SB.Append('<td style="text-align:').Append(LAlign).Append('">');
-              SB.Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
+              SB.Append('<td style="text-align:').Append(LAlign).Append('"');
+              if LValue <> '' then
+                SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+              SB.Append('>').Append(TNetEncoding.HTML.Encode(LValue)).Append('</td>');
             end;
           end
           else
