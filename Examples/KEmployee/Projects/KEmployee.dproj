@@ -1,11 +1,11 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{1FBC6B9D-04F2-4238-A7C5-07DEC4D673BB}</ProjectGuid>
         <ProjectVersion>20.4</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <MainSource>KEmployee.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -36,6 +36,18 @@
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+        <Cfg_2_Win32>true</Cfg_2_Win32>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+        <Cfg_2_Win64>true</Cfg_2_Win64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
         <SanitizedProjectName>KEmployee</SanitizedProjectName>
@@ -45,8 +57,8 @@
         <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=;FileVersion=4.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>KEmployee_Icon.ico</Icon_MainIcon>
         <DCC_ExeOutput>..\Home</DCC_ExeOutput>
-        <DCC_DcuOutput>..\Lib\$(ProductVersion)\$(Platform)</DCC_DcuOutput>
-        <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
+        <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_E>false</DCC_E>
         <DCC_ImageBase>00400000</DCC_ImageBase>
         <DCC_N>false</DCC_N>
@@ -79,12 +91,42 @@
         <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
         <DCC_RangeChecking>true</DCC_RangeChecking>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="..\Source\UseKitto.pas"/>
         <DCCReference Include="..\Source\Rules.pas"/>
+        <None Include="..\Home\Metadata\Config.yaml"/>
+        <None Include="..\Home\Metadata\Views\Home.yaml"/>
+        <None Include="..\Home\Metadata\Views\MainMenu.yaml"/>
+        <None Include="..\Home\Metadata\Views\Countries.yaml"/>
+        <None Include="..\Home\Metadata\Views\Customers.yaml"/>
+        <None Include="..\Home\Metadata\Views\Departments.yaml"/>
+        <None Include="..\Home\Metadata\Views\Employees.yaml"/>
+        <None Include="..\Home\Metadata\Views\EmployeeProjects.yaml"/>
+        <None Include="..\Home\Metadata\Views\Jobs.yaml"/>
+        <None Include="..\Home\Metadata\Views\ProjDeptBudgets.yaml"/>
+        <None Include="..\Home\Metadata\Views\Projects.yaml"/>
+        <None Include="..\Home\Metadata\Views\SalaryHistories.yaml"/>
+        <None Include="..\Home\Metadata\Views\Sales.yaml"/>
+        <None Include="..\Home\Metadata\Views\Users.yaml"/>
+        <None Include="..\Home\Metadata\Models\Country.yaml"/>
+        <None Include="..\Home\Metadata\Models\Customer.yaml"/>
+        <None Include="..\Home\Metadata\Models\Department.yaml"/>
+        <None Include="..\Home\Metadata\Models\Employee.yaml"/>
+        <None Include="..\Home\Metadata\Models\EmployeeProject.yaml"/>
+        <None Include="..\Home\Metadata\Models\Job.yaml"/>
+        <None Include="..\Home\Metadata\Models\ProjDeptBudget.yaml"/>
+        <None Include="..\Home\Metadata\Models\Project.yaml"/>
+        <None Include="..\Home\Metadata\Models\SalaryHistory.yaml"/>
+        <None Include="..\Home\Metadata\Models\Sales.yaml"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

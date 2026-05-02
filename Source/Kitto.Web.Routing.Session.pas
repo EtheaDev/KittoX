@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,16 @@
 
 /// <summary>
 ///   Session provider interface abstracting the transport mechanism for
-///   session identification. Current implementation: cookie-based.
-///   Future: JWT token-based (Authorization: Bearer header).
+///   session identification. Current implementation: cookie-based opaque
+///   id (TKXCookieSessionProvider).
+///
+///   Note: The JWT envelope (Auth: JWT, see Kitto.Auth.JWT and
+///   Kitto.Web.JWT) does NOT plug in here — it ships its own cookie
+///   (kx_token, HttpOnly+Secure+SameSite) and validates the signed token
+///   via the polymorphic TKAuthenticator.AuthorizeRequest hook called
+///   from TKWebApplication.DoHandleRequest. Session correlation for JWT
+///   apps reads the 'sid' claim inline from the engine's
+///   GetSessionIdFromRequest, with no dependency on this interface.
 /// </summary>
 unit Kitto.Web.Routing.Session;
 

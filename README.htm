@@ -32,7 +32,7 @@ td{
 <h1>Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX</h1>
 <p><a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg" alt="Core License"/></a>
 <a href="KittoLicensing"><img src="https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg" alt="Enterprise License"/></a></p>
-<p><strong>Latest Version 4.0.5 - 23 Apr 2026</strong></p>
+<p><strong>Latest Version 4.0.6 - 01 May 2026</strong></p>
 <p><img src="./images/kittoX_logo_200.png" alt="KittoX_logo.png"/></p>
 <p><strong>Kitto<sup>x</sup></strong> allows to create <strong>Rich Internet Applications</strong> based on a data model that can be mapped onto any database. The client-side part uses <strong>HTMX</strong> (through webbroker technology) to create a fully <strong>AJAX</strong> application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.</p>
 <p><strong>Kitto<sup>x</sup></strong> uses <strong>HTMX</strong> as its client-side library: the server generates HTML fragments and HTMX handles partial page updates via AJAX, with no need for a heavy JavaScript framework.</p>
@@ -68,6 +68,23 @@ td{
 <p>Visit <a href="https://ethea.it/Kitto-Demo/">this site</a> for online demos.</p>
 <hr />
 <h1>Release Notes</h1>
+<h2>01 May 2026: ver. 4.0.6 Beta</h2>
+<ul>
+<li>New <code>Auth: JWT</code> wrapper authenticator (signed <code>kx_token</code> cookie, sliding expiration, programmatic key registration)</li>
+<li>New <code>AccessControl: JWT</code> reading grants from <code>kx_acl</code> claim snapshotted at login, with optional DB fallback</li>
+<li>Updated examples to JWT Auth (TasKitto / HelloKitto / KEmployee)</li>
+<li>Updated TasKitto example with three-tier ACL (<code>admin</code> / <code>user</code> / <code>viewer</code>)</li>
+<li>Multi-database support on TasKitto and HelloKitto: SQL Server / PostgreSQL / Firebird</li>
+<li>Cross-dialect macros: <code>%DB.TRUE%</code> / <code>%DB.FALSE%</code>, <code>%DB.DATEDIFF</code>, <code>%DB.DATETIME_FROM</code></li>
+<li>Login form with optional &ldquo;Environment&rdquo; combo for multi-database apps (<code>Auth/DatabaseChoices</code>)</li>
+<li>Native boolean types on the three sample DBs (<code>BIT</code> / <code>BOOLEAN</code>); Firebird setup is now SQL-script-only</li>
+<li>Firebird Activity Dashboard views translated from the SQL Server originals</li>
+<li>TasKitto SQL Server DDL split (tables / views in separate scripts because of T-SQL batch rules)</li>
+<li>New <code>Tools/SetVersion.ps1</code>: one-shot version bump across constant, dproj, README and Inno Setup</li>
+<li>New <code>Projects/BuildAllPackagesD{10_4,11,12,13}.ps1</code> wrappers: rebuild Core + Enterprise per Delphi version</li>
+<li>YAML metadata files included in every <code>.dproj</code> (visible in Project Manager, KIDEX highlighting)</li>
+<li><code>EF.Logger.TextFile</code> active out-of-the-box for the standalone Indy hosts</li>
+</ul>
 <h2>23 Apr 2026: ver. 4.0.5 Beta</h2>
 <h3>Architectural refactor: DB connection ownership unified in TKConfig</h3>
 <ul>

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -302,6 +302,62 @@ type
   end;
 
   /// <summary>
+  ///  Cookie attributes for the JWT token cookie issued by Auth: JWT.
+  ///  YAML path: Auth/Cookie (only meaningful when Auth: JWT)
+  /// </summary>
+  TKAuthCookieConfig = class(TEFNode)
+  private
+    function GetCookieName: string;
+    function GetCookiePath: string;
+    function GetHttpOnly: Boolean;
+    function GetSecure: Boolean;
+    function GetSameSite: string;
+  public
+    [YamlNode('Name', 'kx_token', 'Cookie name carrying the JWT')]
+    property Name: string read GetCookieName;
+
+    [YamlNode('Path', 'Cookie path scope. Default: TKWebApplication.Path (the AppPath of this app)')]
+    property Path: string read GetCookiePath;
+
+    [YamlNode('HttpOnly', 'True', 'Whether the cookie is invisible to JavaScript (recommended)')]
+    property HttpOnly: Boolean read GetHttpOnly;
+
+    [YamlNode('Secure', 'True', 'Whether the cookie is only sent over HTTPS (recommended)')]
+    property Secure: Boolean read GetSecure;
+
+    [YamlNode('SameSite', 'Lax', 'SameSite attribute. Strict | Lax | None | empty (omit attribute)')]
+    property SameSite: string read GetSameSite;
+  end;
+
+  /// <summary>
+  ///  Selection of optional claims embedded in the JWT issued by Auth: JWT.
+  ///  YAML path: Auth/Claims (only meaningful when Auth: JWT)
+  /// </summary>
+  TKAuthClaimsConfig = class(TEFNode)
+  private
+    function GetIncludeRoles: Boolean;
+    function GetIncludeDB: Boolean;
+    function GetIncludeDisplayName: Boolean;
+    function GetIncludeLanguage: Boolean;
+    function GetIncludeACL: Boolean;
+  public
+    [YamlNode('IncludeRoles', 'False', 'Embed the user roles list as a custom claim')]
+    property IncludeRoles: Boolean read GetIncludeRoles;
+
+    [YamlNode('IncludeDB', 'True', 'Embed the active environment / database name as the db claim')]
+    property IncludeDB: Boolean read GetIncludeDB;
+
+    [YamlNode('IncludeDisplayName', 'True', 'Embed the user display name as the name claim')]
+    property IncludeDisplayName: Boolean read GetIncludeDisplayName;
+
+    [YamlNode('IncludeLanguage', 'True', 'Embed the active language as the lang claim')]
+    property IncludeLanguage: Boolean read GetIncludeLanguage;
+
+    [YamlNode('IncludeACL', 'False', 'Snapshot KITTO_PERMISSIONS rows into the kx_acl claim at login (consumed by AccessControl: JWT)')]
+    property IncludeACL: Boolean read GetIncludeACL;
+  end;
+
+  /// <summary>
   ///  Authentication settings from Config.yaml.
   ///  YAML path: Auth
   /// </summary>
@@ -315,6 +371,18 @@ type
     function GetAfterAuthenticateCommandText: string;
     function GetFileName: string;
     function GetDefaults: TKAuthDefaultsConfig;
+    function GetInner: TKAuthConfig;
+    function GetSigningAlgorithm: string;
+    function GetSigningKey: string;
+    function GetSigningPublicKey: string;
+    function GetIssuer: string;
+    function GetAudience: string;
+    function GetTokenLifetime: Integer;
+    function GetSlidingThreshold: Integer;
+    function GetClockSkew: Integer;
+    function GetCookie: TKAuthCookieConfig;
+    function GetClaims: TKAuthClaimsConfig;
+    function GetDatabaseChoices: string;
   public
     [YamlNode('IsClearPassword', 'Whether passwords are stored in clear text')]
     property IsClearPassword: Boolean read GetIsClearPassword;
@@ -337,8 +405,46 @@ type
     [YamlNode('FileName', 'Text file path for text-file authentication')]
     property FileName: string read GetFileName;
 
+    [YamlNode('DatabaseChoices', 'Comma-separated list of Databases/<Name> entries the user can pick at login. Empty = no environment combo on the login page. Embedded in the db claim when Auth: JWT.')]
+    property DatabaseChoices: string read GetDatabaseChoices;
+
     [YamlSubNode('Defaults', TKAuthDefaultsConfig, 'Default credentials')]
     property Defaults: TKAuthDefaultsConfig read GetDefaults;
+
+    // --- Auth: JWT specific keys (ignored by other authenticator classes) ---
+
+    [YamlSubNode('Inner', TKAuthConfig, 'Inner authenticator wrapped by Auth: JWT (DB / TextFile / OSDB / custom). Performs the actual credential check; the JWT envelope wraps the result.')]
+    property Inner: TKAuthConfig read GetInner;
+
+    [YamlNode('SigningAlgorithm', 'HS256', 'JWT signing algorithm. HS256 / HS384 / HS512 (HMAC, no OpenSSL) or RS256 / RS384 / RS512 / ES256 / ES384 / ES512 (asymmetric, requires OpenSSL DLLs)')]
+    property SigningAlgorithm: string read GetSigningAlgorithm;
+
+    [YamlNode('SigningKey', 'JWT signing key. Accepts env:VAR_NAME (env var), file:/path (raw bytes from a file), or any other value as inline literal (DEV ONLY). A TKJWTSigningKeyRegistry provider registered from UseKitto.pas takes precedence.')]
+    property SigningKey: string read GetSigningKey;
+
+    [YamlNode('SigningPublicKey', 'PEM public key for verifier-only deploys with asymmetric algorithms (RS*/ES*). Accepts the same env: / file: / inline prefixes as SigningKey.')]
+    property SigningPublicKey: string read GetSigningPublicKey;
+
+    [YamlNode('Issuer', 'JWT iss claim. Defaults to the application name. Validated on every request.')]
+    property Issuer: string read GetIssuer;
+
+    [YamlNode('Audience', 'kx-app', 'JWT aud claim. Validated on every request.')]
+    property Audience: string read GetAudience;
+
+    [YamlNode('TokenLifetime', '3600', 'exp - iat in seconds. Default 1 hour.')]
+    property TokenLifetime: Integer read GetTokenLifetime;
+
+    [YamlNode('SlidingThreshold', '600', 'When (exp - now) drops below this many seconds, the auth gate re-issues the cookie with a fresh exp on the current response. 0 = disable sliding.')]
+    property SlidingThreshold: Integer read GetSlidingThreshold;
+
+    [YamlNode('ClockSkew', '60', 'Allowance in seconds for clock skew between client and server during exp/nbf/iat validation.')]
+    property ClockSkew: Integer read GetClockSkew;
+
+    [YamlSubNode('Cookie', TKAuthCookieConfig, 'JWT cookie attributes (HttpOnly / Secure / SameSite / Path / Name)')]
+    property Cookie: TKAuthCookieConfig read GetCookie;
+
+    [YamlSubNode('Claims', TKAuthClaimsConfig, 'Optional profile claims embedded in the JWT (roles, db, language, ACL, ...)')]
+    property Claims: TKAuthClaimsConfig read GetClaims;
   end;
 
   /// <summary>
@@ -458,12 +564,18 @@ type
   private
     function GetReadPermissionsCommandText: string;
     function GetReadRolesCommandText: string;
+    function GetFallbackToDB: Boolean;
   public
-    [YamlNode('ReadPermissionsCommandText', 'SQL command to read permissions')]
+    [YamlNode('ReadPermissionsCommandText', 'SQL command to read permissions. Used by AccessControl: DB at runtime and by Auth: JWT at login when Auth/Claims/IncludeACL is True.')]
     property ReadPermissionsCommandText: string read GetReadPermissionsCommandText;
 
-    [YamlNode('ReadRolesCommandText', 'SQL command to read roles')]
+    [YamlNode('ReadRolesCommandText', 'SQL command to read roles. Used by AccessControl: DB at runtime and by Auth: JWT at login when Auth/Claims/IncludeACL is True.')]
     property ReadRolesCommandText: string read GetReadRolesCommandText;
+
+    // --- AccessControl: JWT specific keys (ignored by AccessControl: DB) ---
+
+    [YamlNode('FallbackToDB', 'True', 'When AccessControl: JWT — if the kx_acl claim does not cover a specific (resource, mode), consult a TKDBAccessController for the missing rule. Set False for closed-world (claim is authoritative, anything missing is denied).')]
+    property FallbackToDB: Boolean read GetFallbackToDB;
   end;
 
   /// <summary>
@@ -796,6 +908,120 @@ begin
   Result := nil; // RTTI discovery only
 end;
 
+function TKAuthConfig.GetDatabaseChoices: string;
+begin
+  Result := GetString('DatabaseChoices');
+end;
+
+function TKAuthConfig.GetInner: TKAuthConfig;
+begin
+  Result := nil; // RTTI discovery only
+end;
+
+function TKAuthConfig.GetSigningAlgorithm: string;
+begin
+  Result := GetString('SigningAlgorithm', 'HS256');
+end;
+
+function TKAuthConfig.GetSigningKey: string;
+begin
+  Result := GetString('SigningKey');
+end;
+
+function TKAuthConfig.GetSigningPublicKey: string;
+begin
+  Result := GetString('SigningPublicKey');
+end;
+
+function TKAuthConfig.GetIssuer: string;
+begin
+  Result := GetString('Issuer');
+end;
+
+function TKAuthConfig.GetAudience: string;
+begin
+  Result := GetString('Audience', 'kx-app');
+end;
+
+function TKAuthConfig.GetTokenLifetime: Integer;
+begin
+  Result := GetInteger('TokenLifetime', 3600);
+end;
+
+function TKAuthConfig.GetSlidingThreshold: Integer;
+begin
+  Result := GetInteger('SlidingThreshold', 600);
+end;
+
+function TKAuthConfig.GetClockSkew: Integer;
+begin
+  Result := GetInteger('ClockSkew', 60);
+end;
+
+function TKAuthConfig.GetCookie: TKAuthCookieConfig;
+begin
+  Result := nil; // RTTI discovery only
+end;
+
+function TKAuthConfig.GetClaims: TKAuthClaimsConfig;
+begin
+  Result := nil; // RTTI discovery only
+end;
+
+{ TKAuthCookieConfig }
+
+function TKAuthCookieConfig.GetCookieName: string;
+begin
+  Result := GetString('Name', 'kx_token');
+end;
+
+function TKAuthCookieConfig.GetCookiePath: string;
+begin
+  Result := GetString('Path');
+end;
+
+function TKAuthCookieConfig.GetHttpOnly: Boolean;
+begin
+  Result := GetBoolean('HttpOnly', True);
+end;
+
+function TKAuthCookieConfig.GetSecure: Boolean;
+begin
+  Result := GetBoolean('Secure', True);
+end;
+
+function TKAuthCookieConfig.GetSameSite: string;
+begin
+  Result := GetString('SameSite', 'Lax');
+end;
+
+{ TKAuthClaimsConfig }
+
+function TKAuthClaimsConfig.GetIncludeRoles: Boolean;
+begin
+  Result := GetBoolean('IncludeRoles', False);
+end;
+
+function TKAuthClaimsConfig.GetIncludeDB: Boolean;
+begin
+  Result := GetBoolean('IncludeDB', True);
+end;
+
+function TKAuthClaimsConfig.GetIncludeDisplayName: Boolean;
+begin
+  Result := GetBoolean('IncludeDisplayName', True);
+end;
+
+function TKAuthClaimsConfig.GetIncludeLanguage: Boolean;
+begin
+  Result := GetBoolean('IncludeLanguage', True);
+end;
+
+function TKAuthClaimsConfig.GetIncludeACL: Boolean;
+begin
+  Result := GetBoolean('IncludeACL', False);
+end;
+
 { TKAuthDefaultsConfig }
 
 function TKAuthDefaultsConfig.GetUserName: string;
@@ -881,6 +1107,11 @@ end;
 function TKAccessControlConfig.GetReadRolesCommandText: string;
 begin
   Result := GetString('ReadRolesCommandText');
+end;
+
+function TKAccessControlConfig.GetFallbackToDB: Boolean;
+begin
+  Result := GetBoolean('FallbackToDB', True);
 end;
 
 { TKUserFormatsConfig }

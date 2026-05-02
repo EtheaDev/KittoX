@@ -7,12 +7,12 @@ Fields:
     PhysicalName: QUART_HEAD_CNT
   ProjectedBudget: Decimal(12, 2)
     PhysicalName: PROJECTED_BUDGET
-  DeptNoRef: Reference(Department) not null
+  DeptNoRef: Reference(Department) not null primary key
     PhysicalName: DEPT_NO
     Fields:
       DeptNo:
         PhysicalName: DEPT_NO
-  ProjIdRef: Reference(Project) not null
+  ProjIdRef: Reference(Project) not null primary key
     PhysicalName: PROJ_ID
     Fields:
       ProjId:

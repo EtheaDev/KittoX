@@ -48,7 +48,7 @@ Fields:
     Expression: |
       case
         when ({Q}START_TIME is null) or ({Q}END_TIME is null) then 0
-        else CAST(DATEDIFF(millisecond, {Q}START_TIME, {Q}END_TIME) / CAST(3600000 AS FLOAT) AS DECIMAL(8,4))
+        else CAST(%DB.DATEDIFF(SECOND, {Q}START_TIME, {Q}END_TIME)% / 3600.0 AS DECIMAL(8,4))
       end
 Rules:
   ActivityRules:

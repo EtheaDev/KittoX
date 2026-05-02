@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,17 @@ interface
 
 uses
   EF.Types;
+
+const
+  /// <summary>
+  ///  Single source of truth for the KittoX framework version, in the form
+  ///  'Major.Minor.Patch'. The release tooling (Tools\SetVersion.ps1) parses
+  ///  this literal to read the current version, prompts the operator for the
+  ///  new one, and propagates it to all dproj VerInfo blocks, the Inno Setup
+  ///  script and the README banner. Do not edit manually unless you know
+  ///  what you are doing — use the release script.
+  /// </summary>
+  KITTOX_VERSION = '4.0.6';
 
 type
   TKOperation = (emViewCurrentRecord, emNewRecord, emEditCurrentRecord, emDupCurrentRecord);

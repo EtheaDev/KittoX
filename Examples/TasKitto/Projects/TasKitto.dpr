@@ -19,9 +19,9 @@ program TasKitto;
 
 uses
   Kitto.Vcl.Start,
-  UseKitto in '..\Source\UseKitto.pas',
   Rules in '..\Source\Rules.pas',
-  Auth in '..\Source\Auth.pas';
+  Auth in '..\Source\Auth.pas',
+  UseKitto in '..\Source\UseKitto.pas';
 
 {$R *.res}
 

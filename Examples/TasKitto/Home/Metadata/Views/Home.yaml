@@ -45,4 +45,4 @@ Controller: BorderPanel
   SouthView:
     ImageName: person
     Controller: StatusBar
-          Text: Connected to: %Config:DefaultDatabaseName% - user: %Auth:USER_NAME% - %Auth:FIRST_NAME% %Auth:LAST_NAME%
+          Text: Environment: %Auth:Environment% - user: %Auth:USER_NAME% - %Auth:FIRST_NAME% %Auth:LAST_NAME%

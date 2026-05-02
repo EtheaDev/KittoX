@@ -2466,7 +2466,11 @@ var kxChart = {
     if (kxChart._instances[viewName]) {
       kxChart._instances[viewName].destroy();
     }
-    kxChart._instances[viewName] = new Chart(canvas.getContext('2d'), config);
+    var chart = new Chart(canvas.getContext('2d'), config);
+    kxChart._instances[viewName] = chart;
+    // Forza la ri-misurazione dopo che il flex layout della dashboard si e' stabilizzato,
+    // altrimenti il canvas mantiene dimensioni interne sbagliate dal primo paint
+    requestAnimationFrame(function() { chart.resize(); });
   },
 
   /**
@@ -2509,6 +2513,93 @@ var kxChart = {
       kxChart._instances[viewName].destroy();
       delete kxChart._instances[viewName];
     }
+  }
+};
+
+// kxDashboard — silent polling for views with Controller: Dashboard +
+// RefreshInterval > 0. Patches .kx-kpi-value textContent and updates Chart.js
+// data in place (no canvas recreation). Requests are serialized to avoid
+// racing the framework's view-metadata access from multiple worker threads.
+var kxDashboard = {
+  _timers: {},
+  _lastKpi: {},
+  _lastChart: {},
+
+  start: function(viewName, intervalSec) {
+    if (kxDashboard._timers[viewName]) return;
+    var ms = (intervalSec | 0) * 1000;
+    if (ms <= 0) return;
+    kxDashboard._timers[viewName] = setInterval(function() { kxDashboard._tick(viewName); }, ms);
+  },
+
+  stop: function(viewName) {
+    var id = kxDashboard._timers[viewName];
+    if (id) { clearInterval(id); delete kxDashboard._timers[viewName]; }
+  },
+
+  _tick: function(viewName) {
+    if (document.hidden) return;
+    var dash = document.getElementById('kx-' + viewName);
+    if (!dash) { kxDashboard.stop(viewName); return; }
+    var pane = dash.closest('.kx-tab-pane');
+    if (pane && pane.style.display === 'none') return;
+    kxDashboard._refreshKpi(viewName, dash)
+      .catch(function() {})
+      .then(function() { return kxDashboard._refreshCharts(viewName, dash); });
+  },
+
+  _silentFetch: function(url) {
+    return fetch(url, { headers: { 'X-KittoX': 'true' }, credentials: 'same-origin' })
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r; });
+  },
+
+  _refreshKpi: function(viewName, dash) {
+    return kxDashboard._silentFetch('kx/view/' + viewName)
+      .then(function(r) { return r.text(); })
+      .then(function(html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var fresh = doc.querySelectorAll('.kx-kpi-value');
+        if (fresh.length === 0) return;
+        var snapshot = [];
+        fresh.forEach(function(el) { snapshot.push((el.textContent || '').trim()); });
+        var hash = snapshot.join('|');
+        if (hash === kxDashboard._lastKpi[viewName]) return;
+        kxDashboard._lastKpi[viewName] = hash;
+        var live = dash.querySelectorAll('.kx-kpi-value');
+        live.forEach(function(el, i) {
+          if (i < fresh.length) {
+            var t = (fresh[i].textContent || '').trim();
+            if (t !== (el.textContent || '').trim()) el.textContent = t;
+          }
+        });
+      });
+  },
+
+  _refreshCharts: function(dashViewName, dash) {
+    var canvases = dash.querySelectorAll('canvas[id^="kx-chart-canvas-"]');
+    var names = [];
+    canvases.forEach(function(c) { names.push(c.id.replace(/^kx-chart-canvas-/, '')); });
+    return names.reduce(function(chain, name) {
+      return chain.then(function() { return kxDashboard._refreshOneChart(dashViewName, name); });
+    }, Promise.resolve());
+  },
+
+  _refreshOneChart: function(dashViewName, chartViewName) {
+    var key = dashViewName + '/' + chartViewName;
+    return kxDashboard._silentFetch('kx/view/' + chartViewName + '/chart-data')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (typeof kxChart === 'undefined' || !kxChart._instances) return;
+        var inst = kxChart._instances[chartViewName];
+        if (!inst) return;
+        var hash = JSON.stringify(data.labels || []) + '|' + JSON.stringify(data.data || []);
+        if (kxDashboard._lastChart[key] === hash) return;
+        kxDashboard._lastChart[key] = hash;
+        inst.data.labels = data.labels || [];
+        if (inst.data.datasets && inst.data.datasets[0]) inst.data.datasets[0].data = data.data || [];
+        inst.update('none');
+      })
+      .catch(function() {});
   }
 };
 

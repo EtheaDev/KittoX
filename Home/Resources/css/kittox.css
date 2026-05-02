@@ -2841,15 +2841,17 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   min-width: 0;
   min-height: 0;
   padding: 16px;
-  position: relative;
+  display: flex;
 }
 
-.kx-chart-area canvas {
+.kx-chart-canvas-wrap { flex: 1; min-width: 0; min-height: 0; position: relative; }
+
+.kx-chart-canvas-wrap canvas {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100% !important;
-  height: 100% !important;
+  width: 100%;
+  height: 100%;
 }
 
 .kx-chart-sidebar {

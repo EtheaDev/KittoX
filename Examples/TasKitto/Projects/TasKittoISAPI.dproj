@@ -30,8 +30,8 @@
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=TasKitto;FileVersion=4.0.0.0;InternalName=TasKitto;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=TasKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_ExeOutput>..\Home</DCC_ExeOutput>
-        <DCC_DcuOutput>..\Lib\$(ProductVersion)\$(Platform)</DCC_DcuOutput>
-        <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
+        <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
@@ -60,6 +60,58 @@
         <DCCReference Include="..\Source\UseKitto.pas"/>
         <DCCReference Include="..\Source\Rules.pas"/>
         <DCCReference Include="..\Source\Auth.pas"/>
+        <None Include="..\Home\Metadata\Config.yaml"/>
+        <None Include="..\Home\Metadata\Views\Home.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityInput.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityReport.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityTemplate.yaml"/>
+        <None Include="..\Home\Metadata\Views\LoginView.yaml"/>
+        <None Include="..\Home\Metadata\Views\MainMenu.yaml"/>
+        <None Include="..\Home\Metadata\Views\NewActivity.yaml"/>
+        <None Include="..\Home\Metadata\Views\CustomerMap.yaml"/>
+        <None Include="..\Home\Metadata\Views\Dashboard.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashKpiProjects.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashKpiHours.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashKpiCustomers.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashKpiActivities.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashStatusPie.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashDailyChart.yaml"/>
+        <None Include="..\Home\Metadata\Views\DashTypePie.yaml"/>
+        <None Include="..\Home\Metadata\Views\ResetPassword.yaml"/>
+        <None Include="..\Home\Metadata\Views\PrivacyPolicy.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivitiesByType.yaml"/>
+        <None Include="..\Home\Metadata\Views\Employees.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityPieChart.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityCalendar.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityBarChart.yaml"/>
+        <None Include="..\Home\Metadata\Views\Projects.yaml"/>
+        <None Include="..\Home\Metadata\Views\Customers.yaml"/>
+        <None Include="..\Home\Metadata\Views\ActivityAddForm.yaml"/>
+        <None Include="..\Home\Metadata\Views\ChangePassword.yaml"/>
+        <None Include="..\Home\Metadata\Views\HomeMini.yaml"/>
+        <None Include="..\Home\Metadata\Views\RegisterNewUser.yaml"/>
+        <None Include="..\Home\Metadata\Views\UserAddForm.yaml"/>
+        <None Include="..\Home\Metadata\Views\UserForm.yaml"/>
+        <None Include="..\Home\Metadata\Views\Users.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\ActivityCalendar_Form.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\ActivityInput_Form.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\ActivityInput_Grid.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\Phases_Form.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\Projects_Form.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\RegisterNewUser_Form.yaml"/>
+        <None Include="..\Home\Metadata\Models\ACTIVITY.yaml"/>
+        <None Include="..\Home\Metadata\Models\ACTIVITY_BY_STATUS.yaml"/>
+        <None Include="..\Home\Metadata\Models\ACTIVITY_BY_TYPE.yaml"/>
+        <None Include="..\Home\Metadata\Models\ACTIVITY_CALENDAR.yaml"/>
+        <None Include="..\Home\Metadata\Models\ACTIVITY_DAILY_RANGE.yaml"/>
+        <None Include="..\Home\Metadata\Models\ACTIVITY_TYPE.yaml"/>
+        <None Include="..\Home\Metadata\Models\CUSTOMER.yaml"/>
+        <None Include="..\Home\Metadata\Models\EMPLOYEE.yaml"/>
+        <None Include="..\Home\Metadata\Models\KITTO_USERS.yaml"/>
+        <None Include="..\Home\Metadata\Models\KPI_MONTHLY.yaml"/>
+        <None Include="..\Home\Metadata\Models\OPERATOR_ROLE.yaml"/>
+        <None Include="..\Home\Metadata\Models\PHASE.yaml"/>
+        <None Include="..\Home\Metadata\Models\PROJECT.yaml"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

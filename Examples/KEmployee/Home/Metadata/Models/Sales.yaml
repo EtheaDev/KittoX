@@ -18,7 +18,7 @@ Fields:
   Discount: Float not null
   ItemType: String(12)
     PhysicalName: ITEM_TYPE
-  Aged: Decimal
+  Aged: Decimal(18, 9)
   CustNoRef: Reference(Customer) not null
     PhysicalName: INTEG_77
     Fields:

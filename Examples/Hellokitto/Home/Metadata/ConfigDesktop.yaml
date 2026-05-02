@@ -21,13 +21,31 @@ Databases:
       Isolation: ReadCommitted
       ODBCAdvanced: TrustServerCertificate=yes
 
-Auth: DB
-  IsPassepartoutEnabled: True
-  PassepartoutPassword: password
-  IsClearPassword: False
-  .Defaults:
-    UserName: administrator
-    Password: password
+Auth: JWT
+  # Same envelope as Config.yaml — see that file for inline comments. Desktop
+  # mode runs in-process with WebView2 against localhost only, so the cookie
+  # never leaves the machine; HS256 with the demo key is fine for embedded use.
+  Inner: DB
+    IsPassepartoutEnabled: True
+    PassepartoutPassword: password
+    IsClearPassword: False
+    .Defaults:
+      UserName: administrator
+      Password: password
+
+  SigningAlgorithm: HS256
+  SigningKey: env:KX_JWT_KEY_HELLOKITTO
+  Issuer: HelloKittoX
+  Audience: kx-app
+  TokenLifetime: 3600
+  SlidingThreshold: 600
+  ClockSkew: 60
+  Claims:
+    IncludeRoles: False
+    IncludeDB: True
+    IncludeDisplayName: True
+    IncludeLanguage: True
+    IncludeACL: False
 
 AccessControl: Null
 

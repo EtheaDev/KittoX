@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -222,6 +222,27 @@ type
     property IsBCrypted: Boolean read GetIsBCrypted write FIsBCrypted;
   public
     function CanBypassURLParam(const AParamName: string): Boolean; virtual;
+
+    /// <summary>
+    ///  Returns the configuration node that callers should consult when they
+    ///  read user-facing auth options like DatabaseChoices, ValidatePassword,
+    ///  IsPassepartoutEnabled, etc. For a plain authenticator this is just
+    ///  the authenticator's own Config. For wrapping authenticators (notably
+    ///  TKJWTAuthenticator) it returns the wrapped Inner authenticator's
+    ///  Config, so that the same YAML keys keep working whether or not the
+    ///  app sits behind a JWT envelope.
+    /// </summary>
+    function EffectiveConfigNode: TEFTree; virtual;
+
+    /// <summary>
+    ///  Per-request hook invoked by TKWebApplication just after ActivateInstance
+    ///  and before any route dispatch. Default does nothing. Authenticators
+    ///  that carry a request-bound credential (e.g. TKJWTAuthenticator) override
+    ///  this to validate the credential, hydrate the session, slide expirations,
+    ///  etc. — without forcing the framework runtime layer to depend on the
+    ///  authenticator's third-party libraries.
+    /// </summary>
+    procedure AuthorizeRequest; virtual;
   end;
   TKAuthenticatorClass = class of TKAuthenticator;
 
@@ -448,6 +469,16 @@ function TKAuthenticator.CanBypassURLParam(const AParamName: string): Boolean;
 begin
   //No URL param is protected: Session can pass it to login
   Result := False;
+end;
+
+function TKAuthenticator.EffectiveConfigNode: TEFTree;
+begin
+  Result := Config;
+end;
+
+procedure TKAuthenticator.AuthorizeRequest;
+begin
+  // Default no-op. Descendants override.
 end;
 
 procedure TKAuthenticator.Logout;

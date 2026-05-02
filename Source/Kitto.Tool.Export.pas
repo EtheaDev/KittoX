@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -216,6 +216,9 @@ begin
       LViewField := LViewTableHeaderField.ViewField;
       if Assigned(LViewField) then
       begin
+        //Skip Blob Fields when export to TXT
+        if LViewField.IsBlob then
+          Continue;
         if not UseDisplayLabels then
           LValue := LViewTableHeaderField.FieldName
         else
@@ -243,11 +246,15 @@ begin
       for LFieldIndex := 0 to LRecord.FieldCount - 1 do
       begin
         LField := LRecord.Fields[LFieldIndex];
-        if Assigned(LField.ViewField) then
+        LViewField := LField.ViewField;
+        if Assigned(LViewField) then
         begin
+          //Skip Blob Fields when export to TXT
+          if LViewField.IsBlob then
+            Continue;
           LValue := LField.GetAsJSONValue(True, False, True);
           if LFixedLength then
-            LLine := LLine + FormatValue(LValue, LField.ViewField.DisplayWidth)
+            LLine := LLine + FormatValue(LValue, LViewField.DisplayWidth)
           else
           begin
             if LFieldIndex <> 0 then

@@ -412,6 +412,7 @@ uses
   EF.YAML,
   EF.Localization,
   Kitto.Web.Application,
+  Kitto.Web.Session,
   Kitto.Types,
   Kitto.DatabaseRouter;
 
@@ -547,6 +548,12 @@ function TKConfig.GetDatabaseName: string;
 var
   LDatabaseRouterNode: TEFNode;
 begin
+  // Per-session override (login "environment" combo): if the current session
+  // has picked a specific database, that takes precedence over both the
+  // DatabaseRouter and the configured DefaultDatabaseName.
+  if (TKWebSession.Current <> nil) and (TKWebSession.Current.DatabaseName <> '') then
+    Exit(TKWebSession.Current.DatabaseName);
+
   LDatabaseRouterNode := Config.FindNode('DatabaseRouter');
   if Assigned(LDatabaseRouterNode) then
     Result := TKDatabaseRouterFactory.Instance.GetDatabaseName(

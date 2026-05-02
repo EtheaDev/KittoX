@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,6 +118,7 @@ type
   protected
     function GetQueryClass: TEFDBFDQueryClass; virtual;
     function CreateDBEngineType: TEFDBEngineType; override;
+    procedure AfterConnectionOpen(Sender: TObject); override;
     procedure InternalOpen; override;
     procedure InternalClose; override;
     function InternalCreateDBInfo: TEFDBInfo; override;
@@ -237,7 +238,9 @@ begin
     Result := False;
   end
   else if SameText(ADriverID, 'Ora') then
-    Result := False;
+    Result := False
+  else if SameText(ADriverID, 'PG') then
+    Result := True;
 end;
 
 { TEFDBFDParams }
@@ -279,6 +282,16 @@ begin
             if not LSourceParam.IsNull then
               LDestinationParameter.Value := LSourceParam.AsDateTime;
           end;
+        ftDate:
+          begin
+            // Promote ftDate to ftTimeStamp so that a Date value (time = 00:00)
+            // binds as datetime. Required by SQL Server ODBC Driver 18, which
+            // rejects implicit date → datetime conversion on parameter binding.
+            // Harmless on other engines: date columns truncate the time part.
+            LDestinationParameter.DataType := ftTimeStamp;
+            if not LSourceParam.IsNull then
+              LDestinationParameter.Value := LSourceParam.AsDateTime;
+          end;
         ftCurrency:
           begin
             LDestinationParameter.DataType := ftBCD;
@@ -305,6 +318,18 @@ begin
   FConnection.LoginPrompt := False;
   FConnection.AfterConnect := AfterConnectionOpen;
   FConnectionString := TStringList.Create;
+end;
+
+procedure TEFDBFDConnection.AfterConnectionOpen(Sender: TObject);
+var
+  LSchema: string;
+begin
+  inherited;
+  if SameText(GetDriverId, 'PG') then
+  begin
+    LSchema := Config.GetString('Connection/Schema', 'public');
+    FConnection.ExecSQL(Format('SET search_path TO %s, public', [LSchema]));
+  end;
 end;
 
 procedure TEFDBFDConnection.InternalOpen;
@@ -344,6 +369,7 @@ begin
     FConnection.Params.Values['OSAuthent'] := Config.GetString('Connection/OSAuthent', 'No');
     FConnection.Params.Values['MARS'] := 'Yes';
     FConnection.Params.Values['ODBCAdvanced'] := Config.GetString('Connection/ODBCAdvanced', 'TrustServerCertificate=no');
+    FConnection.Params.Values['MetaDefSchema'] := Config.GetString('Connection/MetaDefSchema', 'dbo');
   end
   else if SameText(LDriverID, 'FB') or SameText(LDriverID, 'IB') then
   begin
@@ -373,6 +399,19 @@ begin
     FConnection.Params.Values['BooleanFormat'] := Config.GetExpandedString('Connection/BooleanFormat', 'Integer');
     FConnection.Params.Values['ApplicationName'] := Config.GetExpandedString('Connection/ApplicationName');
     FConnection.Params.Values['MetaDefSchema'] := Config.GetExpandedString('Connection/MetaDefSchema');
+  end
+  else if SameText(LDriverID, 'PG') then
+  begin
+    // PostgreSQL-specific parameters
+    FConnection.Params.Values['Server'] := Config.GetExpandedString('Connection/Server', 'localhost');
+    FConnection.Params.Values['Port'] := Config.GetString('Connection/Port', '5432');
+    FConnection.Params.Values['Database'] := Config.GetExpandedString('Connection/Database');
+    FConnection.Params.Values['OSAuthent'] := Config.GetString('Connection/OSAuthent', 'No');
+    FConnection.Params.Values['User_Name'] := Config.GetExpandedString('Connection/User_Name');
+    FConnection.Params.Values['Password'] := Config.GetExpandedString('Connection/Password');
+    FConnection.Params.Values['CharacterSet'] := Config.GetString('Connection/CharacterSet', 'UTF8');
+    FConnection.Params.Values['ApplicationName'] := Config.GetExpandedString('Connection/ApplicationName');
+    FConnection.Params.Values['MetaDefSchema'] := Config.GetString('Connection/Schema', 'public');
   end;
 
   //Those parameters speed-up reading
@@ -454,6 +493,8 @@ begin
     Result := TEFSQLServerDBEngineType.Create
   else if SameText(LDriverId, 'FB') or SameText(LDriverId, 'IB') then
     Result := TEFFirebirdDBEngineType.Create
+  else if SameText(LDriverId, 'PG') then
+    Result := TEFPostgreSQLDBEngineType.Create
   else
     Result := inherited CreateDBEngineType;
 end;

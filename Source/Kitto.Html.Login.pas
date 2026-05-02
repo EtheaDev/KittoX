@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +51,7 @@ type
     function RenderLinks: string;
     function RenderLocalStorageCheckbox: string;
     function RenderScript: string;
+    function RenderDatabaseChoice(const ALabelStyleAttr, AStyleAttr: string): string;
     function GetDialogStyle: string;
     function GetExtraWidth: Integer;
     function GetExtraHeight: Integer;
@@ -187,7 +188,11 @@ begin
   else
     LStyleAttr := '';
 
-  Result :=
+  // Optional "environment" combo: shown before UserName when
+  // Auth/DatabaseChoices is configured in Config.yaml.
+  Result := RenderDatabaseChoice(LLabelStyleAttr, LStyleAttr);
+
+  Result := Result +
     '<div class="kx-login-field-row">' +
       '<label class="kx-login-field-label" for="kx-login-username"' + LLabelStyleAttr + '>' +
         TNetEncoding.HTML.Encode(LUserNameLabel) + '</label>' +
@@ -218,6 +223,74 @@ begin
 
   // LocalStorage checkbox
   Result := Result + RenderLocalStorageCheckbox;
+end;
+
+function TKXLoginPanelController.RenderDatabaseChoice(const ALabelStyleAttr, AStyleAttr: string): string;
+var
+  LChoicesNode: TEFNode;
+  LChoicesRaw: string;
+  LChoiceList: TArray<string>;
+  LCurrent: string;
+  LName, LLabel, LSelected: string;
+  LDbNode: TEFNode;
+  LLabelText: string;
+  I: Integer;
+begin
+  Result := '';
+  // Read the explicit list of database choices the user is allowed to pick at
+  // login time. Format: comma-separated list of database names defined under
+  // the Databases node, e.g.
+  //   Auth: TasKitto
+  //     DatabaseChoices: FireDAC_MSSQL, FireDAC_PostgreSQL, FireDAC_Firebird
+  // If this node is absent or empty, no combo is rendered (legacy behavior).
+  // Read via EffectiveConfigNode so that wrapping authenticators (e.g.
+  // TKJWTAuthenticator with Auth/Inner) expose the same key transparently.
+  LChoicesNode := TKWebApplication.Current.Authenticator.EffectiveConfigNode
+    .FindNode('DatabaseChoices');
+  if not Assigned(LChoicesNode) then
+    Exit;
+  LChoicesRaw := LChoicesNode.AsString;
+  if Trim(LChoicesRaw) = '' then
+    Exit;
+  LChoiceList := SplitString(LChoicesRaw, ',');
+  if Length(LChoiceList) = 0 then
+    Exit;
+
+  // Default selection: rely on TKConfig.DatabaseName which already resolves
+  // session override → DatabaseRouter → DefaultDatabaseName, in that order.
+  // The session has already been populated from the kx_db cookie by
+  // TKWebEngine.EnsureSession at the start of this request.
+  LCurrent := TKWebApplication.Current.Config.DatabaseName;
+
+  LLabelText := Config.GetString('FormPanel/Database', _('Environment'));
+
+  Result :=
+    '<div class="kx-login-field-row">' +
+      '<label class="kx-login-field-label" for="kx-login-database"' + ALabelStyleAttr + '>' +
+        TNetEncoding.HTML.Encode(LLabelText) + '</label>' +
+      '<select id="kx-login-database" name="DatabaseName" class="kx-login-field-input"' + AStyleAttr + '>';
+  for I := 0 to High(LChoiceList) do
+  begin
+    LName := Trim(LChoiceList[I]);
+    if LName = '' then
+      Continue;
+    // Optional per-database display label: Databases/<Name>/DisplayLabel.
+    // Falls back to the raw config name.
+    LDbNode := TKWebApplication.Current.Config.Config.FindNode(
+      'Databases/' + LName + '/DisplayLabel');
+    if Assigned(LDbNode) then
+      LLabel := LDbNode.AsExpandedString
+    else
+      LLabel := LName;
+    if SameText(LName, LCurrent) then
+      LSelected := ' selected'
+    else
+      LSelected := '';
+    Result := Result +
+      '<option value="' + TNetEncoding.HTML.Encode(LName) + '"' + LSelected + '>' +
+        TNetEncoding.HTML.Encode(LLabel) + '</option>';
+  end;
+  Result := Result + '</select></div>';
 end;
 
 function TKXLoginPanelController.RenderLocalStorageCheckbox: string;

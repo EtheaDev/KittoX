@@ -81,6 +81,13 @@ type
     function GetAccessController: TKAccessController;
     procedure InitConfig;
     /// <summary>
+    ///  When the active authenticator is a TKJWTAuthenticator, validates
+    ///  the kx_token cookie present on the request, hydrates the session
+    ///  state from the verified claims, and slides the cookie expiration
+    ///  if it is approaching. No-op for any other authenticator class.
+    /// </summary>
+    procedure AuthorizeJWTRequest;
+    /// <summary>
     ///  Adds a .png extension to the resource name.
     ///  ASuffix, if specified, is added before the file extension.
     ///  If the image name ends with _ and a two-digit number among 16, 24, 32, and 48,
@@ -94,6 +101,10 @@ type
     function HandleKXLoginRequest: Boolean;
     function HandleKXResetPasswordRequest: Boolean;
     function HandleKXChangePasswordRequest: Boolean;
+    /// <summary>Populates AuthData.DatabaseName (raw config name) and
+    ///  AuthData.Environment (Databases/Name/DisplayLabel if present, falling
+    ///  back to the raw name) so the corresponding %Auth:* macros resolve.</summary>
+    procedure DeclareDatabaseMacros(const AAuthData: TEFNode);
     function HandleKXFormRequest(const AViewName: string): Boolean;
     function HandleKXLookupRequest(const AViewName: string): Boolean;
     function HandleKXSaveRequest(const AViewName: string): Boolean;
@@ -1103,11 +1114,23 @@ begin
     TEFLogger.Instance.Log('DoHandleRequest: path matched, activating instance', TEFLogger.LOG_DEBUG);
     ActivateInstance;
     try
+      // Auth gate for JWT mode: validate the kx_token cookie's signature and
+      // claims, hydrate session state from the verified payload, slide the
+      // cookie if approaching expiration. Has no effect for non-JWT auth.
+      AuthorizeJWTRequest;
       try
         // Session lost after server restart: raise so the except block
         // shows a fatal error dialog with reload.
-        // Home requests pass through: the normal flow shows the login page.
-        if TKWebSession.Current.IsSessionLost and not IsHomeRequest then
+        // Home + auth recovery endpoints pass through: the normal flow
+        // shows the login page (Home), the user submits the form
+        // (IsKXLoginRequest) and the login handler regenerates the session
+        // ID. Reset password / change password are similarly safe to run on
+        // a freshly-created session.
+        if TKWebSession.Current.IsSessionLost
+            and not IsHomeRequest
+            and not IsKXLoginRequest
+            and not IsKXResetPasswordRequest
+            and not IsKXChangePasswordRequest then
           raise Exception.Create(_('Session lost or expired, please restart!'));
         if IsHomeRequest then
         begin
@@ -1229,25 +1252,75 @@ begin
       AURL.Path + '" expected="' + FPath + '/*"', TEFLogger.LOG_DEBUG);
 end;
 
+procedure TKWebApplication.DeclareDatabaseMacros(const AAuthData: TEFNode);
+var
+  LDatabaseName: string;
+  LLabelNode: TEFNode;
+  LEnvironment: string;
+begin
+  Assert(Assigned(AAuthData));
+  // Raw config name of the active database (session override, then default).
+  LDatabaseName := Config.DatabaseName;
+  AAuthData.SetString('DatabaseName', LDatabaseName);
+
+  // Environment = friendly DisplayLabel of the active database, or the raw
+  // name when no label is configured. Matches the value shown in the login
+  // combo so the StatusBar / dialog titles can display the same text.
+  LLabelNode := Config.Config.FindNode(
+    'Databases/' + LDatabaseName + '/DisplayLabel');
+  if Assigned(LLabelNode) and (LLabelNode.AsExpandedString <> '') then
+    LEnvironment := LLabelNode.AsExpandedString
+  else
+    LEnvironment := LDatabaseName;
+  AAuthData.SetString('Environment', LEnvironment);
+end;
+
 function TKWebApplication.HandleKXLoginRequest: Boolean;
+const
+  COOKIE_DB_LIFETIME_DAYS = 30;
 var
   LAuthData: TEFNode;
   LAuthenticator: TKAuthenticator;
-  LUserName, LPassword, LLanguage: string;
+  LUserName, LPassword, LLanguage, LDatabaseName: string;
 begin
   Result := True;
   LAuthenticator := GetAuthenticator;
+
+  // Always regenerate the session ID at login time. This serves two purposes:
+  //   1) Recovers transparently from a stale session cookie (server restarted,
+  //      session timed out and was cleaned up): the client's old cookie no
+  //      longer points to anything, EnsureSession created a fresh session
+  //      flagged as IsSessionLost, and we just give it a clean new ID.
+  //   2) Hardens against session fixation: an attacker who tricked the
+  //      victim into using a known session ID cannot ride that ID after
+  //      successful authentication, because the ID changes here.
+  TKWebSession.Current.RegenerateId;
+
+  // Reset any previously selected database environment. A stale kx_db cookie
+  // from another KittoX app (or from a removed Databases entry) would force
+  // TKConfig.DatabaseFor to look up a name that does not exist in this app's
+  // Config.yaml and crash. The cookie is re-set below only if the user
+  // explicitly picks an environment in the login combo.
+  TKWebSession.Current.DatabaseName := '';
+  TKWebResponse.Current.SetCookie('kx_db', '', Now - 1);
 
   // Read data from POST form body (application/x-www-form-urlencoded)
   LUserName := TKWebRequest.Current.GetField('UserName');
   LPassword := TKWebRequest.Current.GetField('Password');
   LLanguage := TKWebRequest.Current.GetField('Language');
+  LDatabaseName := TKWebRequest.Current.GetField('DatabaseName');
 
   if LLanguage <> '' then
   begin
     TKWebSession.Current.RefreshingLanguage := True;
     TKWebSession.Current.Language := LLanguage;
   end;
+
+  // Apply the chosen database environment BEFORE authenticating, so that the
+  // auth query (which goes to KITTO_USERS via TKConfig.Database) is routed to
+  // the database the user picked from the login combo.
+  if LDatabaseName <> '' then
+    TKWebSession.Current.DatabaseName := LDatabaseName;
 
   LAuthData := TEFNode.Create;
   try
@@ -1259,6 +1332,21 @@ begin
 
     if LAuthenticator.Authenticate(LAuthData) then
     begin
+      // Persist the chosen environment as a cookie so the next visit
+      // pre-selects the same database. Lifetime: 30 days.
+      if LDatabaseName <> '' then
+        TKWebResponse.Current.SetCookie('kx_db', LDatabaseName,
+          Now + COOKIE_DB_LIFETIME_DAYS);
+
+      // Expose the active database to macro consumers:
+      //   %Auth:DatabaseName%  → raw config name (e.g. "FireDAC_MSSQL")
+      //   %Auth:Environment%   → user-friendly label, taken from
+      //                          Databases/<Name>/DisplayLabel if present,
+      //                          otherwise falls back to the database name.
+      // Use Environment in the StatusBar so it matches the value shown in
+      // the login combo (which uses the same DisplayLabel).
+      DeclareDatabaseMacros(TKWebSession.Current.AuthData);
+
       // Prevent Home from calling Logout on the next request (the redirect).
       // RefreshingLanguage=True causes Home to skip Logout, preserving the auth state.
       TKWebSession.Current.RefreshingLanguage := True;
@@ -4025,19 +4113,45 @@ var
   LConfig: TEFNode;
   I: Integer;
 begin
-  if not Assigned(FAccessController) then
-  begin
-    LType := Config.Config.GetExpandedString('AccessControl', NODE_NULL_VALUE);
-    FAccessController := TKAccessControllerFactory.Instance.CreateObject(LType);
-    LConfig := Config.Config.FindNode('AccessControl');
-    if Assigned(LConfig) then
+  // Double-checked locking — the Indy thread pool can fan out the very first
+  // wave of requests across multiple worker threads before the lazy field
+  // settles, and an unguarded `if not Assigned(...)` would let two threads
+  // both create an instance, with one becoming an orphaned leak.
+  if Assigned(FAccessController) then
+    Exit(FAccessController);
+  TMonitor.Enter(Self);
+  try
+    if not Assigned(FAccessController) then
     begin
-      for I := 0 to LConfig.ChildCount - 1 do
-        FAccessController.Config.AddChild(TEFNode.Clone(LConfig.Children[I]));
-      FAccessController.Init;
+      LType := Config.Config.GetExpandedString('AccessControl', NODE_NULL_VALUE);
+      FAccessController := TKAccessControllerFactory.Instance.CreateObject(LType);
+      LConfig := Config.Config.FindNode('AccessControl');
+      if Assigned(LConfig) then
+      begin
+        for I := 0 to LConfig.ChildCount - 1 do
+          FAccessController.Config.AddChild(TEFNode.Clone(LConfig.Children[I]));
+        FAccessController.Init;
+      end;
     end;
+    Result := FAccessController;
+  finally
+    TMonitor.Exit(Self);
   end;
-  Result := FAccessController;
+end;
+
+procedure TKWebApplication.AuthorizeJWTRequest;
+var
+  LAuth: TKAuthenticator;
+begin
+  // Delegate to the active authenticator. Default TKAuthenticator.AuthorizeRequest
+  // is a no-op; TKJWTAuthenticator overrides to validate the kx_token cookie,
+  // hydrate session state from the verified claims, and slide expiration.
+  // Other authenticators are free to plug in their own per-request logic
+  // (Phase C OIDC/SAML descendants, custom token schemes, etc.) without this
+  // unit having to know about them.
+  LAuth := GetAuthenticator;
+  if Assigned(LAuth) then
+    LAuth.AuthorizeRequest;
 end;
 
 function TKWebApplication.GetAuthenticator: TKAuthenticator;
@@ -4046,16 +4160,24 @@ var
   LConfig: TEFNode;
   I: Integer;
 begin
-  if not Assigned(FAuthenticator) then
-  begin
-    LType := Config.Config.GetExpandedString('Auth', NODE_NULL_VALUE);
-    FAuthenticator := TKAuthenticatorFactory.Instance.CreateObject(LType);
-    LConfig := Config.Config.FindNode('Auth');
-    if Assigned(LConfig) then
-      for I := 0 to LConfig.ChildCount - 1 do
-        FAuthenticator.Config.AddChild(TEFNode.Clone(LConfig.Children[I]));
+  // See GetAccessController for the rationale; same race window, same fix.
+  if Assigned(FAuthenticator) then
+    Exit(FAuthenticator);
+  TMonitor.Enter(Self);
+  try
+    if not Assigned(FAuthenticator) then
+    begin
+      LType := Config.Config.GetExpandedString('Auth', NODE_NULL_VALUE);
+      FAuthenticator := TKAuthenticatorFactory.Instance.CreateObject(LType);
+      LConfig := Config.Config.FindNode('Auth');
+      if Assigned(LConfig) then
+        for I := 0 to LConfig.ChildCount - 1 do
+          FAuthenticator.Config.AddChild(TEFNode.Clone(LConfig.Children[I]));
+    end;
+    Result := FAuthenticator;
+  finally
+    TMonitor.Exit(Self);
   end;
-  Result := FAuthenticator;
 end;
 
 class function TKWebApplication.GetCurrent: TKWebApplication;

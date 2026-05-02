@@ -1,14 +1,15 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{1FBC6B9D-04F2-4238-A7C5-07DEC4D673EA}</ProjectGuid>
-        <ProjectVersion>19.2</ProjectVersion>
+        <ProjectVersion>20.4</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <MainSource>HelloKitto.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
+        <ProjectName Condition="'$(ProjectName)'==''">HelloKitto</ProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -35,6 +36,18 @@
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+        <Cfg_2_Win32>true</Cfg_2_Win32>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+        <Cfg_2_Win64>true</Cfg_2_Win64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
         <SanitizedProjectName>HelloKitto</SanitizedProjectName>
@@ -44,15 +57,14 @@
         <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=HelloKitto;FileVersion=4.0.0.0;InternalName=HelloKitto;LegalCopyright=Copyright © Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=HelloKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>HelloKitto_Icon.ico</Icon_MainIcon>
         <DCC_ExeOutput>..\Home</DCC_ExeOutput>
-        <DCC_DcuOutput>..\Lib\$(ProductVersion)\$(Platform)</DCC_DcuOutput>
-        <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
+        <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_E>false</DCC_E>
         <DCC_ImageBase>00400000</DCC_ImageBase>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
-        <GenDll>false</GenDll>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
     </PropertyGroup>
@@ -78,6 +90,12 @@
         <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
         <DCC_RangeChecking>true</DCC_RangeChecking>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
@@ -85,6 +103,31 @@
         <DCCReference Include="..\Source\Controllers.pas"/>
         <DCCReference Include="..\Source\Rules.pas"/>
         <DCCReference Include="..\Source\UseKitto.pas"/>
+        <None Include="..\Home\Metadata\Config.yaml"/>
+        <None Include="..\Home\Metadata\ConfigDesktop.yaml"/>
+        <None Include="..\Home\Metadata\Views\Home.yaml"/>
+        <None Include="..\Home\Metadata\Views\HomeSmall.yaml"/>
+        <None Include="..\Home\Metadata\Views\HomeTiny.yaml"/>
+        <None Include="..\Home\Metadata\Views\MainMenu.yaml"/>
+        <None Include="..\Home\Metadata\Views\MainMenuSmall.yaml"/>
+        <None Include="..\Home\Metadata\Views\MainMenuTiny.yaml"/>
+        <None Include="..\Home\Metadata\Views\Girls.yaml"/>
+        <None Include="..\Home\Metadata\Views\GirlForm.yaml"/>
+        <None Include="..\Home\Metadata\Views\Dolls.yaml"/>
+        <None Include="..\Home\Metadata\Views\DollsCard.yaml"/>
+        <None Include="..\Home\Metadata\Views\DollForm.yaml"/>
+        <None Include="..\Home\Metadata\Views\Hairs.yaml"/>
+        <None Include="..\Home\Metadata\Views\Parties.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\Girls_Grid.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\Dolls_Form.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\Parties_Form.yaml"/>
+        <None Include="..\Home\Metadata\Views\Layouts\Parties_Grid.yaml"/>
+        <None Include="..\Home\Metadata\Models\Girl.yaml"/>
+        <None Include="..\Home\Metadata\Models\Doll.yaml"/>
+        <None Include="..\Home\Metadata\Models\Hair.yaml"/>
+        <None Include="..\Home\Metadata\Models\Party.yaml"/>
+        <None Include="..\Home\Metadata\Models\Invitation.yaml"/>
+        <None Include="..\Home\Metadata\Models\KittoUsers.yaml"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -112,10 +155,11 @@
                 <Platform value="Win64">True</Platform>
             </Platforms>
             <ModelSupport>False</ModelSupport>
-            <Deployment Version="3"/>
+            <Deployment Version="5"/>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>
     <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
     <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+    <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
 </Project>

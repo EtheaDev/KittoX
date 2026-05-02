@@ -1,4 +1,4 @@
-unit UseKitto;
+﻿unit UseKitto;
 
 interface
 
@@ -8,14 +8,34 @@ uses
   , Data.DBXMSSQL, Data.DBXFirebird, EF.DB.FD //FireDac support
   , FireDAC.Phys.MSSQL, FireDAC.Phys.MSSQLMeta //FireDac support for MS-SQL
   , FireDAC.Phys.IBBase, FireDAC.Phys.FB //FireDac support for Firebird
+  , FireDAC.Phys.PG, FireDAC.Phys.PGWrapper //FireDac support for PostgreSQL
   //Global Kittox uses
   , Kitto.Html.All
   , Kitto.Web.Enterprise
+  // Activates the file logger endpoint declared in Config.yaml under
+  // Log/TextFile (auto-registered via the unit's initialization). Standalone
+  // Indy hosts must include this unit explicitly — the WebBroker bridge for
+  // ISAPI/Apache pulls it in on its own.
+  , EF.Logger.TextFile
   //, Kitto.AccessControl.DB
   , Kitto.Auth.DB
   // , Kitto.Auth.DBServer
   // , Kitto.Auth.OSDB
   // , Kitto.Auth.TextFile
+  // JWT authenticator (Auth: JWT) — registered as 'JWT' on init.
+  // Pull this in only when the app actually uses JWT auth, otherwise the
+  // delphi-jose-jwt third-party library does not need to be on the search
+  // path of unrelated apps.
+  , Kitto.Auth.JWT
+  // JWT access controller (AccessControl: JWT) — reads the kx_acl claim
+  // snapshotted at login by TKJWTAuthenticator (Auth/Claims/IncludeACL: True),
+  // with optional DB fallback. Independent from Auth: JWT — you can use one
+  // without the other.
+  , Kitto.AccessControl.JWT
+  // Needed by Kitto.AccessControl.JWT when FallbackToDB is True (lazy create
+  // of a TKDBAccessController at first miss), and required to register the
+  // 'DB' AccessController class id used as the fallback.
+  , Kitto.AccessControl.DB
   , Kitto.Tool.ADO //For Excel/Import export
   , Kitto.Tool.DebenuQuickPDF //For PDF Merge
   //, Kitto.Tool.ReportBuilderTools //Tool for Reportbuilder
@@ -25,10 +45,32 @@ uses
 
 implementation
 
+uses
+  System.SysUtils,
+  Kitto.Web.JWT,
+  JOSE.Core.JWA;
+
 initialization
 {$WARN SYMBOL_PLATFORM OFF}
   // check memory leaks at the end of the app
   ReportMemoryLeaksOnShutdown := DebugHook <> 0;
 {$WARN SYMBOL_PLATFORM ON}
+
+  // JWT signing key for the TaskittoX demo — registered programmatically
+  // so all .dpr variants (Standalone, ISAPI, Desktop, Apache) share the
+  // same key without each having to set an environment variable. The
+  // first argument is matched (case-insensitive) against TKConfig.AppName,
+  // so this provider is used only by this app even if other JWT-enabled
+  // apps run in the same process.
+  // FOR PRODUCTION: replace this literal with a load from a vault, env
+  // var, or platform secret manager (the registered provider always takes
+  // precedence over Auth/SigningKey in Config.yaml).
+  TKJWTSigningKeyRegistry.Instance.RegisterProvider('TaskittoX',
+    function: TKJWTSigningKey
+    begin
+      Result.Algorithm := TJOSEAlgorithmId.HS256;
+      Result.PrivateKey := TEncoding.UTF8.GetBytes(
+        'taskitto-demo-hs256-shared-key-do-not-use-this-in-prod');
+    end);
 
 end.

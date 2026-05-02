@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{44E44607-5754-4B0C-BEEB-4EEC44A09CE7}</ProjectGuid>
         <MainSource>KittoXCore.dpk</MainSource>
@@ -49,7 +49,7 @@
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.0.5.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.0.6.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_Description>KittoX Core Run-Time Package</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
@@ -58,7 +58,7 @@
         <DllSuffix>$(Auto)</DllSuffix>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>5</VerInfo_Release>
+        <VerInfo_Release>6</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <BT_BuildType>Debug</BT_BuildType>
@@ -222,6 +222,36 @@
         <DCCReference Include="..\..\Source\ThirdParty\Kitto.TemplatePro.pas"/>
         <DCCReference Include="..\..\Source\ThirdParty\Kitto.JsonDataObjects.pas"/>
         <DCCReference Include="..\..\Source\ThirdParty\Kitto.Nullables.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.AccessControl.JWT.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.JWT.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.JWT.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Builder.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Consumer.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Consumer.Validators.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Context.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.Base.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.Builder.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWA.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWA.Compression.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWA.Encryption.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWA.Factory.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWA.Signing.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWE.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWK.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWS.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.JWT.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Core.Parts.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Encoding.Base64.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Hashing.HMAC.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.OpenSSL.Headers.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Producer.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Signing.Base.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Signing.ECDSA.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Signing.RSA.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Types.Arrays.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Types.Bytes.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Types.JSON.pas"/>
+        <DCCReference Include="..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE.Types.Utils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    This file is part of KittoX Enterprise Edition.
@@ -7,9 +7,9 @@
 -------------------------------------------------------------------------------}
 
 /// <summary>
-///   Dashboard controller: FlexPanel with a header and optional auto-refresh
-///   via HTMX polling. Enterprise module — include Kitto.Web.Enterprise
-///   in UseKitto.pas to enable.
+///   Dashboard controller: FlexPanel with optional auto-refresh driven by
+///   kxDashboard.start (kxgrid.js). Enterprise module — include
+///   Kitto.Web.Enterprise in UseKitto.pas to enable.
 /// </summary>
 unit Kitto.Html.Dashboard;
 
@@ -59,21 +59,15 @@ end;
 function TKXDashboardController.RenderContent: string;
 var
   LItemsHtml: string;
-  LRefreshAttr: string;
 begin
   LItemsHtml := inherited RenderContent;
-
-  if FRefreshInterval > 0 then
-  begin
-    LRefreshAttr := Format(
-      ' hx-get="kx/view/%s" hx-trigger="every %ds"' +
-      ' hx-target="closest .kx-tab-pane" hx-swap="innerHTML"',
-      [View.PersistentName, FRefreshInterval]);
-    Result := Format('<div id="%s-refresh"%s style="display:none"></div>%s',
-      [GetHtmlId, LRefreshAttr, LItemsHtml]);
-  end
-  else
-    Result := LItemsHtml;
+  if FRefreshInterval <= 0 then
+    Exit(LItemsHtml);
+  // Hand off to kxDashboard.start: silent JS poller updates KPI text and
+  // chart data in place (no DOM destruction, no flicker).
+  Result := LItemsHtml + Format(
+    '<script>if(typeof kxDashboard!=="undefined")kxDashboard.start("%s",%d);</script>',
+    [View.PersistentName, FRefreshInterval]);
 end;
 
 initialization

@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.5 - 23 Apr 2026**
+**Latest Version 4.0.6 - 01 May 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -57,6 +57,22 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 01 May 2026: ver. 4.0.6 Beta
+- New `Auth: JWT` wrapper authenticator (signed `kx_token` cookie, sliding expiration, programmatic key registration)
+- New `AccessControl: JWT` reading grants from `kx_acl` claim snapshotted at login, with optional DB fallback
+- Updated examples to JWT Auth (TasKitto / HelloKitto / KEmployee)
+- Updated TasKitto example with three-tier ACL (`admin` / `user` / `viewer`)
+- Multi-database support on TasKitto and HelloKitto: SQL Server / PostgreSQL / Firebird
+- Cross-dialect macros: `%DB.TRUE%` / `%DB.FALSE%`, `%DB.DATEDIFF`, `%DB.DATETIME_FROM`
+- Login form with optional "Environment" combo for multi-database apps (`Auth/DatabaseChoices`)
+- Native boolean types on the three sample DBs (`BIT` / `BOOLEAN`); Firebird setup is now SQL-script-only
+- Firebird Activity Dashboard views translated from the SQL Server originals
+- TasKitto SQL Server DDL split (tables / views in separate scripts because of T-SQL batch rules)
+- New `Tools/SetVersion.ps1`: one-shot version bump across constant, dproj, README and Inno Setup
+- New `Projects/BuildAllPackagesD{10_4,11,12,13}.ps1` wrappers: rebuild Core + Enterprise per Delphi version
+- YAML metadata files included in every `.dproj` (visible in Project Manager, KIDEX highlighting)
+- `EF.Logger.TextFile` active out-of-the-box for the standalone Indy hosts
 
 ## 23 Apr 2026: ver. 4.0.5 Beta
 

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,6 +78,14 @@ type
     procedure SetCustomHeader(const AName, AValue: string);
     property CustomHeaders: TStrings read GetCustomHeaders;
     procedure SetCookie(const AName, AValue: string; const AExpires: TDateTime);
+    /// <summary>
+    ///  Writes a cookie with the full set of attributes needed by JWT auth:
+    ///  Path, HttpOnly, Secure, SameSite. Pass an empty path to use '/'.
+    ///  ASameSite values: 'Strict' | 'Lax' | 'None' | '' (omit attribute).
+    /// </summary>
+    procedure SetSecureCookie(const AName, AValue: string; const AExpires: TDateTime;
+      const APath: string; const AHttpOnly: Boolean; const ASecure: Boolean;
+      const ASameSite: string);
 
     function HasItems: Boolean;
     property Items: TKWebResponseContent read GetItems;
@@ -244,6 +252,26 @@ begin
   LCookie.Value := AValue;
   LCookie.Path := '/';
   LCookie.Expires := AExpires;
+end;
+
+procedure TKWebResponse.SetSecureCookie(const AName, AValue: string;
+  const AExpires: TDateTime; const APath: string;
+  const AHttpOnly: Boolean; const ASecure: Boolean; const ASameSite: string);
+var
+  LCookie: TCookie;
+  LPath: string;
+begin
+  LPath := APath;
+  if LPath = '' then
+    LPath := '/';
+  LCookie := FResponse.Cookies.Add;
+  LCookie.Name := AName;
+  LCookie.Value := AValue;
+  LCookie.Path := LPath;
+  LCookie.Expires := AExpires;
+  LCookie.HttpOnly := AHttpOnly;
+  LCookie.Secure := ASecure;
+  LCookie.SameSite := ASameSite;
 end;
 
 class procedure TKWebResponse.SetCurrent(const AValue: TKWebResponse);

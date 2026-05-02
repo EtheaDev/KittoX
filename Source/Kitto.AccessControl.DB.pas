@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,6 +98,16 @@ type
     /// "TKDBAccessController" />.</summary>
     property ReadRolesCommandText: string
       read FReadRolesCommandText write FReadRolesCommandText;
+
+    /// <summary>
+    ///  Read-only access to the loaded permission rows for the configured
+    ///  UserId. Each record exposes the three columns RESOURCE_URI_PATTERN,
+    ///  ACCESS_MODES, GRANT_VALUE that the access controller iterates to
+    ///  resolve a grant. Used by TKJWTAuthenticator at login time to snapshot
+    ///  the permissions into the kx_acl JWT claim, so the same matching logic
+    ///  can be replayed in TKJWTAccessController without re-hitting the DB.
+    /// </summary>
+    property Permissions: TKStore read FPermissions;
   end;
 
   /// <summary>

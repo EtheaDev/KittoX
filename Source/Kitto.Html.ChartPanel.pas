@@ -279,7 +279,11 @@ begin
 
     SB.Append(', "backgroundColor": [').Append(SBColors.ToString).Append(']');
     SB.Append(', "borderColor": [').Append(SBBorders.ToString).Append(']');
-    SB.Append(', "borderWidth": 1}]}, ');
+    SB.Append(', "borderWidth": 1');
+    // Allinea l'area di hit dei punti del line chart al loro raggio visibile (default Chart.js e' 1px)
+    if LChartJsType = 'line' then
+      SB.Append(', "pointRadius": 4, "pointHoverRadius": 6, "pointHitRadius": 4');
+    SB.Append('}]}, ');
 
     // Options
     SB.Append('"options": {"responsive": true, "maintainAspectRatio": false, ');
@@ -493,8 +497,9 @@ begin
         SB.Append('</div>');
       end;
 
-      // Chart area (canvas)
-      SB.Append('<div class="kx-chart-area"><canvas id="kx-chart-canvas-').Append(FViewName).Append('"></canvas></div>');
+      // Chart area (canvas). Wrapper interno per rispettare il padding di
+      // .kx-chart-area (un canvas absolute figlio diretto lo ignorerebbe).
+      SB.Append('<div class="kx-chart-area"><div class="kx-chart-canvas-wrap"><canvas id="kx-chart-canvas-').Append(FViewName).Append('"></canvas></div></div>');
 
       // East sidebar + splitter
       if Assigned(LEastNode) then

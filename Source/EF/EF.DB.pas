@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,7 @@ uses
   System.SysUtils,
   System.Classes,
   System.Generics.Collections,
+  System.RegularExpressions,
   Data.DB,
   EF.Intf,
   EF.Classes,
@@ -384,7 +385,27 @@ type
 
   ///	<summary>Descendants of this class encapsulate differences among
   ///	different DB engines, mainly SQL dialect differences.</summary>
+  TEFDBMacroKind = (mkDateDiff, mkDateTimeFrom);
+
   TEFDBEngineType = class(TEFComponent)
+  private
+    function ExpandParamMacro(const AText, APattern: string;
+      const AKind: TEFDBMacroKind): string;
+  protected
+    ///	<summary>Translates %DB.DATEDIFF(unit,expr1,expr2)% into the
+    ///	database-specific expression that computes (expr2 - expr1) in the
+    ///	given unit. Override in each dialect subclass.</summary>
+    function ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string; virtual;
+    ///	<summary>Translates %DB.DATETIME_FROM(date_expr,time_expr)% into the
+    ///	database-specific expression that combines a DATE and a TIME into a
+    ///	single DATETIME/TIMESTAMP value. Override in each dialect subclass.</summary>
+    function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; virtual;
+    ///	<summary>SQL literal for a TRUE boolean value, dialect-specific.
+    ///	Used by the %DB.TRUE% macro. Override in each dialect subclass.</summary>
+    function GetBoolTrueLiteral: string; virtual;
+    ///	<summary>SQL literal for a FALSE boolean value, dialect-specific.
+    ///	Used by the %DB.FALSE% macro. Override in each dialect subclass.</summary>
+    function GetBoolFalseLiteral: string; virtual;
   public
     ///	<summary>
     ///	  <para>Adds a limit clause to the specified SQL statement, which must
@@ -436,6 +457,11 @@ type
   end;
 
   TEFSQLServerDBEngineType = class(TEFDBEngineType)
+  protected
+    function ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string; override;
+    function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; override;
+    function GetBoolTrueLiteral: string; override;
+    function GetBoolFalseLiteral: string; override;
   public
     function AddLimitClause(const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
       const AFrom: Integer; const AFor: Integer): string; override;
@@ -444,6 +470,11 @@ type
   end;
 
   TEFOracleDBEngineType = class(TEFDBEngineType)
+  protected
+    function ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string; override;
+    function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; override;
+    function GetBoolTrueLiteral: string; override;
+    function GetBoolFalseLiteral: string; override;
   public
     function AddLimitClause(const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
       const AFrom: Integer; const AFor: Integer): string; override;
@@ -451,9 +482,18 @@ type
   end;
 
   TEFFirebirdDBEngineType = class(TEFDBEngineType)
+  protected
+    function ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string; override;
+    function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; override;
   public
     procedure BeforeExecute(const ACommandText: string; const AParams: TParams); override;
     function ExpandCommandText(const ACommandText: string): string; override;
+  end;
+
+  TEFPostgreSQLDBEngineType = class(TEFDBEngineType)
+  public
+    function AddLimitClause(const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
+      const AFrom: Integer; const AFor: Integer): string; override;
   end;
 
   ///	<summary>
@@ -467,7 +507,7 @@ type
     function GetDBEngineType: TEFDBEngineType;
   protected
     function GetStandardFormatSettings: TFormatSettings;
-    procedure AfterConnectionOpen(Sender: TObject);
+    procedure AfterConnectionOpen(Sender: TObject); virtual;
     function CreateDBEngineType: TEFDBEngineType; virtual;
     procedure InternalOpen; virtual; abstract;
     procedure InternalClose; virtual; abstract;
@@ -1279,10 +1319,106 @@ procedure TEFDBEngineType.BeforeExecute(const ACommandText: string;
 begin
 end;
 
+function TEFDBEngineType.ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string;
+begin
+  // Default: PostgreSQL native — date + time returns timestamp directly.
+  Result := Format('(%s + %s)', [ADateExpr, ATimeExpr]);
+end;
+
+function TEFDBEngineType.GetBoolTrueLiteral: string;
+begin
+  // Default: ANSI / PostgreSQL / Firebird 3+
+  Result := 'TRUE';
+end;
+
+function TEFDBEngineType.GetBoolFalseLiteral: string;
+begin
+  // Default: ANSI / PostgreSQL / Firebird 3+
+  Result := 'FALSE';
+end;
+
+function TEFDBEngineType.ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string;
+begin
+  // Default: PostgreSQL-compatible. Strategy depends on the unit, because in
+  // PostgreSQL different operand types yield different result types from the
+  // subtraction:
+  //   - date - date            → integer (number of days)
+  //   - time - time            → interval
+  //   - timestamp - timestamp  → interval
+  // EXTRACT(EPOCH FROM ...) works on intervals but NOT on integers, and you
+  // cannot cast time to timestamp directly. So:
+  //   - DAY assumes date operands → return integer days from direct subtraction.
+  //   - SECOND / MILLISECOND / MINUTE / HOUR assume time or timestamp operands
+  //     → use EXTRACT(EPOCH FROM (e2 - e1)) on the resulting interval.
+  // For unusual combinations (e.g. SECOND on date columns) the YAML author
+  // must wrap operands in explicit CAST.
+  if SameText(AUnit, 'DAY') then
+    Result := Format('(%s - %s)', [AExpr2, AExpr1])
+  else if SameText(AUnit, 'MILLISECOND') then
+    Result := Format('(EXTRACT(EPOCH FROM (%s - %s)) * 1000)', [AExpr2, AExpr1])
+  else if SameText(AUnit, 'MINUTE') then
+    Result := Format('(EXTRACT(EPOCH FROM (%s - %s)) / 60)', [AExpr2, AExpr1])
+  else if SameText(AUnit, 'HOUR') then
+    Result := Format('(EXTRACT(EPOCH FROM (%s - %s)) / 3600)', [AExpr2, AExpr1])
+  else
+    Result := Format('EXTRACT(EPOCH FROM (%s - %s))', [AExpr2, AExpr1]); // SECOND
+end;
+
+function TEFDBEngineType.ExpandParamMacro(const AText, APattern: string;
+  const AKind: TEFDBMacroKind): string;
+var
+  LMatch: TMatch;
+  LMatches: TMatchCollection;
+  LBuilder: TStringBuilder;
+  LCursor: Integer;
+  I: Integer;
+  LExpansion: string;
+begin
+  LMatches := TRegEx.Matches(AText, APattern, [roIgnoreCase]);
+  if LMatches.Count = 0 then
+    Exit(AText);
+  LBuilder := TStringBuilder.Create;
+  try
+    LCursor := 1;
+    for I := 0 to LMatches.Count - 1 do
+    begin
+      LMatch := LMatches.Item[I];
+      case AKind of
+        mkDateDiff:
+          LExpansion := ExpandDateDiff(
+            Trim(LMatch.Groups[1].Value),
+            Trim(LMatch.Groups[2].Value),
+            Trim(LMatch.Groups[3].Value));
+        mkDateTimeFrom:
+          LExpansion := ExpandDateTimeFrom(
+            Trim(LMatch.Groups[1].Value),
+            Trim(LMatch.Groups[2].Value));
+      else
+        LExpansion := LMatch.Value;
+      end;
+      // Match.Index is 1-based; append text before the match.
+      LBuilder.Append(Copy(AText, LCursor, LMatch.Index - LCursor));
+      LBuilder.Append(LExpansion);
+      LCursor := LMatch.Index + LMatch.Length;
+    end;
+    LBuilder.Append(Copy(AText, LCursor, MaxInt));
+    Result := LBuilder.ToString;
+  finally
+    LBuilder.Free;
+  end;
+end;
+
 function TEFDBEngineType.ExpandCommandText(const ACommandText: string): string;
+const
+  DATEDIFF_PATTERN      = '%DB\.DATEDIFF\(\s*(\w+)\s*,\s*([^,]+?)\s*,\s*(.+?)\s*\)%';
+  DATETIME_FROM_PATTERN = '%DB\.DATETIME_FROM\(\s*([^,]+?)\s*,\s*(.+?)\s*\)%';
 begin
   Result := ReplaceText(ACommandText, '%DB.CURRENT_DATE%', 'current_date');
   Result := ReplaceText(Result, '%DB.FROM_DUAL%', 'FROM DUAL');
+  Result := ReplaceText(Result, '%DB.TRUE%', GetBoolTrueLiteral);
+  Result := ReplaceText(Result, '%DB.FALSE%', GetBoolFalseLiteral);
+  Result := ExpandParamMacro(Result, DATEDIFF_PATTERN, mkDateDiff);
+  Result := ExpandParamMacro(Result, DATETIME_FROM_PATTERN, mkDateTimeFrom);
 end;
 
 function TEFDBEngineType.FormatDateTime(const ADateTimeValue: TDateTime): string;
@@ -1314,6 +1450,26 @@ Select clause massaging would be required. }
   else
     Result := inherited AddLimitClause(ASelectClause, AFromClause, AWhereClause, AOrderByClause,
       AFrom, AFor);
+end;
+
+function TEFSQLServerDBEngineType.ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string;
+begin
+  Result := Format('DATEDIFF(%s, %s, %s)', [LowerCase(AUnit), AExpr1, AExpr2]);
+end;
+
+function TEFSQLServerDBEngineType.ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string;
+begin
+  Result := Format('(CAST(%s AS datetime) + CAST(%s AS datetime))', [ADateExpr, ATimeExpr]);
+end;
+
+function TEFSQLServerDBEngineType.GetBoolTrueLiteral: string;
+begin
+  Result := '1';
+end;
+
+function TEFSQLServerDBEngineType.GetBoolFalseLiteral: string;
+begin
+  Result := '0';
 end;
 
 function TEFSQLServerDBEngineType.ExpandCommandText(const ACommandText: string): string;
@@ -1381,13 +1537,72 @@ begin
   end;
 end;
 
+function TEFFirebirdDBEngineType.ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string;
+begin
+  Result := Format('DATEDIFF(%s FROM %s TO %s)', [UpperCase(AUnit), AExpr1, AExpr2]);
+end;
+
+function TEFFirebirdDBEngineType.ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string;
+begin
+  // Firebird 2.5+: DATEADD adds an interval expressed as MILLISECOND to a TIMESTAMP.
+  Result := Format(
+    'DATEADD(MILLISECOND, DATEDIFF(MILLISECOND FROM CAST(''00:00:00'' AS TIME) TO %s), CAST(%s AS TIMESTAMP))',
+    [ATimeExpr, ADateExpr]);
+end;
+
 function TEFFirebirdDBEngineType.ExpandCommandText(const ACommandText: string): string;
 begin
   Result := ReplaceText(ACommandText, '%DB.FROM_DUAL%', 'FROM RDB$DATABASE');
   Result := inherited ExpandCommandText(Result);
 end;
 
+{ TEFPostgreSQLDBEngineType }
+
+function TEFPostgreSQLDBEngineType.AddLimitClause(
+  const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
+  const AFrom: Integer; const AFor: Integer): string;
+begin
+  Result := ASelectClause + ' ' + AFromClause + ' ' + AWhereClause;
+  if AOrderByClause <> '' then
+    Result := Result + ' ' + AOrderByClause;
+  if (AFrom <> 0) or (AFor <> 0) then
+    Result := Result + Format(' LIMIT %d OFFSET %d', [AFor, AFrom]);
+end;
+
 { TEFOracleDBEngineType }
+
+function TEFOracleDBEngineType.ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string;
+begin
+  // Oracle: (date2 - date1) yields fractional days as NUMBER.
+  if SameText(AUnit, 'MILLISECOND') then
+    Result := Format('((%s - %s) * 86400000)', [AExpr2, AExpr1])
+  else if SameText(AUnit, 'MINUTE') then
+    Result := Format('((%s - %s) * 1440)', [AExpr2, AExpr1])
+  else if SameText(AUnit, 'HOUR') then
+    Result := Format('((%s - %s) * 24)', [AExpr2, AExpr1])
+  else if SameText(AUnit, 'DAY') then
+    Result := Format('(%s - %s)', [AExpr2, AExpr1])
+  else
+    Result := Format('((%s - %s) * 86400)', [AExpr2, AExpr1]); // SECOND
+end;
+
+function TEFOracleDBEngineType.ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string;
+begin
+  // Oracle has no TIME type; assume time is stored as DATE with arbitrary day.
+  // Combine: date_part + time_fraction.
+  Result := Format('(TRUNC(%s) + (%s - TRUNC(%s)))', [ADateExpr, ATimeExpr, ATimeExpr]);
+end;
+
+function TEFOracleDBEngineType.GetBoolTrueLiteral: string;
+begin
+  // Oracle (pre-23c) has no native BOOLEAN type — apps typically use NUMBER(1).
+  Result := '1';
+end;
+
+function TEFOracleDBEngineType.GetBoolFalseLiteral: string;
+begin
+  Result := '0';
+end;
 
 function TEFOracleDBEngineType.AddLimitClause(const ASelectClause, AFromClause,
   AWhereClause, AOrderByClause: string; const AFrom, AFor: Integer): string;

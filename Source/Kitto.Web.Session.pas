@@ -1,4 +1,4 @@
-{ -------------------------------------------------------------------------------
+﻿{ -------------------------------------------------------------------------------
   Copyright 2012-2026 Ethea S.r.l.
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,6 +49,7 @@ type
   private
     FSessionId: string;
     FLanguage: string;
+    FDatabaseName: string;
     FRefreshingLanguage: Boolean;
     FViewportWidthInInches: Integer;
     FAutoOpenViewName: string;
@@ -97,6 +98,14 @@ type
     property SessionId: string read FSessionId;
     property Timeout: Double read FTimeout;
     property Language: string read FLanguage write SetLanguage;
+
+    /// <summary>
+    ///  Name of the database connection currently active for this session.
+    ///  When empty, the application falls back to Config.DefaultDatabaseName.
+    ///  Set at login time when the user picks an "environment" via the
+    ///  Auth/DatabaseChoices combo, persisted across sessions via cookie kx_db.
+    /// </summary>
+    property DatabaseName: string read FDatabaseName write FDatabaseName;
 
     /// <summary>
     ///  Gives access to a copy of the auth data that was last passed
@@ -150,6 +159,18 @@ type
     ///  Used by view hosts to notify the session that a controller was closed.
     /// </summary>
     procedure RemoveController(const AController: IKXController);
+
+    /// <summary>
+    ///  Replaces the session ID with a freshly generated one and clears
+    ///  the IsSessionLost flag. The session object itself is preserved
+    ///  (state already gathered for this request — Language, DatabaseName,
+    ///  client address — survives), only its identity changes. The new ID
+    ///  is sent back as a cookie at AfterHandleRequest time.
+    ///  Called by the login handler before authenticating, both for
+    ///  session-fixation hardening and to recover from stale cookies
+    ///  pointing to an expired/lost server-side session.
+    /// </summary>
+    procedure RegenerateId;
     property DisplayName: string read GetDisplayName write FDisplayName;
 
     property LastRequestInfo: TKWebRequestInfo read FLastRequestInfo;
@@ -388,6 +409,14 @@ procedure TKWebSession.RemoveController(const AController: IKXController);
 begin
   if Assigned(FOpenControllers) then
     FOpenControllers.Remove(AController);
+end;
+
+procedure TKWebSession.RegenerateId;
+begin
+  // FindSessionById iterates and matches on the SessionId property, so
+  // changing FSessionId in place is enough — no manager re-indexing needed.
+  FSessionId := CreateCompactGuidStr;
+  FIsSessionLost := False;
 end;
 
 procedure TKWebSession.SetLanguage(const AValue: string);

@@ -167,13 +167,13 @@ echo =============================================
 cd /d "%START_DIR%\KEmployee\Projects"
 
 if %BUILD_DESKTOP%==1 (
-    echo   [Desktop] KEmployee.dproj ^(Win32^)...
-    msbuild /t:Build /p:config=Release /p:platform=Win32 /nologo KEmployee.dproj /fl /flp:logfile=KEmployee_Desktop.log;verbosity=diagnostic
+    echo   [Desktop] KEmployee.dproj ^(Win64^)...
+    msbuild /t:Build /p:config=Release /p:platform=Win64 /nologo KEmployee.dproj /fl /flp:logfile=KEmployee_Desktop.log;verbosity=diagnostic
     if errorlevel 1 (echo   *** FAILED *** & set /a ERRORS+=1) else (echo   OK)
 )
 if %BUILD_ISAPI%==1 (
-    echo   [ISAPI] KEmployeeISAPI.dproj ^(Win32^)...
-    msbuild /t:Build /p:config=Release /p:platform=Win32 /nologo KEmployeeISAPI.dproj /fl /flp:logfile=KEmployee_ISAPI.log;verbosity=diagnostic
+    echo   [ISAPI] KEmployeeISAPI.dproj ^(Win64^)...
+    msbuild /t:Build /p:config=Release /p:platform=Win64 /nologo KEmployeeISAPI.dproj /fl /flp:logfile=KEmployee_ISAPI.log;verbosity=diagnostic
     if errorlevel 1 (echo   *** FAILED *** & set /a ERRORS+=1) else (echo   OK)
 )
 if %BUILD_APACHE%==1 (
@@ -182,8 +182,8 @@ if %BUILD_APACHE%==1 (
     if errorlevel 1 (echo   *** FAILED *** & set /a ERRORS+=1) else (echo   OK)
 )
 if %BUILD_EMBEDDED%==1 (
-    echo   [Embedded] KEmployeeDesktop.dproj ^(Win32^)...
-    msbuild /t:Build /p:config=Release /p:platform=Win32 /nologo KEmployeeDesktop.dproj /fl /flp:logfile=KEmployee_Embedded.log;verbosity=diagnostic
+    echo   [Embedded] KEmployeeDesktop.dproj ^(Win64^)...
+    msbuild /t:Build /p:config=Release /p:platform=Win64 /nologo KEmployeeDesktop.dproj /fl /flp:logfile=KEmployee_Embedded.log;verbosity=diagnostic
     if errorlevel 1 (echo   *** FAILED *** & set /a ERRORS+=1) else (echo   OK)
 )
 cd /d "%START_DIR%"

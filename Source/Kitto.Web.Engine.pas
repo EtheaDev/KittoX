@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -109,6 +109,8 @@ uses
   System.Win.ComObj,
   {$ENDIF}
   System.IOUtils,
+  System.JSON,
+  System.NetEncoding,
   EF.DB,
   EF.Tree,
   EF.Logger,
@@ -149,8 +151,69 @@ begin
 end;
 
 function TKWebEngine.GetSessionIdFromRequest: string;
+
+  function TryDecodeSidFromTokenCookie(const ACompactToken: string;
+    out ASid: string): Boolean;
+  // Decodes the payload portion of a compact JWT WITHOUT verifying the
+  // signature, only to extract the 'sid' custom claim used for binding the
+  // request to its server-side TKWebSession. Verification of the signature
+  // happens later in TKAuthenticator.AuthorizeRequest before any data is
+  // served, so the unsafe decode here grants no privilege. Implemented
+  // inline so this engine unit does not depend on Kitto.Web.JWT (and on
+  // the JOSE third-party library) — apps that don't use Auth: JWT can
+  // build the framework without having JOSE on their search path.
+  var
+    LParts: TArray<string>;
+    LSafe: string;
+    LPad: Integer;
+    LPayloadBytes: TBytes;
+    LJson: TJSONObject;
+    LValue: TJSONValue;
+  begin
+    Result := False;
+    ASid := '';
+    if Trim(ACompactToken) = '' then
+      Exit;
+    LParts := ACompactToken.Split(['.']);
+    if Length(LParts) < 2 then
+      Exit;
+    LSafe := StringReplace(LParts[1], '-', '+', [rfReplaceAll]);
+    LSafe := StringReplace(LSafe, '_', '/', [rfReplaceAll]);
+    LPad := Length(LSafe) mod 4;
+    if LPad > 0 then
+      LSafe := LSafe + StringOfChar('=', 4 - LPad);
+    try
+      LPayloadBytes := TNetEncoding.Base64.DecodeStringToBytes(LSafe);
+      LJson := TJSONObject.ParseJSONValue(TEncoding.UTF8.GetString(LPayloadBytes)) as TJSONObject;
+      if not Assigned(LJson) then
+        Exit;
+      try
+        LValue := LJson.GetValue('sid');
+        if Assigned(LValue) then
+        begin
+          ASid := LValue.Value;
+          Result := ASid <> '';
+        end;
+      finally
+        LJson.Free;
+      end;
+    except
+      Result := False;
+    end;
+  end;
+
+var
+  LToken, LSidFromJWT: string;
 begin
+  // Legacy session id cookie (used by Auth: DB / TextFile / Null and similar).
   Result := TKWebRequest.Current.GetCookie(FSessionIDCookieName);
+  if Result <> '' then
+    Exit;
+  // JWT path: the kx_token cookie carries a signed token whose 'sid' claim
+  // is the session correlator.
+  LToken := TKWebRequest.Current.GetCookie('kx_token');
+  if (LToken <> '') and TryDecodeSidFromTokenCookie(LToken, LSidFromJWT) then
+    Result := LSidFromJWT;
 end;
 
 procedure TKWebEngine.SetActive(const Value: Boolean);
@@ -237,6 +300,7 @@ var
   LAuthDataCopy: TEFNode;
   LRefreshingLanguage: Boolean;
   LLanguage: string;
+  LDatabaseName: string;
 begin
   LSessionId := GetSessionIdFromRequest;
   LClientAddress := TKWebRequest.Current.RemoteAddr;
@@ -262,6 +326,7 @@ begin
     LWasAuthenticated := LSession.IsAuthenticated;
     LRefreshingLanguage := LSession.RefreshingLanguage;
     LLanguage := LSession.Language;
+    LDatabaseName := LSession.DatabaseName;
     LAuthDataCopy := TEFNode.Create;
     try
       LAuthDataCopy.Assign(LSession.AuthData);
@@ -278,12 +343,19 @@ begin
       end;
       LSession.RefreshingLanguage := LRefreshingLanguage;
       LSession.Language := LLanguage;
+      LSession.DatabaseName := LDatabaseName;
     finally
       LAuthDataCopy.Free;
     end;
   end;
 
   TKWebSession.Current := LSession;
+
+  // Restore the chosen database environment from the kx_db cookie if the
+  // session does not have one yet. The cookie is set at login time and
+  // survives 30 days, so the user lands on the same environment as last time.
+  if LSession.DatabaseName = '' then
+    LSession.DatabaseName := TKWebRequest.Current.GetCookie('kx_db');
 end;
 
 procedure TKWebEngine.DoSessionEnd(ASession: TKWebSession);

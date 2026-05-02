@@ -15,9 +15,9 @@ Fields:
     Fields:
       PHASE_ID:
   StartDate: DateTime
-    Expression: CAST({Q}ACTIVITY_DATE AS datetime) + CAST({Q}START_TIME AS datetime)
+    Expression: %DB.DATETIME_FROM({Q}ACTIVITY_DATE, {Q}START_TIME)%
   EndDate: DateTime
-    Expression: CAST({Q}ACTIVITY_DATE AS datetime) + CAST({Q}END_TIME AS datetime)
+    Expression: %DB.DATETIME_FROM({Q}ACTIVITY_DATE, {Q}END_TIME)%
   Notes: String(80)
     PhysicalName: DESCRIPTION
     DisplayWidth: 50
@@ -45,7 +45,7 @@ Fields:
     Expression: |
       case
         when ({Q}START_TIME is null) or ({Q}END_TIME is null) then 0
-        else DATEDIFF(SECOND, {Q}START_TIME, {Q}END_TIME) / 3600.0
+        else %DB.DATEDIFF(SECOND, {Q}START_TIME, {Q}END_TIME)% / 3600.0
       end
 Rules:
   EnforceRange:

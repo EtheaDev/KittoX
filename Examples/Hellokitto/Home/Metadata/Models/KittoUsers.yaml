@@ -5,5 +5,10 @@ Fields:
     PhysicalName: USER_NAME
   PasswordHash: String(32)
     PhysicalName: PASSWORD_HASH
-  IsActive: Integer
+  IsActive: Boolean
     PhysicalName: IS_ACTIVE
+  MustChangePassword: Boolean
+    PhysicalName: MUST_CHANGE_PASSWORD
+    IsVisible: False
+  EmailAddress: String(100)
+    PhysicalName: EMAIL_ADDRESS
