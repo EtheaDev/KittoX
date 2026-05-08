@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    This file is part of KittoX Enterprise Edition.
@@ -7,7 +7,7 @@
 -------------------------------------------------------------------------------}
 
 /// <summary>
-///  KittoX CalendarPanel controller � renders an EventCalendar interactive
+///  KittoX CalendarPanel controller è renders an EventCalendar interactive
 ///  calendar with month/week/day views and CRUD integration.
 ///  Supports color-coded event types and date-range auto-fetching.
 /// </summary>
@@ -230,7 +230,12 @@ var
     if not IsActionVisible(AAction) then
       Exit;
     SB.Append('<button class="kx-toolbar-btn');
-    if ARequiresSelection then
+    // Same guard as Kitto.Html.List.AppendToolbarButton: only mark a
+    // selection-dependent button if it is actually allowed by the ACL,
+    // so the matching kxCalendar._updateToolbarButtons cannot re-enable
+    // a button that the server statically disabled (e.g. Edit/Delete for
+    // a viewer with no MODIFY/DELETE grant).
+    if ARequiresSelection and IsActionAllowed(AAction) then
       SB.Append(' kx-cal-requires-selection');
     SB.Append('"');
     if not IsActionAllowed(AAction) then

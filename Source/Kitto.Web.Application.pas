@@ -31,6 +31,7 @@ uses
   Kitto.Config,
   Kitto.Metadata.Views,
   Kitto.Metadata.DataView,
+  Kitto.Store,
   Kitto.Web.Routes,
   Kitto.Web.URL,
   Kitto.Web.Request,
@@ -94,6 +95,39 @@ type
     ///  then the suffix is added before the _.
     /// </summary>
     class function AdaptImageName(const AResourceName: string; const ASuffix: string = ''): string;
+    /// <summary>
+    ///  Returns True when AView grants AMode to the current session.
+    ///  On deny: sets TKWebResponse.Current.StatusCode := 404 and logs
+    ///  'ACL deny: ...' at LOG_DETAILED. UI components (TreePanel,
+    ///  ToolBar, …) already filter on IsAccessGranted; this is the
+    ///  matching server-side gate for every HandleKX* route.
+    ///  Caller pattern: `if not IsViewAccessGranted(LView, ACM_X) then
+    ///  Exit(True);`. Returning True (not False) tells the engine the
+    ///  request has been handled, so SimpleHandleRequest's "unknown
+    ///  request" fallback does NOT overwrite our empty 404 body with
+    ///  its HTML page (the client would otherwise parse it and
+    ///  accumulate orphan DOM nodes on every retry).
+    /// </summary>
+    function IsViewAccessGranted(const AView: TKView; const AMode: string): Boolean;
+    /// <summary>
+    ///  Resolves AViewName via Config.Views.FindView. On miss: sets
+    ///  StatusCode := 404 and logs 'View not found: ...' at LOG_DETAILED.
+    ///  Caller pattern: `LView := FindViewOrSetNotFound(AViewName);
+    ///  if not Assigned(LView) then Exit(True);`. Pair with
+    ///  IsViewAccessGranted to enforce the correct access mode AFTER the
+    ///  view is resolved (modes that depend on request fields like _op
+    ///  cannot be decided before the handler reads them). See
+    ///  IsViewAccessGranted for why Exit(True) is required.
+    /// </summary>
+    function FindViewOrSetNotFound(const AViewName: string): TKView;
+    /// <summary>
+    ///  Returns True when AView is a TKDataView (the type required by
+    ///  every data/CRUD endpoint). On miss: sets StatusCode := 404 — a
+    ///  request for /kx/data/<Foo> where Foo exists but is not a data
+    ///  view is "no such resource" at this URL.
+    ///  Caller pattern: `if not RequireDataView(LView) then Exit(True);`.
+    /// </summary>
+    function RequireDataView(const AView: TKView): Boolean;
     function HandleKXViewRequest(const AViewName: string): Boolean;
     function HandleKXDataRequest(const AViewName: string): Boolean;
     function HandleKXDeleteRequest(const AViewName: string): Boolean;
@@ -112,6 +146,18 @@ type
     function HandleKXSaveCacheRequest(const AViewName: string): Boolean;
     function HandleKXBlobRequest(const AViewName, AFieldName: string): Boolean;
     function HandleKXTempUploadRequest(const AViewName, AFieldName: string): Boolean;
+    /// <summary>
+    ///  Applies posted form values to the session record (no save), letting
+    ///  FieldChanged propagate derived fields and run AfterFieldChange rules,
+    ///  then returns JSON of fields whose value changed as a side effect.
+    /// </summary>
+    function HandleKXNotifyChangeRequest(const AViewName, AFieldName: string): Boolean;
+    /// <summary>
+    ///  Record OnFieldChange callback used by HandleKXNotifyChangeRequest.
+    ///  Mirrors Kitto1's TKExtFormPanelController.FieldChange.
+    /// </summary>
+    procedure NotifyFieldChangeHandler(const AField: TKField;
+      const AOldValue, ANewValue: Variant);
     function HandleKXDetailDataRequest(const AViewName: string;
       ADetailIndex: Integer): Boolean;
     function HandleKXDetailSaveRequest(const AViewName: string;
@@ -124,6 +170,13 @@ type
     /// </summary>
     procedure PopulateRecordFromPost(ARecord: TKViewTableRecord;
       AViewTable: TKViewTable; AIsInsert: Boolean);
+    /// <summary>
+    ///  Applies a single field's POST value to the record, replicating the
+    ///  type-aware logic of PopulateRecordFromPost. Used by the notify
+    ///  endpoint to apply only the trigger field.
+    /// </summary>
+    procedure PopulateRecordFieldFromPost(ARecord: TKViewTableRecord;
+      AViewField: TKViewField; AIsInsert: Boolean);
     /// <summary>Builds an ORDER BY expression from CSV sort/dir request fields.
     /// Fields not in AViewTable are silently dropped (anti SQL injection).</summary>
     function BuildSortExpression(AViewTable: TKViewTable;
@@ -267,11 +320,11 @@ uses
   Kitto.Html.Filters,
   Kitto.Metadata.Models,
   Kitto.Html.Form,
-  Kitto.Store,
   Kitto.Html.Utils,
   Kitto.Html.Panel,
   Kitto.Html.FormController,
   Kitto.Html.Wizard,
+  Kitto.Rules,
   Kitto.Rules.Wizard,
   Kitto.Html.GroupingList,
   Kitto.Html.TemplateDataPanel,
@@ -281,6 +334,7 @@ uses
   Kitto.SQL,
   Kitto.Web.Routing.Route,
   Kitto.Web.Routing.Scripts,
+  EF.JSON,
   Web.HTTPApp;
 
 { TKApplicationMacroExpander }
@@ -544,6 +598,52 @@ begin
     SetLength(Result, 1);
     Result[0] := 'Home' + ASuffix;
   end;
+end;
+
+
+function TKWebApplication.FindViewOrSetNotFound(const AViewName: string): TKView;
+begin
+  Result := Config.Views.FindView(AViewName);
+  if not Assigned(Result) then
+  begin
+    if Assigned(TKWebResponse.Current) then
+      TKWebResponse.Current.StatusCode := 404;
+    TEFLogger.Instance.LogFmt('View not found: "%s"', [AViewName],
+      TEFLogger.LOG_DETAILED);
+  end;
+end;
+
+
+function TKWebApplication.IsViewAccessGranted(const AView: TKView;
+  const AMode: string): Boolean;
+var
+  LUser: string;
+  LSession: TKWebSession;
+begin
+  Assert(Assigned(AView));
+  Result := AView.IsAccessGranted(AMode);
+  if not Result then
+  begin
+    LSession := TKWebSession.Current;
+    if Assigned(LSession) and Assigned(LSession.AuthData) then
+      LUser := LSession.AuthData.GetString('UserName')
+    else
+      LUser := '';
+    TEFLogger.Instance.LogFmt(
+      'ACL deny: user "%s" requested view "%s" mode %s',
+      [LUser, AView.PersistentName, AMode], TEFLogger.LOG_DETAILED);
+    if Assigned(TKWebResponse.Current) then
+      TKWebResponse.Current.StatusCode := 404;
+  end;
+end;
+
+
+function TKWebApplication.RequireDataView(const AView: TKView): Boolean;
+begin
+  Assert(Assigned(AView));
+  Result := AView is TKDataView;
+  if not Result and Assigned(TKWebResponse.Current) then
+    TKWebResponse.Current.StatusCode := 404;
 end;
 
 
@@ -945,6 +1045,28 @@ var
     Result := (AViewName <> '') and (AFieldName <> '');
   end;
 
+// Notify field-change matcher — POST kx/view/{ViewName}/notify/{FieldName}
+  function IsKXNotifyChangeRequest(out AViewName, AFieldName: string): Boolean;
+  var
+    LFullPath, LPrefix, LRest: string;
+    LSlashPos: Integer;
+  begin
+    Result := False;
+    AViewName := '';
+    AFieldName := '';
+    LFullPath := AURL.Path + AURL.Document;
+    LPrefix := FPath + '/kx/view/';
+    if not StartsText(LPrefix, LFullPath) then Exit;
+    LRest := Copy(LFullPath, Length(LPrefix) + 1, MaxInt);
+    LSlashPos := Pos('/notify/', LRest);
+    if LSlashPos <= 0 then Exit;
+    AViewName := Copy(LRest, 1, LSlashPos - 1);
+    AFieldName := Copy(LRest, LSlashPos + 8, MaxInt); // 8 = Length('/notify/')
+    if (AFieldName <> '') and (AFieldName[Length(AFieldName)] = '/') then
+      AFieldName := Copy(AFieldName, 1, Length(AFieldName) - 1);
+    Result := (AViewName <> '') and (AFieldName <> '');
+  end;
+
 // Detail data request matcher — kx/view/{ViewName}/detail/{Index}/data
   function IsKXDetailDataRequest(out AViewName: string; out ADetailIndex: Integer): Boolean;
   var
@@ -1062,6 +1184,49 @@ var
     Result := StartsText(FPath + '/kx/changepassword', AURL.Path + AURL.Document);
   end;
 
+  // Returns True when the request targets a view that the YAML metadata
+  // declares as public (`ACName:` set to an empty value, which makes
+  // TKMetadata.GetACURI return ''; TKAccessController.GetAccessGrantValue
+  // then short-circuits to ACV_TRUE on the empty URI). Used by the
+  // unauthenticated-request gate so login-helper views like RegisterNewUser,
+  // ResetPassword, PrivacyPolicy — plus any future view the integrator marks
+  // public via ACName — remain reachable before the user logs in. The probe
+  // covers every KX route shape that consumes a view name (view, data, form,
+  // save, delete, lookup, blob, upload, tool, detail*, wizard finish, …) so
+  // that POST submissions on a public view (e.g. submitting the registration
+  // form) are not blocked either.
+  function IsKXRequestToPublicView: Boolean;
+  var
+    LViewName: string;
+    LToolName: string;
+    LFieldName: string;
+    LDetailIndex: Integer;
+    LView: TKView;
+  begin
+    Result := False;
+    if not (IsKXViewRequest(LViewName)
+         or IsKXDataRequest(LViewName)
+         or IsKXFormRequest(LViewName)
+         or IsKXFormCloseRequest(LViewName)
+         or IsKXEnterEditRequest(LViewName)
+         or IsKXSaveRequest(LViewName)
+         or IsKXSaveCacheRequest(LViewName)
+         or IsKXDeleteRequest(LViewName)
+         or IsKXLookupRequest(LViewName)
+         or IsKXWizardFinishRequest(LViewName)
+         or IsKXBlobRequest(LViewName, LFieldName)
+         or IsKXTempUploadRequest(LViewName, LFieldName)
+         or IsKXToolRequest(LViewName, LToolName)
+         or IsKXDetailDataRequest(LViewName, LDetailIndex)
+         or IsKXDetailSaveRequest(LViewName, LDetailIndex)
+         or IsKXDetailDeleteRequest(LViewName, LDetailIndex)) then
+      Exit;
+    if LViewName = '' then
+      Exit;
+    LView := Config.Views.FindView(LViewName);
+    Result := Assigned(LView) and (LView.GetACURI = '');
+  end;
+
   procedure Error(const AMessage: string; const AIsFatal: Boolean);
   var
     LEncodedMsg: string;
@@ -1132,6 +1297,40 @@ begin
             and not IsKXResetPasswordRequest
             and not IsKXChangePasswordRequest then
           raise Exception.Create(_('Session lost or expired, please restart!'));
+        // Authentication gate: protected KX endpoints must NOT be served to
+        // a session whose IsAuthenticated flag is False. Without this gate
+        // the empty-UserName case in TKAccessController.GetAccessGrantValue
+        // (which short-circuits to ACV_TRUE on `AUserId = ''`) would let an
+        // unauthenticated client read the same data the session-bound ACL
+        // is trying to deny — e.g. /kx/view/Users after a logout. 404 keeps
+        // the same response shape used for ACL deny / not-found, so
+        // probing cannot distinguish "exists but protected" from
+        // "doesn't exist".
+        //
+        // Exclusions:
+        //   - Home, KXLogin, KXResetPassword, KXChangePassword: framework
+        //     endpoints that must work without prior authentication;
+        //   - any KX request whose target view is declared public via
+        //     `ACName:` in YAML (IsKXRequestToPublicView). This is the
+        //     idiomatic KittoX mechanism for views the user must reach
+        //     before login (RegisterNewUser, ResetPassword, PrivacyPolicy,
+        //     any custom landing page) — adding `ACName:` to the view's
+        //     YAML auto-allows every related route (view/save/blob/…) here
+        //     without further code change.
+        if not TKWebSession.Current.IsAuthenticated
+            and not IsHomeRequest
+            and not IsKXLoginRequest
+            and not IsKXResetPasswordRequest
+            and not IsKXChangePasswordRequest
+            and not IsKXRequestToPublicView then
+        begin
+          if Assigned(TKWebResponse.Current) then
+            TKWebResponse.Current.StatusCode := 404;
+          TEFLogger.Instance.LogFmt(
+            'Unauthenticated request to protected endpoint: %s',
+            [AURL.Path], TEFLogger.LOG_DETAILED);
+          Exit(True);
+        end;
         if IsHomeRequest then
         begin
           TEFLogger.Instance.Log('DoHandleRequest: IsHomeRequest=True, calling Home', TEFLogger.LOG_DEBUG);
@@ -1161,6 +1360,10 @@ begin
         else if IsKXTempUploadRequest(LKXViewName, LKXBlobFieldName) then
         begin
           Result := HandleKXTempUploadRequest(LKXViewName, LKXBlobFieldName);
+        end
+        else if IsKXNotifyChangeRequest(LKXViewName, LKXBlobFieldName) then
+        begin
+          Result := HandleKXNotifyChangeRequest(LKXViewName, LKXBlobFieldName);
         end
         else if IsKXBlobRequest(LKXViewName, LKXBlobFieldName) then
         begin
@@ -1333,8 +1536,14 @@ begin
     if LAuthenticator.Authenticate(LAuthData) then
     begin
       // Persist the chosen environment as a cookie so the next visit
-      // pre-selects the same database. Lifetime: 30 days.
-      if LDatabaseName <> '' then
+      // pre-selects the same database. Lifetime: 30 days. Skipped when the
+      // active authenticator carries its own session-bound state (Auth: JWT
+      // ships the database name as the 'db' claim inside kx_token), so the
+      // browser never accumulates a parallel kx_db cookie. Trade-off: under
+      // JWT, after the token expires the next login form falls back to
+      // DefaultDatabaseName instead of the last picked one.
+      if (LDatabaseName <> '')
+        and not LAuthenticator.CarriesSessionIdInCredential then
         TKWebResponse.Current.SetCookie('kx_db', LDatabaseName,
           Now + COOKIE_DB_LIFETIME_DAYS);
 
@@ -1546,9 +1755,16 @@ var
 
 begin
   Result := False;
+  // Note: do NOT use FindViewOrSetNotFound here — when the YAML lookup
+  // fails this handler has a fallback path (treat AViewName as a controller
+  // class id, used by inline views like "Controller: Logout" in tree menus),
+  // and we don't want a premature 404 to stick to a successful fallback.
+  // The 404 is set by the catch-all at the bottom of the function.
   LView := Config.Views.FindView(AViewName);
   if Assigned(LView) then
   begin
+    if not IsViewAccessGranted(LView, ACM_VIEW) then
+      Exit(True);
     try
       // Check for CenterController interception (e.g. Controller: List / CenterController: ChartPanel)
       // Only intercept when CenterController specifies a controller type (non-empty value).
@@ -1673,7 +1889,12 @@ begin
     try
       LObject := TKXControllerRegistry.Instance.GetClass(AViewName).Create;
     except
-      Exit;
+      // Neither YAML view nor registered controller class — genuine 404.
+      if Assigned(TKWebResponse.Current) then
+        TKWebResponse.Current.StatusCode := 404;
+      TEFLogger.Instance.LogFmt('View not found: "%s"', [AViewName],
+        TEFLogger.LOG_DETAILED);
+      Exit(True);
     end;
     try
       if Supports(LObject, IKXController, LController) then
@@ -1781,11 +2002,12 @@ var
   I: Integer;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
+  LView := FindViewOrSetNotFound(AViewName);
   if not Assigned(LView) then
-    Exit;
-  if not (LView is TKDataView) then
-    Exit;
+    Exit(True);
+  if not IsViewAccessGranted(LView, ACM_VIEW) then
+    Exit(True);
+  if not RequireDataView(LView) then Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
@@ -1795,8 +2017,8 @@ begin
   // Detect GroupingList or TemplateDataPanel controller
   LIsGroupingList := SameText(LView.GetString('Controller'), 'GroupingList');
 
-  // PagingTools: opt-in paging (default false)
-  LPagingTools := LViewTable.GetBoolean('Controller/PagingTools');
+  // IsLarge drives the default: PagingTools = IsLarge.
+  LPagingTools := LViewTable.GetBoolean('Controller/PagingTools', LViewTable.IsLarge);
 
   // Read viewAlias from hidden state (set by lookup mode)
   LViewAlias := TKWebRequest.Current.GetField('viewAlias');
@@ -2044,19 +2266,20 @@ var
   I: Integer;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
+  LView := FindViewOrSetNotFound(AViewName);
   if not Assigned(LView) then
-    Exit;
-  if not (LView is TKDataView) then
-    Exit;
+    Exit(True);
+  if not IsViewAccessGranted(LView, ACM_DELETE) then
+    Exit(True);
+  if not RequireDataView(LView) then Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
   if not Assigned(LViewTable) then
     Exit;
 
-  // PagingTools: opt-in paging (default false)
-  LPagingTools := LViewTable.GetBoolean('Controller/PagingTools');
+  // IsLarge drives the default: PagingTools = IsLarge.
+  LPagingTools := LViewTable.GetBoolean('Controller/PagingTools', LViewTable.IsLarge);
 
   // Parse key from POST parameter (URL-encoded field=value pairs separated by &)
   LKeyStr := TKWebRequest.Current.GetField('key');
@@ -2292,20 +2515,29 @@ var
   I: Integer;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
-  if not Assigned(LView) or not (LView is TKDataView) then
-    Exit;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  if not IsViewAccessGranted(LView, ACM_RUN) then
+    Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
   if not Assigned(LViewTable) then
     Exit;
 
-  // Find the tool node under Controller/ToolViews
+  // Find the tool node: prefer Controller/ToolViews (list toolbar),
+  // fall back to EditController/ToolViews (form toolbar) — Kitto1 parity.
+  LToolNode := nil;
   LToolViewsNode := LViewTable.FindNode('Controller/ToolViews');
-  if not Assigned(LToolViewsNode) then
-    Exit;
-  LToolNode := LToolViewsNode.FindNode(AToolName);
+  if Assigned(LToolViewsNode) then
+    LToolNode := LToolViewsNode.FindNode(AToolName);
+  if not Assigned(LToolNode) then
+  begin
+    LToolViewsNode := LViewTable.FindNode('EditController/ToolViews');
+    if Assigned(LToolViewsNode) then
+      LToolNode := LToolViewsNode.FindNode(AToolName);
+  end;
   if not Assigned(LToolNode) then
     Exit;
 
@@ -2416,9 +2648,11 @@ var
   LOwnsStore: Boolean;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
-  if not Assigned(LView) or not (LView is TKDataView) then
-    Exit;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  if not IsViewAccessGranted(LView, ACM_VIEW) then
+    Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
@@ -2587,38 +2821,106 @@ begin
     end;
   end;
 
+  // Read sort state (multi-column CSV: "Field1,Field2" + "asc,desc"),
+  // matching the contract used by HandleKXDataRequest.
+  var LSort := TKWebRequest.Current.GetField('sort');
+  var LDir := TKWebRequest.Current.GetField('dir');
+  var LSortExpr := BuildSortExpression(LDetailViewTable, LSort, LDir);
+
   if not Assigned(LStore) then
   begin
     // Fallback: load from DB (no session store available)
     if LFilterExpr = '' then
       Exit; // No session store and no FK filter (shouldn't happen)
     LStore := LDetailViewTable.CreateStore;
-    LStore.Load(LFilterExpr, '', 0, 0);
+    LStore.Load(LFilterExpr, LSortExpr, 0, 0);
     LOwnsStore := True;
+  end
+  else if LSort <> '' then
+  begin
+    // In-memory sort of the session detail store: AliasedName-based compare
+    // chain over the requested fields. Mutates record order in place — same
+    // behavior as Kitto1's GridPanel sort, which acts on the live ServerStore.
+    var LSortFields := LSort.Split([',']);
+    var LSortDirs := LDir.Split([',']);
+    LStore.Records.Sort(
+      function (ALeft, ARight: TKRecord): Integer
+      var K: Integer; LFL, LFR: TKField; LDesc: Boolean;
+      begin
+        Result := 0;
+        for K := 0 to High(LSortFields) do
+        begin
+          LFL := ALeft.FindField(LSortFields[K].Trim);
+          LFR := ARight.FindField(LSortFields[K].Trim);
+          if not (Assigned(LFL) and Assigned(LFR)) then Continue;
+          if LFL.IsNull and LFR.IsNull then Continue
+          else if LFL.IsNull then Result := -1
+          else if LFR.IsNull then Result := 1
+          else Result := CompareText(LFL.AsString, LFR.AsString);
+          LDesc := (K <= High(LSortDirs)) and SameText(LSortDirs[K].Trim, 'desc');
+          if LDesc then Result := -Result;
+          if Result <> 0 then Exit;
+        end;
+      end);
   end;
 
   try
-    // Build complete detail grid: toolbar + column headers + data rows
-    LHtml := LToolbar +
-      '<div class="kx-list-grid"><table class="kx-grid-table">' +
-      TKXListPanelController.BuildColumnHeaders(
-        LDetailViewTable, LViewAlias, '', '', LDetailViewName,
-        LDetailViewTable.FindLayout('Grid')) +
-      '<tbody id="kx-list-body-' + LViewAlias + '"' +
-      ' data-dblclick="' + IfThen(not LPreventEditing, 'edit', 'view') + '"' +
-      ' data-detail-view="' + LDetailViewName + '"' +
-      ' data-alias-view="' + LViewAlias + '"' +
-      ' data-detail-index="' + IntToStr(ADetailIndex) + '"' +
-      ' data-master-view="' + AViewName + '"' +
-      ' data-master-key="' + TNetEncoding.HTML.Encode(LKeyStr) + '"' +
-      IfThen(Assigned(LRefField), ' data-fk-field="' + LRefField.FieldName + '"', '') +
-      '>' +
-      TKXListPanelController.BuildDataRows(
-        LStore, LDetailViewTable, LViewAlias, LDetailViewName,
-        LDetailViewTable.FindLayout('Grid')) +
-      '</tbody></table></div>' +
-      // Hidden state for HTMX data refresh
-      TKXListPanelController.BuildHiddenState(LViewAlias, 0, '', '', LDetailViewName);
+    // Detail data endpoint contract — same as HandleKXDataRequest:
+    //  - HX-driven request (column sort, filter, pager): tbody rows for the
+    //    target swap, plus OOB-swap of the state div carrying updated
+    //    sort/dir. No toolbar/headers in the response.
+    //  - Direct fetch (initial load via loadDetailTab): full grid (toolbar +
+    //    headers + tbody + state) so the panel can be filled in one go.
+    // The state div carries the master `key` so hx-include keeps the master
+    // filter on every refresh; without it, the LIST endpoint of the detail
+    // model would return all detail rows of all masters.
+    var LDetailUrlPath := AViewName + '/detail/' + IntToStr(ADetailIndex);
+    var LIsHxRequest := SameText(
+      TKWebRequest.Current.GetHeaderField('HX-Request'), 'true');
+
+    if LIsHxRequest then
+    begin
+      // Rows for tbody innerHTML swap + OOB state update.
+      LHtml :=
+        TKXListPanelController.BuildDataRows(
+          LStore, LDetailViewTable, LViewAlias, LDetailViewName,
+          LDetailViewTable.FindLayout('Grid')) +
+        ReplaceStr(
+          TKXListPanelController.BuildHiddenState(LViewAlias, 0, LSort, LDir, LDetailUrlPath),
+          '</div>',
+          '<input type="hidden" name="key" value="' +
+            TNetEncoding.HTML.Encode(LKeyStr) + '" /></div>');
+      LHtml := ReplaceStr(LHtml,
+        'id="kx-list-state-' + LViewAlias + '"',
+        'id="kx-list-state-' + LViewAlias + '" hx-swap-oob="true"');
+    end
+    else
+    begin
+      // Full grid: toolbar + column headers + tbody + rows + state.
+      LHtml := LToolbar +
+        '<div class="kx-list-grid"><table class="kx-grid-table">' +
+        TKXListPanelController.BuildColumnHeaders(
+          LDetailViewTable, LViewAlias, LSort, LDir, LDetailUrlPath,
+          LDetailViewTable.FindLayout('Grid')) +
+        '<tbody id="kx-list-body-' + LViewAlias + '"' +
+        ' data-dblclick="' + IfThen(not LPreventEditing, 'edit', 'view') + '"' +
+        ' data-detail-view="' + LDetailViewName + '"' +
+        ' data-alias-view="' + LViewAlias + '"' +
+        ' data-detail-index="' + IntToStr(ADetailIndex) + '"' +
+        ' data-master-view="' + AViewName + '"' +
+        ' data-master-key="' + TNetEncoding.HTML.Encode(LKeyStr) + '"' +
+        IfThen(Assigned(LRefField), ' data-fk-field="' + LRefField.FieldName + '"', '') +
+        '>' +
+        TKXListPanelController.BuildDataRows(
+          LStore, LDetailViewTable, LViewAlias, LDetailViewName,
+          LDetailViewTable.FindLayout('Grid')) +
+        '</tbody></table></div>' +
+        ReplaceStr(
+          TKXListPanelController.BuildHiddenState(LViewAlias, 0, LSort, LDir, LDetailUrlPath),
+          '</div>',
+          '<input type="hidden" name="key" value="' +
+            TNetEncoding.HTML.Encode(LKeyStr) + '" /></div>');
+    end;
 
     TKXWebResponse.Current.SendFragment(LHtml);
     Result := True;
@@ -2646,8 +2948,6 @@ var
   LHtml: string;
   I: Integer;
   LDefaults: TEFNode;
-  LDetailRef: TKModelDetailReference;
-  LRefField: TKModelField;
 begin
   Result := False;
 
@@ -2661,8 +2961,10 @@ begin
   LDetailStore := TKViewTableStore(LMasterRecord.DetailStores[ADetailIndex]);
 
   // Resolve detail view table
-  LView := Config.Views.FindView(AViewName);
-  if not Assigned(LView) or not (LView is TKDataView) then Exit;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  if not IsViewAccessGranted(LView, ACM_MODIFY) then Exit(True);
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
   if not Assigned(LViewTable) or (ADetailIndex >= LViewTable.DetailTableCount) then Exit;
@@ -2685,7 +2987,13 @@ begin
   try
     if SameText(LOperation, 'add') then
     begin
-      // Append new record to detail store
+      // Wire master-detail link before appending: AppendAndInitialize calls
+      // SetDetailFieldValues (Kitto.Metadata.DataView.pas:3088) when
+      // MasterRecord is set, propagating the master key onto the new detail
+      // record's FK columns via GetNode (which creates the nodes if absent —
+      // tolerating detail views that don't list the back-reference).
+      LDetailStore.MasterRecord := LMasterRecord;
+
       LRecord := LDetailStore.Records.AppendAndInitialize;
       LDefaults := LDetailViewTable.GetDefaultValues;
       try
@@ -2694,24 +3002,6 @@ begin
         FreeAndNil(LDefaults);
       end;
       LRecord.MarkAsNew;
-
-      // Set FK fields from master record key
-      LDetailRef := LViewTable.Model.FindDetailReferenceByModelName(LDetailViewTable.ModelName);
-      if Assigned(LDetailRef) then
-      begin
-        LRefField := LDetailRef.ReferenceField;
-        if Assigned(LRefField) and LRefField.IsReference then
-        begin
-          var LRefSubFields := LRefField.GetReferenceFields;
-          var LMasterKeyFields := LViewTable.Model.GetKeyFieldNames;
-          for I := 0 to Min(Length(LRefSubFields), Length(LMasterKeyFields)) - 1 do
-          begin
-            var LMKField := LMasterRecord.FindField(LMasterKeyFields[I]);
-            if Assigned(LMKField) then
-              LRecord.FieldByName(LRefSubFields[I].FieldName).Assign(LMKField);
-          end;
-        end;
-      end;
 
       // Populate fields from POST data
       PopulateRecordFromPost(LRecord, LDetailViewTable, True);
@@ -2802,11 +3092,18 @@ var
   LMasterRecord: TKViewTableRecord;
   LDetailStore: TKViewTableStore;
   LRecord: TKViewTableRecord;
+  LView: TKView;
   LKeyStr, LFieldName, LFieldValue: string;
   LKeyParts, LPair: TArray<string>;
   I: Integer;
 begin
   Result := False;
+
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then
+    Exit(True);
+  if not IsViewAccessGranted(LView, ACM_DELETE) then
+    Exit(True);
 
   // Find master store in session
   LSessionStore := TKWebSession.Current.FindStore(AViewName);
@@ -2886,11 +3183,10 @@ var
   I: Integer;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
+  LView := FindViewOrSetNotFound(AViewName);
   if not Assigned(LView) then
-    Exit;
-  if not (LView is TKDataView) then
-    Exit;
+    Exit(True);
+  if not RequireDataView(LView) then Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
@@ -2902,6 +3198,24 @@ begin
   if LOperation = '' then
     LOperation := 'edit';
   LKeyStr := TKWebRequest.Current.GetQueryField('key');
+
+  // ACL: enforce mode based on the requested form operation. New (op=new)
+  // requires ADD; edit/view need MODIFY/VIEW respectively. The op string
+  // mirrors the values built by TKXListPanelController and the legacy
+  // ExtJS controllers.
+  if SameText(LOperation, 'new') or SameText(LOperation, 'add') or
+     SameText(LOperation, 'dup') then
+  begin
+    if not IsViewAccessGranted(LView, ACM_ADD) then Exit(True);
+  end
+  else if SameText(LOperation, 'view') then
+  begin
+    if not IsViewAccessGranted(LView, ACM_VIEW) then Exit(True);
+  end
+  else
+  begin
+    if not IsViewAccessGranted(LView, ACM_MODIFY) then Exit(True);
+  end;
 
   // Create store and load record
   LStore := LViewTable.CreateStore;
@@ -2962,10 +3276,12 @@ begin
       end;
       LRecord.ApplyNewRecordRules;
 
-      // FK pre-fill: when adding from a detail grid, the master record key
-      // is passed as query params: fkField=REFERENCE_NAME&masterKey=PK_FIELD%3Dvalue
-      // Example: fkField=PROJECT&masterKey=PROJECT_ID%3Dxxx
-      // The masterKey fields are set directly on the record (flat structure).
+      // FK pre-fill from a detail-grid add: query carries the Reference field
+      // name on the detail model (fkField) plus the master record key as
+      // master PK name=value pairs (masterKey, e.g. "Id=XXX"). We map those
+      // master PKs onto the Reference's FK sub-fields positionally — using
+      // the master's own PK names verbatim is wrong because they may collide
+      // with detail-side fields (e.g. both models have a field called "Id").
       begin
         var LFKFieldName := TNetEncoding.URL.Decode(
           TKWebRequest.Current.GetQueryField('fkField'));
@@ -2973,20 +3289,41 @@ begin
           TKWebRequest.Current.GetQueryField('masterKey'));
         if (LFKFieldName <> '') and (LMasterKey <> '') then
         begin
-          // Store fields are flat: PROJECT_ID is a direct child of the record,
-          // not nested under the PROJECT reference node. Set each master key
-          // field directly on the record.
-          var LMKParts := LMasterKey.Split(['&']);
-          for var K := 0 to Length(LMKParts) - 1 do
+          var LRefViewField := LViewTable.FindField(LFKFieldName);
+          if Assigned(LRefViewField) and LRefViewField.IsReference and
+             Assigned(LRefViewField.ModelField) and
+             Assigned(LRefViewField.ModelField.ReferencedModel) then
           begin
-            var LMKPair := LMKParts[K].Split(['=']);
-            if Length(LMKPair) = 2 then
-            begin
-              var LMKName := TNetEncoding.URL.Decode(LMKPair[0]);
-              var LMKValue := TNetEncoding.URL.Decode(LMKPair[1]);
-              var LMKField := LRecord.FindField(LMKName);
-              if Assigned(LMKField) then
-                LMKField.AsString := LMKValue;
+            var LFKColumns := LRefViewField.ModelField.GetFieldNames;
+            var LMasterKeyNames :=
+              LRefViewField.ModelField.ReferencedModel.GetKeyFieldNames;
+            // Parse "name=val&..." into a master-PK name → value map.
+            var LMKMap := TDictionary<string, string>.Create;
+            try
+              var LMKParts := LMasterKey.Split(['&']);
+              for var K := 0 to Length(LMKParts) - 1 do
+              begin
+                var LMKPair := LMKParts[K].Split(['=']);
+                if Length(LMKPair) = 2 then
+                  LMKMap.AddOrSetValue(
+                    TNetEncoding.URL.Decode(LMKPair[0]),
+                    TNetEncoding.URL.Decode(LMKPair[1]));
+              end;
+              for var K := 0 to Min(Length(LFKColumns),
+                                    Length(LMasterKeyNames)) - 1 do
+              begin
+                var LMKValue: string;
+                if LMKMap.TryGetValue(LMasterKeyNames[K], LMKValue) then
+                begin
+                  var LFKRecField := LRecord.FindField(LFKColumns[K]);
+                  if Assigned(LFKRecField) then
+                    LFKRecField.AsString := LMKValue
+                  else
+                    LRecord.GetNode(LFKColumns[K]).AsString := LMKValue;
+                end;
+              end;
+            finally
+              LMKMap.Free;
             end;
           end;
         end;
@@ -3057,10 +3394,11 @@ var
   LHtml: string;
   LViewAlias: string;
 begin
-  Result := False;
-  LView := Config.Views.FindView(AViewName);
+  LView := FindViewOrSetNotFound(AViewName);
   if not Assigned(LView) then
-    Exit;
+    Exit(True);
+  if not IsViewAccessGranted(LView, ACM_READ) then
+    Exit(True);
 
   LController := TKXControllerFactory.Instance.CreateController(LView);
   LController.Display;
@@ -3103,8 +3441,10 @@ var
   LJson: string;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
-  if not Assigned(LView) or not (LView is TKDataView) then Exit;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  if not IsViewAccessGranted(LView, ACM_MODIFY) then Exit(True);
   LViewTable := TKDataView(LView).MainTable;
   if not Assigned(LViewTable) then Exit;
   LViewField := LViewTable.FindField(AFieldName);
@@ -3134,6 +3474,237 @@ begin
   Result := True;
 end;
 
+function TKWebApplication.HandleKXNotifyChangeRequest(
+  const AViewName, AFieldName: string): Boolean;
+var
+  LView: TKView;
+  LDataView: TKDataView;
+  LViewTable: TKViewTable;
+  LStore: TKViewTableStore;
+  LRecord: TKViewTableRecord;
+  LOperation: string;
+  LFieldsCount: Integer;
+  LPreNulls: TArray<Boolean>;
+  LPreValues: TArray<string>;
+  LPreFKValues: TArray<string>;
+  I: Integer;
+  LVF: TKViewField;
+  LRF: TKViewTableField;
+  LFKField: TKViewTableField;
+  LJson: TStringBuilder;
+  LFirst: Boolean;
+  LCurNull: Boolean;
+  LCurValue, LCurFK: string;
+  LTriggerVF: TKViewField;
+begin
+  Result := False;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then
+    Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  if not IsViewAccessGranted(LView, ACM_READ) then Exit(True);
+
+  LDataView := TKDataView(LView);
+  LViewTable := LDataView.MainTable;
+  if not Assigned(LViewTable) then Exit;
+
+  LOperation := TKWebRequest.Current.GetField('_op');
+  if LOperation = '' then
+    LOperation := 'edit';
+
+  // The session store is registered by HandleKXFormRequest when the form
+  // opens. Without it there's no record to mutate (and no prior edits to
+  // preserve), so simply return an empty diff.
+  LStore := TKWebSession.Current.FindStore(AViewName);
+  if not Assigned(LStore) or (LStore.RecordCount = 0) then
+  begin
+    TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+    TKWebResponse.Current.ReplaceContentStream(
+      TStringStream.Create('{}', TEncoding.UTF8));
+    Exit(True);
+  end;
+  LRecord := LStore.Records[0];
+
+  LTriggerVF := LViewTable.FindField(AFieldName);
+  if not Assigned(LTriggerVF) then
+  begin
+    TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+    TKWebResponse.Current.ReplaceContentStream(
+      TStringStream.Create('{}', TEncoding.UTF8));
+    Exit(True);
+  end;
+
+  LFieldsCount := LViewTable.FieldCount;
+
+  // Snapshot all top-level field values BEFORE applying the trigger.
+  SetLength(LPreNulls, LFieldsCount);
+  SetLength(LPreValues, LFieldsCount);
+  SetLength(LPreFKValues, LFieldsCount);
+  for I := 0 to LFieldsCount - 1 do
+  begin
+    LVF := LViewTable.Fields[I];
+    LRF := LRecord.FindField(LVF.AliasedName);
+    if Assigned(LRF) then
+    begin
+      LPreNulls[I] := LRF.IsNull;
+      if not LRF.IsNull then
+        LPreValues[I] := LRF.AsString
+      else
+        LPreValues[I] := '';
+    end
+    else
+    begin
+      LPreNulls[I] := True;
+      LPreValues[I] := '';
+    end;
+    LPreFKValues[I] := '';
+    if LVF.IsReference then
+    begin
+      LFKField := LRecord.FindField(LVF.FieldNamesForUpdate);
+      if Assigned(LFKField) and not LFKField.IsNull then
+        LPreFKValues[I] := LFKField.AsString;
+    end;
+  end;
+
+  // Wire the field-change handler that drives AfterFieldChange rules.
+  // Mirrors Kitto1's TKExtFormPanelController.EnableFieldChangeHandler /
+  // FieldChange (Kitto.Ext.Form.pas). Without this, the framework's
+  // FieldChanged only refreshes derived reference fields — user rules
+  // would not fire on field-change events.
+  LRecord.OnFieldChange := NotifyFieldChangeHandler;
+  try
+    try
+      PopulateRecordFieldFromPost(LRecord, LTriggerVF,
+        SameText(LOperation, 'add') or SameText(LOperation, 'dup'));
+    except
+      // Any exception from an AfterFieldChange rule is surfaced as a dialog,
+      // mirroring Kitto1 (TCustomWebSession.HandleRequest catches Exception
+      // and routes to OnError → ExtMessageBox.Alert). Without this, debug
+      // builds break in the IDE on benign rule failures (e.g. EConvertError
+      // when a rule reads an out-of-range value from data).
+      on E: Exception do
+      begin
+        TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+        TKWebResponse.Current.ReplaceContentStream(
+          TStringStream.Create(
+            '{"_error":' + QuoteJSONValue(E.Message) + '}',
+            TEncoding.UTF8));
+        Exit(True);
+      end;
+    end;
+  finally
+    LRecord.OnFieldChange := nil;
+  end;
+
+  // Diff and emit JSON of changed top-level fields
+  LJson := TStringBuilder.Create;
+  try
+    LJson.Append('{');
+    LFirst := True;
+    for I := 0 to LFieldsCount - 1 do
+    begin
+      LVF := LViewTable.Fields[I];
+
+      // Skip the trigger field itself: the client already has the value
+      if SameText(LVF.AliasedName, AFieldName) then
+        Continue;
+      // Skip blob fields (binary not relevant for fan-out)
+      if LVF.IsBlob and not (LVF.DataType is TEFMemoDataType) then
+        Continue;
+
+      LRF := LRecord.FindField(LVF.AliasedName);
+      if not Assigned(LRF) then
+        Continue;
+
+      LCurNull := LRF.IsNull;
+      if LCurNull then
+        LCurValue := ''
+      else
+        LCurValue := LRF.AsString;
+
+      if LVF.IsReference then
+      begin
+        // Reference: only emit when the FK actually changed
+        LFKField := LRecord.FindField(LVF.FieldNamesForUpdate);
+        if Assigned(LFKField) and not LFKField.IsNull then
+          LCurFK := LFKField.AsString
+        else
+          LCurFK := '';
+        if LCurFK = LPreFKValues[I] then
+          Continue;
+        if not LFirst then
+          LJson.Append(',');
+        LFirst := False;
+        LJson.Append('"').Append(LVF.AliasedName)
+          .Append('":{"_ref":true,"key":')
+          .Append(QuoteJSONValue(LCurFK))
+          .Append(',"display":')
+          .Append(QuoteJSONValue(LCurValue))
+          .Append('}');
+      end
+      else
+      begin
+        // Scalar: skip if unchanged
+        if (LPreNulls[I] = LCurNull) and (LPreValues[I] = LCurValue) then
+          Continue;
+        if not LFirst then
+          LJson.Append(',');
+        LFirst := False;
+        LJson.Append('"').Append(LVF.AliasedName).Append('":');
+        if LCurNull then
+          LJson.Append('null')
+        else if LVF.DataType is TEFBooleanDataType then
+          LJson.Append(IfThen(LRF.AsBoolean, 'true', 'false'))
+        else if LVF.DataType is TEFNumericDataTypeBase then
+          LJson.Append(LRF.GetAsJSONValue(False, False))
+        else if LVF.DataType is TEFDateDataType then
+          // ISO format expected by <input type="date"> on the client.
+          LJson.Append(QuoteJSONValue(FormatDateTime('yyyy-mm-dd', LRF.AsDateTime)))
+        else if LVF.DataType is TEFTimeDataType then
+          LJson.Append(QuoteJSONValue(FormatDateTime('hh:nn', LRF.AsDateTime)))
+        else if LVF.DataType is TEFDateTimeDataType then
+          LJson.Append(QuoteJSONValue(FormatDateTime('yyyy-mm-dd', LRF.AsDateTime)))
+        else
+          LJson.Append(QuoteJSONValue(LRF.AsString));
+      end;
+    end;
+    LJson.Append('}');
+
+    TKWebResponse.Current.ContentType := 'application/json; charset=utf-8';
+    TKWebResponse.Current.ReplaceContentStream(
+      TStringStream.Create(LJson.ToString, TEncoding.UTF8));
+  finally
+    LJson.Free;
+  end;
+  Result := True;
+end;
+
+procedure TKWebApplication.NotifyFieldChangeHandler(const AField: TKField;
+  const AOldValue, ANewValue: Variant);
+var
+  LField: TKViewTableField;
+  LOldVal, LNewVal: Variant;
+begin
+  // Mirrors Kitto1's TKExtFormPanelController.FieldChange: enumerates rules
+  // of the changed field's ViewField and invokes AfterFieldChange. For a
+  // reference FK sub-field set (e.g. NominativoId) the rule body's check on
+  // AField.Name will not match the reference name (e.g. 'Nominativo');
+  // however the framework's cascade applies derived values back on the
+  // parent reference field via AssignValue, and that fires FieldChanged on
+  // the parent reference — which is what triggers the rule.
+  if not (AField is TKViewTableField) then Exit;
+  LField := TKViewTableField(AField);
+  if LField.IsPartOfCompositeField then Exit;
+  LOldVal := AOldValue;
+  LNewVal := ANewValue;
+  LField.ViewField.EnumRules(
+    function (ARuleImpl: TKRuleImpl): Boolean
+    begin
+      ARuleImpl.AfterFieldChange(AField, LOldVal, LNewVal);
+      Result := False; // Continue with the next rule
+    end);
+end;
+
 function TKWebApplication.HandleKXBlobRequest(const AViewName, AFieldName: string): Boolean;
 var
   LView: TKView;
@@ -3153,9 +3724,11 @@ var
   I: Integer;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
-  if not Assigned(LView) or not (LView is TKDataView) then
-    Exit;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  if not IsViewAccessGranted(LView, ACM_READ) then
+    Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
@@ -3387,106 +3960,136 @@ begin
   Result := True;
 end;
 
+procedure TKWebApplication.PopulateRecordFieldFromPost(
+  ARecord: TKViewTableRecord; AViewField: TKViewField; AIsInsert: Boolean);
+var
+  LFieldName, LPostValue, LDatePart, LTimePart: string;
+begin
+  if AIsInsert then
+  begin
+    if not AViewField.CanInsert then Exit;
+  end
+  else
+  begin
+    if AViewField.IsKey then Exit;
+    if not AViewField.CanUpdate then Exit;
+  end;
+  if AViewField.IsBlob and not (AViewField.DataType is TEFMemoDataType) then
+    Exit;
+  // FileReference fields are handled by the dedicated file-save section, not here
+  if AViewField.DataType is TKFileReferenceDataType then
+    Exit;
+
+  LFieldName := AViewField.FieldNamesForUpdate;
+
+  // Handle DateTime split fields
+  if AViewField.DataType is TEFDateTimeDataType then
+  begin
+    // Skip if neither half of the DateTime input is in POST: the field was
+    // not rendered (e.g. IsVisible=False) and we must preserve the record's
+    // current value (often computed by an AfterFieldChange rule during the
+    // notify cycle).
+    if not (TKWebRequest.Current.HasField(LFieldName + '__date') or
+            TKWebRequest.Current.HasField(LFieldName + '__time')) then
+      Exit;
+    LDatePart := TKWebRequest.Current.GetField(LFieldName + '__date');
+    LTimePart := TKWebRequest.Current.GetField(LFieldName + '__time');
+    if (LDatePart = '') and (LTimePart = '') then
+      // Both empty: set to null (allows clearing a DateTime field)
+      ARecord.FieldByName(LFieldName).SetToNull(True)
+    else if LDatePart <> '' then
+    begin
+      // Date present: combine with time (default 00:00 if time is empty)
+      LPostValue := LDatePart;
+      if LTimePart <> '' then
+        LPostValue := LPostValue + ' ' + LTimePart;
+      ARecord.FieldByName(LFieldName).Value :=
+        AViewField.DataType.ValueToDateTime(LPostValue);
+    end
+    else
+      // Only time without date: set to null (time alone is not valid)
+      ARecord.FieldByName(LFieldName).SetToNull(True);
+    Exit;
+  end;
+
+  // Skip fields not present in the POST: typically IsVisible=False fields
+  // that the form doesn't render. Their record value (often computed by an
+  // AfterFieldChange rule during the notify cycle) must be preserved, not
+  // overwritten with null.
+  if not TKWebRequest.Current.HasField(LFieldName) then
+    Exit;
+
+  LPostValue := TKWebRequest.Current.GetField(LFieldName);
+
+  if AViewField.DataType is TEFBooleanDataType then
+    ARecord.FieldByName(LFieldName).Value :=
+      SameText(LPostValue, 'true') or SameText(LPostValue, '1')
+  else if AViewField.DataType is TEFDateDataType then
+  begin
+    if LPostValue = '' then
+      ARecord.FieldByName(LFieldName).SetToNull(True)
+    else
+      ARecord.FieldByName(LFieldName).Value :=
+        AViewField.DataType.ValueToDate(LPostValue);
+  end
+  else if AViewField.DataType is TEFTimeDataType then
+  begin
+    if LPostValue = '' then
+      ARecord.FieldByName(LFieldName).SetToNull(True)
+    else
+      ARecord.FieldByName(LFieldName).Value :=
+        AViewField.DataType.ValueToTime(LPostValue);
+  end
+  else if AViewField.DataType is TEFIntegerDataType then
+  begin
+    if LPostValue = '' then
+      ARecord.FieldByName(LFieldName).SetToNull(True)
+    else
+      ARecord.FieldByName(LFieldName).Value := StrToIntDef(LPostValue, 0);
+  end
+  else if AViewField.DataType is TEFDecimalNumericDataTypeBase then
+  begin
+    if LPostValue = '' then
+      ARecord.FieldByName(LFieldName).SetToNull(True)
+    else
+    begin
+      if (AViewField.DataType is TEFCurrencyDataType) and (FormatSettings.CurrencyString <> '') then
+        LPostValue := Trim(ReplaceStr(LPostValue, FormatSettings.CurrencyString, ''));
+      ARecord.FieldByName(LFieldName).Value :=
+        StrToFloatDef(ReplaceStr(LPostValue, FormatSettings.DecimalSeparator, '.'), 0,
+          TFormatSettings.Invariant);
+    end;
+  end
+  else
+  begin
+    if LPostValue <> '' then
+      ARecord.FieldByName(LFieldName).Value := LPostValue
+    else if not AViewField.IsRequired then
+      ARecord.FieldByName(LFieldName).SetToNull(not AIsInsert);
+  end;
+end;
+
 procedure TKWebApplication.PopulateRecordFromPost(ARecord: TKViewTableRecord;
   AViewTable: TKViewTable; AIsInsert: Boolean);
 var
   I, J: Integer;
   LViewField: TKViewField;
-  LFieldName, LPostValue, LDatePart, LTimePart: string;
+  LFieldName: string;
   LFiles: TAbstractWebRequestFiles;
 begin
-  for I := 0 to AViewTable.FieldCount - 1 do
-  begin
-    LViewField := AViewTable.Fields[I];
-    if AIsInsert then
+  // Disable change notifications during the bulk update — derived/joined data
+  // for Reference fields was already refreshed by the per-field notify cycle,
+  // there is no need to re-fire the cascade for every assignment here. Mirrors
+  // Kitto1 TKExtDataPanelController.UpdateRecord (DisableChangeNotifications
+  // wrapping the value-set loop).
+  ARecord.Store.DoWithChangeNotificationsDisabled(
+    procedure
+    var
+      LI: Integer;
     begin
-      if not LViewField.CanInsert then Continue;
-    end
-    else
-    begin
-      if LViewField.IsKey then Continue;
-      if not LViewField.CanUpdate then Continue;
-    end;
-    if LViewField.IsBlob and not (LViewField.DataType is TEFMemoDataType) then
-      Continue;
-    // FileReference fields are handled below (file save section), not here
-    if LViewField.DataType is TKFileReferenceDataType then
-      Continue;
-
-    LFieldName := LViewField.FieldNamesForUpdate;
-
-    // Handle DateTime split fields
-    if LViewField.DataType is TEFDateTimeDataType then
-    begin
-      LDatePart := TKWebRequest.Current.GetField(LFieldName + '__date');
-      LTimePart := TKWebRequest.Current.GetField(LFieldName + '__time');
-      if (LDatePart = '') and (LTimePart = '') then
-        // Both empty: set to null (allows clearing a DateTime field)
-        ARecord.FieldByName(LFieldName).SetToNull(True)
-      else if LDatePart <> '' then
-      begin
-        // Date present: combine with time (default 00:00 if time is empty)
-        LPostValue := LDatePart;
-        if LTimePart <> '' then
-          LPostValue := LPostValue + ' ' + LTimePart;
-        ARecord.FieldByName(LFieldName).Value :=
-          LViewField.DataType.ValueToDateTime(LPostValue);
-      end
-      else
-        // Only time without date: set to null (time alone is not valid)
-        ARecord.FieldByName(LFieldName).SetToNull(True);
-      Continue;
-    end;
-
-    LPostValue := TKWebRequest.Current.GetField(LFieldName);
-
-    if LViewField.DataType is TEFBooleanDataType then
-      ARecord.FieldByName(LFieldName).Value :=
-        SameText(LPostValue, 'true') or SameText(LPostValue, '1')
-    else if LViewField.DataType is TEFDateDataType then
-    begin
-      if LPostValue = '' then
-        ARecord.FieldByName(LFieldName).SetToNull(True)
-      else
-        ARecord.FieldByName(LFieldName).Value :=
-          LViewField.DataType.ValueToDate(LPostValue);
-    end
-    else if LViewField.DataType is TEFTimeDataType then
-    begin
-      if LPostValue = '' then
-        ARecord.FieldByName(LFieldName).SetToNull(True)
-      else
-        ARecord.FieldByName(LFieldName).Value :=
-          LViewField.DataType.ValueToTime(LPostValue);
-    end
-    else if LViewField.DataType is TEFIntegerDataType then
-    begin
-      if LPostValue = '' then
-        ARecord.FieldByName(LFieldName).SetToNull(True)
-      else
-        ARecord.FieldByName(LFieldName).Value := StrToIntDef(LPostValue, 0);
-    end
-    else if LViewField.DataType is TEFDecimalNumericDataTypeBase then
-    begin
-      if LPostValue = '' then
-        ARecord.FieldByName(LFieldName).SetToNull(True)
-      else
-      begin
-        if (LViewField.DataType is TEFCurrencyDataType) and (FormatSettings.CurrencyString <> '') then
-          LPostValue := Trim(ReplaceStr(LPostValue, FormatSettings.CurrencyString, ''));
-        ARecord.FieldByName(LFieldName).Value :=
-          StrToFloatDef(ReplaceStr(LPostValue, FormatSettings.DecimalSeparator, '.'), 0,
-            TFormatSettings.Invariant);
-      end;
-    end
-    else
-    begin
-      if LPostValue <> '' then
-        ARecord.FieldByName(LFieldName).Value := LPostValue
-      else if not LViewField.IsRequired then
-        ARecord.FieldByName(LFieldName).SetToNull(not AIsInsert);
-    end;
-  end;
+      for LI := 0 to AViewTable.FieldCount - 1 do
+        PopulateRecordFieldFromPost(ARecord, AViewTable.Fields[LI], AIsInsert);
+    end);
 
   // Handle blob fields (IsPicture upload)
   LFiles := TKWebRequest.Current.Files;
@@ -3618,14 +4221,27 @@ begin
   if not Assigned(LStore) then
     Exit;
 
-  LView := Config.Views.FindView(AViewName);
-  if not Assigned(LView) or not (LView is TKDataView) then
-    Exit;
+  LView := FindViewOrSetNotFound(AViewName);
+  if not Assigned(LView) then Exit(True);
+  if not RequireDataView(LView) then Exit(True);
   LViewTable := TKDataView(LView).MainTable;
   if not Assigned(LViewTable) then
     Exit;
 
   LOperation := TKWebRequest.Current.GetField('_op');
+
+  // ACL: ADD for new/dup, MODIFY otherwise. Empty op defaults to MODIFY
+  // (existing record edit) since SaveCache writes back a record already in
+  // the session store.
+  if SameText(LOperation, 'add') or SameText(LOperation, 'new') or
+     SameText(LOperation, 'dup') then
+  begin
+    if not IsViewAccessGranted(LView, ACM_ADD) then Exit(True);
+  end
+  else
+  begin
+    if not IsViewAccessGranted(LView, ACM_MODIFY) then Exit(True);
+  end;
 
   try
     if LStore.RecordCount > 0 then
@@ -3696,11 +4312,10 @@ var
   LOwnsStore: Boolean;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
+  LView := FindViewOrSetNotFound(AViewName);
   if not Assigned(LView) then
-    Exit;
-  if not (LView is TKDataView) then
-    Exit;
+    Exit(True);
+  if not RequireDataView(LView) then Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;
@@ -3712,6 +4327,18 @@ begin
   if LOperation = '' then
     LOperation := 'edit';
   LKeyStr := TKWebRequest.Current.GetField('_key');
+
+  // ACL: ADD for new/dup commits, MODIFY for edit, ignore VIEW (read-only
+  // can't reach the save endpoint anyway since toolbars hide the button).
+  if SameText(LOperation, 'new') or SameText(LOperation, 'add') or
+     SameText(LOperation, 'dup') then
+  begin
+    if not IsViewAccessGranted(LView, ACM_ADD) then Exit(True);
+  end
+  else
+  begin
+    if not IsViewAccessGranted(LView, ACM_MODIFY) then Exit(True);
+  end;
 
   // Try to use the session store (with attached detail stores for transactional save).
   // Falls back to creating a new store if no session store is found.
@@ -3851,11 +4478,13 @@ var
   LRules: TObjectList<TKXWizardRuleImpl>;
 begin
   Result := False;
-  LView := Config.Views.FindView(AViewName);
+  LView := FindViewOrSetNotFound(AViewName);
   if not Assigned(LView) then
-    Exit;
-  if not (LView is TKDataView) then
-    Exit;
+    Exit(True);
+  if not RequireDataView(LView) then Exit(True);
+  // Wizard finish always commits a brand-new record → ADD.
+  if not IsViewAccessGranted(LView, ACM_ADD) then
+    Exit(True);
 
   LDataView := TKDataView(LView);
   LViewTable := LDataView.MainTable;

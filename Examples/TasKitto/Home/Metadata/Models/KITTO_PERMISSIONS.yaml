@@ -1,0 +1,13 @@
+ModelName: KITTO_PERMISSIONS
+ImageName: key
+DisplayLabel: Permission
+PluralDisplayLabel: Permissions
+Fields:
+  RESOURCE_URI_PATTERN: String(200) not null primary key
+    DisplayLabel: Resource URI pattern
+  GRANTEE_NAME: String(50) not null primary key
+    DisplayLabel: Grantee name
+  ACCESS_MODES: String(100) not null primary key
+    DisplayLabel: Access modes
+  GRANT_VALUE: String(50) not null
+    DisplayLabel: Grant value

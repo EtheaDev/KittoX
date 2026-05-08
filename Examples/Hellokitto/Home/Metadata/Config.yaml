@@ -8,9 +8,9 @@ BlobPath: %HOME_PATH%UploadedFiles\
 # Change this to switch databases.
 #DefaultDatabaseName: DBExpress_Firebird
 #DefaultDatabaseName: DBExpress_MSSQL
-#DefaultDatabaseName: FireDAC_MSSQL
+DefaultDatabaseName: FireDAC_MSSQL
 #DefaultDatabaseName: FireDAC_Firebird
-DefaultDatabaseName: FireDAC_PostgreSQL
+#DefaultDatabaseName: FireDAC_PostgreSQL
 #DefaultDatabaseName: ADO_MSSQL
 
 Databases:
@@ -127,10 +127,9 @@ Auth: JWT
     IncludeDB: True
     IncludeDisplayName: True
     IncludeLanguage: True
-    # HelloKitto uses AccessControl: Null (no permissions). Setting IncludeACL
-    # to True here would query KITTO_PERMISSIONS at login but the resulting
-    # claim would be unused — leave it False for a smaller token.
-    IncludeACL: False
+    # The kx_acl claim is included automatically only when AccessControl
+    # below is set to JWT. HelloKitto uses AccessControl: Null so the
+    # claim is omitted by the framework.
 
 AccessControl: Null
 
@@ -138,7 +137,7 @@ LanguagePerSession: True
 
 Login:
   Controller:
-    Title: Login to "HelloKitto" %APP_VERSION%
+    Title: Login to "HelloKitto" %APP_VERSION_FULL%
     BorderPanel:
       NorthView:
         Controller: HtmlPanel

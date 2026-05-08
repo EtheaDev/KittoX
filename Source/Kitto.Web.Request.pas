@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -103,6 +103,13 @@ type
     ///  then in QueryFields (URL query string). Returns '' if not found.
     /// </summary>
     function GetField(const AName: string): string;
+    /// <summary>
+    ///  Returns True if a field with the given name is present in the POST
+    ///  body or in the URL query string. Distinguishes "field not posted" from
+    ///  "field posted with empty value", which GetField/GetFormField alone
+    ///  cannot do.
+    /// </summary>
+    function HasField(const AName: string): Boolean;
     /// <summary>
     ///  Returns the value of the cookie with the given name,
     ///  or '' if not found.
@@ -250,6 +257,12 @@ begin
   Result := GetFormField(AName);
   if Result = '' then
     Result := GetQueryField(AName);
+end;
+
+function TKWebRequest.HasField(const AName: string): Boolean;
+begin
+  Result := (FRequest.ContentFields.IndexOfName(AName) >= 0) or
+            (FRequest.QueryFields.IndexOfName(AName) >= 0);
 end;
 
 function TKWebRequest.GetQueryField(const AName: string): string;

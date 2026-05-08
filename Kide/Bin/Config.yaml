@@ -25,6 +25,7 @@ Authentication:
     Item: TextFile
 AccessControl:
   AccessControllers:
+    Item: JWT
     Item: DB
 Theme:
   Item: Auto

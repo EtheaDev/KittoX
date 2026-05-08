@@ -245,7 +245,7 @@ var
   LNorthHtml, LWestHtml, LEastHtml, LSouthHtml: string;
   LHasRegions: Boolean;
 begin
-  // Dialog panels (Form, etc.) never render regions � the Config may contain
+  // Dialog panels (Form, etc.) never render regions è the Config may contain
   // region nodes inherited from the parent List view which are not relevant.
   if IsModal then
     Exit(ACenterHtml);

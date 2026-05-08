@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 -------------------------------------------------------------------------------}
 
 /// <summary>
-///  Unified editor factory for KittoX � produces the HTML for input elements
+///  Unified editor factory for KittoX è produces the HTML for input elements
 ///  shared by both form editors (Kitto.Html.Form) and filter inputs
 ///  (Kitto.Html.List). Each method returns ONLY the <input>/<select>/<textarea>
 ///  markup (no wrapper div, no label). Callers supply context via TKXEditorContext.
@@ -37,7 +37,7 @@ const
   INPUT_EXTRA_CHS = 2;
   /// Fixed pixel offset for browser-native trigger icons (date picker, select arrow)
   TRIGGER_PX = 20;
-  /// Extra px for date inputs � Firefox renders date segments (dd/mm/yyyy) with
+  /// Extra px for date inputs è Firefox renders date segments (dd/mm/yyyy) with
   /// internal spacing that cannot be removed via CSS, so we widen date fields.
   DATE_EXTRA_PX = 6;
   /// Extra chars for spacer between date and time in DateTime editors
@@ -52,6 +52,7 @@ type
     WidthStyle: string;          // e.g. 'width:20ch'
     TriggerWidthStyle: string;   // e.g. 'width:calc(20ch + 20px)'
     IsReadOnly: Boolean;
+    IsIntrinsicallyReadOnly: Boolean; // Read-only regardless of form view/edit mode toggle.
     IsRequired: Boolean;
     IsKey: Boolean;
     ExtraAttrs: string;          // Additional attributes (hx-*, data-*, etc.)
@@ -111,6 +112,7 @@ implementation
 
 uses
   System.NetEncoding,
+  System.StrUtils,
   EF.Localization,
   Kitto.Metadata.DataView,
   Kitto.Html.Utils;
@@ -259,7 +261,7 @@ class function TKXEditorFactory.RenderDateTimeInput(const ACtx: TKXEditorContext
 var
   LDateWidthStyle, LTimeWidthStyle: string;
 begin
-  // Date part � extra px for Firefox segment spacing
+  // Date part è extra px for Firefox segment spacing
   if ACtx.TriggerWidthStyle <> '' then
     LDateWidthStyle := ACtx.TriggerWidthStyle.Replace(
       IntToStr(TRIGGER_PX) + 'px)',
@@ -428,12 +430,16 @@ begin
       ' style="' + ACtx.TriggerWidthStyle + '"' +
       ' />';
 
-  if not ACtx.IsReadOnly then
+  // Search / Clear: emit with kx-btn-editmode so setMode toggles visibility
+  // on view<->edit switch; suppress entirely if intrinsically read-only.
+  if not ACtx.IsIntrinsicallyReadOnly then
     Result := Result +
-      '<button type="button" class="kx-form-lookup-btn" title="' + _('Search') + '"' +
+      '<button type="button" class="kx-form-lookup-btn kx-btn-editmode" title="' + _('Search') + '"' +
+      IfThen(ACtx.IsReadOnly, ' style="display:none"', '') +
       ' onclick="' + ACallbackPrefix + '.openLookup(''' + ACallbackViewName + ''',''' + ACallbackFieldName + ''')">' +
       ASearchIcon + '</button>' +
-      '<button type="button" class="kx-form-lookup-btn" title="' + _('Clear') + '"' +
+      '<button type="button" class="kx-form-lookup-btn kx-btn-editmode" title="' + _('Clear') + '"' +
+      IfThen(ACtx.IsReadOnly, ' style="display:none"', '') +
       ' onclick="' + ACallbackPrefix + '.clearLookup(''' + ACallbackViewName + ''',''' + ACallbackFieldName + ''')">' +
       AClearIcon + '</button>';
 

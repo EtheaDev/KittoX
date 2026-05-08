@@ -204,7 +204,7 @@ type
   end;
 
   ///	<summary>
-  ///	 Contains enough information to�describe a database table.
+  ///	 Contains enough information to describe a database table.
   ///	</summary>
   TEFDBTableInfo = class(TEFDBItemInfo)
   private
@@ -266,7 +266,7 @@ type
     function FindForeignKey(const AForeignKeyName: string): TEFDBForeignKeyInfo;
 
     ///	<summary>
-    ///	  Appends a�new table to the end of the list. Returns the index in the
+    ///	  Appends a new table to the end of the list. Returns the index in the
     ///	  list of the newly added table.
     ///	</summary>
     function AddTable(const ATable: TEFDBTableInfo): Integer;
@@ -497,7 +497,7 @@ type
   end;
 
   ///	<summary>
-  ///	 A base class for�database connections.
+  ///	 A base class foràdatabase connections.
   ///	</summary>
   TEFDBConnection = class(TEFComponent)
   private
@@ -589,7 +589,7 @@ type
     function GetSingletonValue(const ASQLStatement: string): Variant;
 
     ///	<summary>
-    ///	  Executes the given�SQL statement�and returns an array of values from
+    ///	  Executes the given SQL statement and returns an array of values from
     ///	  the first row of the result set. The returned array is zero-based and
     ///	  has an element for each field in the source select statement. If no
     ///	  rows are returned, the result is a single Null. The query may contain
@@ -1267,10 +1267,10 @@ begin
       if LString = '' then
         LString := AField.AsString
       else
-        LString := LString + '�' + AField.AsString;
+        LString := LString + '§' + AField.AsString;
       AField.DataSet.Next;
     end;
-    Result := Split(LString, '�');
+    Result := Split(LString, '§');
   finally
     AField.DataSet.Bookmark := LBookmark;
   end;

@@ -1,0 +1,36 @@
+Auth: JWT
+  # JWT wraps an Inner authenticator (DB / DBServer / OSDB / TextFile) and
+  # issues a signed self-contained credential cookie (kx_token). On every
+  # request the cookie is verified against the embedded signature, with no
+  # server-side session-id lookup required.
+  # Default Inner is DB; edit to match your credential storage.
+  Inner: DB
+    IsClearPassword: False
+    IsPassepartoutEnabled: False
+    PassepartoutPassword:
+    ReadUserCommandText:
+    SetPasswordCommandText:
+    Defaults:
+      UserName:
+      Password:
+
+  # Signing algorithm. HS* (HMAC) needs no OpenSSL DLL from Delphi 10
+  # Seattle on; RS*/ES* (asymmetric) require OpenSSL libraries deployed
+  # alongside the binary.
+  SigningAlgorithm: HS256
+
+  # Token lifetime in seconds (default 3600 = 1 hour).
+  TokenLifetime: 3600
+
+  # Sliding-refresh window: re-issue the cookie when remaining time is
+  # below this threshold (seconds). Default 600 = 10 min.
+  SlidingThreshold: 600
+
+  # IMPORTANT — register the signing key programmatically in UseKitto.pas
+  # via TKJWTSigningKeyRegistry.Instance.RegisterProvider so it is shared
+  # across all .dpr variants (Standalone, ISAPI, Desktop, Apache). For
+  # production load the key from a vault or environment variable, never
+  # check it into source control.
+
+  # The kx_acl claim is automatically populated at login when
+  # AccessControl: JWT is configured. No opt-in flag needed.

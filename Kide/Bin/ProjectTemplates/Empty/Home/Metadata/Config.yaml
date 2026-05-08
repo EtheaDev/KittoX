@@ -1,19 +1,33 @@
 AppTitle: {AppTitle}
 
+# Default database connection name. Empty until a Databases entry is added.
+DefaultDatabaseName:
+
 Databases:
 
 Auth: Null
 
 AccessControl: Null
 
-ExtJS:
-  Theme: classic
-  AjaxTimeout: 100000
+# Theme. Options: Mode = Light | Dark | Auto.
+# IconStyle = filled | outlined | round | sharp | two-tone.
+# IconSize = Small | Medium | Large.
+Theme:
+  Mode: Auto
+  IconStyle: outlined
+  IconSize: Medium
 
+# Default UI language. The runtime can switch language per session via
+# the Accept-Language header or the kx_lang cookie.
 LanguageId: en
+
 # Either utf-8 or a SBCS corresponding to the system code page
 # (such as iso-8859-1 for Western Europe). Defaults to utf-8.
 Charset: utf-8
+
+# AJAX timeout in seconds for HTMX and fetch channels. Applies to long
+# requests (e.g. heavy queries, exports). Default: 30.
+AjaxTimeout: 30
 
 Server:
   Port: 8080

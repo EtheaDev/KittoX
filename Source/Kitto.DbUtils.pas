@@ -294,7 +294,7 @@ begin
     LQuery.CommandText := LQueryText;
     LQuery.Params.ParamByName('Id').AsString := UpperCase(LIdNazione);
     LQuery.Open;
-    if LQuery.DataSet.IsEmpty then //se non lo trovo la nazione � italia
+    if LQuery.DataSet.IsEmpty then //se non lo trovo la nazione è italia
       Result := 'IT'
     else
       Result := LQuery.DataSet.Fields[0].AsString;

@@ -691,8 +691,16 @@ var kxGrid = {
     var loadingEl = document.getElementById('kx-loading');
     if (loadingEl) loadingEl.classList.add('kx-busy');
     kxFetchWithTimeout(url, { headers: { 'X-KittoX': 'true' } })
-      .then(function(r) { return r.text(); })
+      .then(function(r) {
+        // Skip non-2xx responses (e.g. 404 from ACL deny / view not found).
+        // Without this guard the engine's fallback HTML body would be parsed
+        // and its <html> element appended to document.body, accumulating one
+        // orphan tree per click.
+        if (!r.ok) return null;
+        return r.text();
+      })
       .then(function(html) {
+        if (html === null) return;
         var div = document.createElement('div');
         div.innerHTML = html;
         if (div.firstElementChild) {
@@ -774,9 +782,13 @@ var kxGrid = {
     var autoRefresh = btn.dataset.autorefresh || '';
     var isUpload = btn.dataset.upload === 'true';
     var acceptFilter = btn.dataset.accept || '';
+    // data-key: form-toolbar buttons carry the open record's key so the tool
+    // operates on that record (Kitto1 ServerRecord parity); list-toolbar buttons
+    // omit it and fall back to getSelectedKey() when requireSel is true.
+    var formKey = btn.dataset.key || '';
 
     // Check selection if required
-    if (requireSel) {
+    if (requireSel && !formKey) {
       var key = kxGrid.getSelectedKey(viewName);
       if (!key) return;
     }
@@ -792,14 +804,16 @@ var kxGrid = {
         body = new FormData();
         body.append('file', file);
         var vals = kxGrid.collectValues(viewName, {});
-        if (requireSel) vals.key = kxGrid.getSelectedKey(viewName);
+        if (formKey) vals.key = formKey;
+        else if (requireSel) vals.key = kxGrid.getSelectedKey(viewName);
         for (var k in vals) body.append(k, vals[k]);
         // Don't set Content-Type; browser sets multipart boundary automatically
         headers['X-KittoX'] = 'true';
       } else {
         // Regular tool: URL-encoded form data
         var values = kxGrid.collectValues(viewName, {});
-        if (requireSel) values.key = kxGrid.getSelectedKey(viewName);
+        if (formKey) values.key = formKey;
+        else if (requireSel) values.key = kxGrid.getSelectedKey(viewName);
         body = new URLSearchParams();
         for (var k in values) body.append(k, values[k]);
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
@@ -1079,6 +1093,13 @@ var kxForm = {
 
     if (!form) return;
 
+    // Refuse if an unresolved notify validation error is pending — the user
+    // must change a field (triggering a fresh notify) to clear it.
+    if (form.dataset.notifyError) {
+      kxGrid.showConfirm('Error', form.dataset.notifyError, 'OK', '', null);
+      return;
+    }
+
     // Browser validation for required fields (multi-page aware)
     var saveBtn = kxForm._prepareSave(form, viewName);
     if (saveBtn === false) return;
@@ -1235,6 +1256,13 @@ var kxForm = {
   saveCache: function(viewName, op) {
     var form = document.getElementById('kx-form-' + viewName);
     if (!form) return;
+
+    // Refuse if an unresolved notify validation error is pending — the user
+    // must change a field (triggering a fresh notify) to clear it.
+    if (form.dataset.notifyError) {
+      kxGrid.showConfirm('Error', form.dataset.notifyError, 'OK', '', null);
+      return;
+    }
 
     // Browser validation for required fields (multi-page aware)
     var saveBtn = kxForm._prepareSave(form, viewName);
@@ -1419,6 +1447,13 @@ var kxForm = {
   saveDetail: function(detailView, masterView, detailIndex, op) {
     var form = document.getElementById('kx-form-' + detailView);
     if (!form) return;
+
+    // Refuse if an unresolved notify validation error is pending — the user
+    // must change a field (triggering a fresh notify) to clear it.
+    if (form.dataset.notifyError) {
+      kxGrid.showConfirm('Error', form.dataset.notifyError, 'OK', '', null);
+      return;
+    }
 
     // Browser validation for required fields (multi-page aware)
     var saveBtn = kxForm._prepareSave(form, detailView);
@@ -1710,6 +1745,11 @@ var kxForm = {
           keyInput.value = opt.k;
           if (displayInput) displayInput.value = opt.c;
           overlay.remove();
+          // Trigger the server-side field-change cascade (AfterFieldChange
+          // rules + AutoAddFields fan-out), matching what the <select>
+          // onchange and the dedicated-lookup onLookupSelect paths do.
+          if (window.kxForm && typeof kxForm.notifyFieldChange === 'function')
+            kxForm.notifyFieldChange(viewName, fieldName);
         });
         item.addEventListener('mouseenter', function() {
           item.style.background = 'var(--kx-accent-bg)';
@@ -1791,8 +1831,36 @@ var kxForm = {
     if (formKeyInput) formKeyInput.value = fkValue;
     if (formDisplayInput) formDisplayInput.value = caption;
 
+    // AutoAddFields: fan-out values from the referenced model record into
+    // the calling form's derived fields (id pattern: kx-field-{cv}-{alias}).
+    var autoAddRaw = selectedRow ? selectedRow.dataset.autoadd : '';
+    if (autoAddRaw) {
+      try {
+        var autoAddData = JSON.parse(autoAddRaw);
+        Object.keys(autoAddData).forEach(function(alias) {
+          var v = autoAddData[alias];
+          var el = document.getElementById('kx-field-' + callbackView + '-' + alias);
+          if (!el) return;
+          if (el.type === 'checkbox') {
+            el.checked = !!v;
+          } else {
+            el.value = (v === null || v === undefined) ? '' : v;
+          }
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      } catch(e) {
+        // Invalid JSON in data-autoadd: ignore silently
+      }
+    }
+
     // Close the lookup dialog
     kxForm.closeLookup(lookupAlias);
+
+    // Trigger server-side cascade (FieldChanged → derived fields + rules):
+    // covers cases like Iscrizione → Nominativo selection that populates
+    // Cognome/Nome/CodiceFiscale via AfterFieldChange rules.
+    kxForm.notifyFieldChange(callbackView, callbackField);
   },
 
   /**
@@ -1802,6 +1870,84 @@ var kxForm = {
   closeLookup: function(lookupAlias) {
     var overlay = document.getElementById('kx-' + lookupAlias);
     if (overlay) overlay.remove();
+  },
+
+  /**
+   * Posts the current form to /kx/view/{view}/notify/{field}; the server applies
+   * values, runs FieldChanged + AfterFieldChange rules, and returns JSON of the
+   * fields whose value changed as a side effect. We then apply those values to
+   * the form inputs by id.
+   * @param {string} viewName - Calling form's view name
+   * @param {string} fieldName - The field that triggered the notification
+   *   (matches the AliasedName used in the input id)
+   */
+  notifyFieldChange: function(viewName, fieldName) {
+    var form = document.getElementById('kx-form-' + viewName);
+    if (!form) return;
+    var body = new URLSearchParams();
+    form.querySelectorAll('input, select, textarea').forEach(function(inp) {
+      if (!inp.name) return;
+      if (inp.type === 'file') return;
+      if (inp.type === 'checkbox') body.append(inp.name, inp.checked ? 'true' : 'false');
+      else body.append(inp.name, inp.value);
+    });
+    kxFetchWithTimeout('kx/view/' + viewName + '/notify/' +
+        encodeURIComponent(fieldName), {
+      method: 'POST',
+      body: body,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-KittoX': 'true'
+      }
+    })
+    .then(function(r) {
+      if (!r.ok) return null;
+      return r.json();
+    })
+    .then(function(data) {
+      if (!data) return;
+      // Validation error from a rule (TKRuleImpl.RaiseError): show dialog,
+      // skip the field-update fan-out. Mirrors Kitto1 ExtMessageBox.Alert.
+      // Tag the form and disable save buttons so Conferma can refuse until
+      // the user fixes it — a fresh notify cycle on any field clears the tag.
+      if (typeof data._error === 'string') {
+        form.dataset.notifyError = data._error;
+        form.querySelectorAll('.kx-form-btn-save, .kx-form-btn-saveall').forEach(function(b) {
+          b.disabled = true;
+          b.title = data._error;
+        });
+        kxGrid.showConfirm('Error', data._error, 'OK', '', null);
+        return;
+      }
+      delete form.dataset.notifyError;
+      form.querySelectorAll('.kx-form-btn-save, .kx-form-btn-saveall').forEach(function(b) {
+        b.disabled = false;
+        b.title = '';
+      });
+      Object.keys(data).forEach(function(name) {
+        var v = data[name];
+        if (v && typeof v === 'object' && v._ref) {
+          var keyEl = document.getElementById(
+            'kx-field-' + viewName + '-' + name + '-key');
+          var dispEl = document.getElementById(
+            'kx-field-' + viewName + '-' + name + '-display');
+          if (keyEl) keyEl.value = (v.key === null || v.key === undefined) ? '' : v.key;
+          if (dispEl) dispEl.value = (v.display === null || v.display === undefined) ? '' : v.display;
+        } else {
+          var el = document.getElementById('kx-field-' + viewName + '-' + name);
+          if (!el) return;
+          if (el.type === 'checkbox') {
+            el.checked = !!v;
+          } else {
+            el.value = (v === null || v === undefined) ? '' : v;
+          }
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+    })
+    .catch(function() {
+      // Notify is a UX enhancement; silently ignore network/server errors
+    });
   },
 
   /**

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 -------------------------------------------------------------------------------}
 
 /// <summary>
-///  KittoX TemplateDataPanel controller � renders database records using a
+///  KittoX TemplateDataPanel controller è renders database records using a
 ///  custom HTML template file. The template file defines the HTML for a
 ///  single card/row; it is repeated for each record with {FieldName}
 ///  placeholders substituted with record values.

@@ -48,6 +48,7 @@ type
     FSessionCleanupThread: TKWebSessionCleanupThread;
     FActive: Boolean;
     FSessionCleanupInterval: Double;
+    FAuthCarriesSessionId: Boolean;
     FOnSessionStart: TKWebEngineSessionProc;
     FOnSessionEnd: TKWebEngineSessionProc;
     procedure EnsureSession(const AURL: TKWebURL);
@@ -114,6 +115,7 @@ uses
   EF.DB,
   EF.Tree,
   EF.Logger,
+  Kitto.Auth,
   Kitto.Config,
   Kitto.Html.Response,
   Kitto.Web.Types;
@@ -124,6 +126,8 @@ procedure TKWebEngine.AfterConstruction;
 var
   LConfig: TKConfig;
   LSessionTimeOut: Double;
+  LAuthType: string;
+  LAuthClass: TClass;
 begin
   inherited;
   // Standard config objects are per application; we need to create our own
@@ -138,6 +142,15 @@ begin
     FSessions := TKWebSessions.Create(LSessionTimeOut);
     FSessions.OnSessionStart := DoSessionStart;
     FSessions.OnSessionEnd := DoSessionEnd;
+    // Probe the registered authenticator class for whether its credential
+    // already carries the session id (JWT does, plain DB / TextFile / Null
+    // do not). We must cache the answer here because by the time
+    // SetSessionIdIntoResponse runs from AfterHandleRequest, the per-thread
+    // TKAuthenticator.Current has been cleared by DeactivateInstance.
+    LAuthType := LConfig.Config.GetExpandedString('Auth', NODE_NULL_VALUE);
+    LAuthClass := TKAuthenticatorRegistry.Instance.FindClass(LAuthType);
+    FAuthCarriesSessionId := Assigned(LAuthClass)
+      and TKAuthenticatorClass(LAuthClass).CarriesSessionIdInCredential;
   finally
     FreeAndNil(LConfig);
   end;
@@ -240,6 +253,15 @@ procedure TKWebEngine.SetSessionIdIntoResponse(const ASession: TKWebSession; con
 begin
   Assert(Assigned(ASession));
 
+  // When the configured authenticator's credential already carries the session
+  // id (e.g. JWT 'sid' claim) the legacy session id cookie named after
+  // AppName would just shadow kx_token in DevTools. Skip writing it on normal
+  // requests so the response stays minimal. We still emit an expired cookie
+  // on session end to clear any stale legacy cookie left over from older
+  // framework builds.
+  if FAuthCarriesSessionId and (not ARemove) then
+    Exit;
+
   if ARemove then
     TKWebResponse.Current.SetCookie(FSessionIDCookieName, ASession.SessionId, Now - 7)
   else
@@ -307,7 +329,7 @@ begin
 
   Assert(LClientAddress <> '');
 
-  // Atomically find or create � prevents duplicate sessions when multiple
+  // Atomically find or create è prevents duplicate sessions when multiple
   // requests arrive concurrently (e.g. page + resources after F5/restart).
   LSession := FSessions.FindOrCreateSession(LSessionId, LClientAddress, LCreated);
 
@@ -354,7 +376,11 @@ begin
   // Restore the chosen database environment from the kx_db cookie if the
   // session does not have one yet. The cookie is set at login time and
   // survives 30 days, so the user lands on the same environment as last time.
-  if LSession.DatabaseName = '' then
+  // Skipped when the active authenticator carries its own session-bound state
+  // (Auth: JWT hydrates DatabaseName from the verified 'db' claim during
+  // AuthorizeRequest, and we don't want a stale kx_db cookie to override
+  // the credential's authoritative value).
+  if (LSession.DatabaseName = '') and not FAuthCarriesSessionId then
     LSession.DatabaseName := TKWebRequest.Current.GetCookie('kx_db');
 end;
 

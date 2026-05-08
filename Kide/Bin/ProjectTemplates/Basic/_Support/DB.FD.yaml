@@ -1,11 +1,22 @@
-﻿Connection:
-  # Example for Firebird using FireDAC
-  DriverID: FB
-  # Alias of database defined in Aliases.conf or filename
-  DataBase: ChangeMe
-  User_Name: SYSDBA
-  Password: masterkey
-  Server: localhost
-  CharacterSet: UTF8
-  Protocol: TCPIP
+Connection:
+  # Edit this section to match your database server.
+  # Default placeholder is for Microsoft SQL Server with OS authentication.
+  # For other engines change DriverID and the field set:
+  #   FB    (Firebird):  DriverID: FB    + Server, Database, User_Name, Password, CharacterSet: UTF8, Protocol: TCPIP
+  #   PG    (Postgres):  DriverID: PG    + Server, Database, User_Name, Password
+  #   MySQL (MySQL):     DriverID: MySQL + Server, Database, User_Name, Password
+  #   IB    (InterBase): DriverID: IB    + Database, User_Name, Password
+  DriverID: MSSQL
+  Server: %COMPUTERNAME%
+  ApplicationName: %APPTITLE%
+  Database: ChangeMe
+  OSAuthent: Yes
+  # If OSAuthent is No, set User_Name and Password explicitly:
+  # User_Name: sa
+  # Password: ChangeMe
   Isolation: ReadCommitted
+  # Modern MSSQL ODBC drivers (17+/18) reject the connection unless the
+  # server's TLS certificate is in the local trust store. The line below
+  # is the commonly-used dev workaround; remove it (or replace with a
+  # pinned cert) for production. Ignored by non-MSSQL drivers.
+  ODBCAdvanced: TrustServerCertificate=yes

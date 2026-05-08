@@ -120,6 +120,7 @@ var
   LFilterPanelHtml: string;
   LDefaultFilterExpr: string;
   LRowClassProvider: string;
+  LAutoOpen: Boolean;
   SB: TStringBuilder;
 begin
   Result := '';
@@ -146,10 +147,16 @@ begin
   LFilterPanelHtml := BuildFilterPanel(LViewName, LViewTable,
     LDefaultFilterExpr);
 
-  // Load ALL records (no paging: start=0, count=0)
+  // IsLarge drives the default: AutoOpen = not IsLarge.
+  // (GroupingList has no paging — PagingTools is irrelevant here.)
+  LAutoOpen := LViewTable.GetBoolean('Controller/AutoOpen', not LViewTable.IsLarge);
+
+  // Load ALL records (no paging: start=0, count=0).
+  // AutoOpen=False skips the initial load — user populates via filter/Refresh.
   LStore := LViewTable.CreateStore;
   try
-    LStore.Load(LDefaultFilterExpr, LSortExpr, 0, 0);
+    if LAutoOpen then
+      LStore.Load(LDefaultFilterExpr, LSortExpr, 0, 0);
 
     SB := TStringBuilder.Create;
     try

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -273,7 +273,7 @@ begin
         ' onclick="event.stopPropagation(); kxTabs.close(''' + LViewName + ''')">' +
         GetIconHTML('close') + '</span></button>';
 
-      // Tab pane � lazy loaded via HTMX (global overlay provides loading feedback)
+      // Tab pane è lazy loaded via HTMX (global overlay provides loading feedback)
       if LIsFirst then
         // First tab: visible, auto-load on page render
         LTabBodies := LTabBodies + Format(

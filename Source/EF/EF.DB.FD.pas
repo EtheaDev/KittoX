@@ -113,8 +113,17 @@ type
   private
     FConnection: TFDConnection;
     FConnectionString: TStrings;
+    FPoolDefName: string;
     function GetDriverId: string;
     function GetIsolation: string;
+  public
+    /// <summary>
+    ///  Name of the FDManager pooled connection definition. CreateDBQuery
+    ///  uses this to acquire a fresh TFDConnection from the pool, so that
+    ///  each query is isolated and nested rules can iterate datasets without
+    ///  the FireDAC MARS-on-shared-connection issue.
+    /// </summary>
+    property PoolDefName: string read FPoolDefName;
   protected
     function GetQueryClass: TEFDBFDQueryClass; virtual;
     function CreateDBEngineType: TEFDBEngineType; override;
@@ -168,6 +177,16 @@ type
   TEFDBFDQuery = class(TEFDBQuery)
   private
     FQuery: TFDQuery;
+    /// <summary>
+    ///  Per-query private TFDConnection acquired from the FDManager pool.
+    ///  Owned by this query — keeps each TFDQuery isolated from other
+    ///  queries that may run concurrently on the application's shared
+    ///  TKConfig.Database connection (rule cascades, joined SELECTs, etc.).
+    ///  Nil when the parent connection is in a transaction: in that case
+    ///  the query reuses the shared TFDConnection so it stays inside the
+    ///  transaction.
+    /// </summary>
+    FOwnedConnection: TFDConnection;
     FParams: TEFDBFDParams;
     FCommandText: string;
     // Copies the values in FParams to FQuery.Parameters.
@@ -368,7 +387,8 @@ begin
     FConnection.Params.Values['Database'] := Config.GetExpandedString('Connection/Database');
     FConnection.Params.Values['OSAuthent'] := Config.GetString('Connection/OSAuthent', 'No');
     FConnection.Params.Values['MARS'] := 'Yes';
-    FConnection.Params.Values['ODBCAdvanced'] := Config.GetString('Connection/ODBCAdvanced', 'TrustServerCertificate=no');
+    FConnection.Params.Values['ODBCAdvanced'] :=
+      Config.GetString('Connection/ODBCAdvanced', 'TrustServerCertificate=no');
     FConnection.Params.Values['MetaDefSchema'] := Config.GetString('Connection/MetaDefSchema', 'dbo');
   end
   else if SameText(LDriverID, 'FB') or SameText(LDriverID, 'IB') then
@@ -421,13 +441,13 @@ begin
   FConnection.ResourceOptions.MacroExpand := False;
   FConnection.FetchOptions.Mode := fmAll;
 
-  //Enable FireDAC connection pooling via FDManager: register an in-memory
-  //pooled connection definition (once per driver+database), then open by name.
-  //Physical connections are returned to the pool on Close/Free and reused,
-  //avoiding the overhead of opening a new connection for each DB operation.
-  //POOL_MaximumItems is read from Config.yaml Connection node (default 100).
+  //Register a pooled FDManager connection definition so each CreateDBQuery
+  //can acquire its own TFDConnection from the pool — isolating queries from
+  //each other and bypassing the FireDAC MARS-on-shared-connection issue.
+  //POOL_MaximumItems defaults to 100 (overridable via Config.yaml).
   LDefName := 'KittoPool_' + LDriverId + '_' +
     FConnection.Params.Values['Database'];
+  FPoolDefName := LDefName;
   if FDManager.ConnectionDefs.FindConnectionDef(LDefName) = nil then
   begin
     LPoolMaxItems := Config.GetInteger('Connection/POOL_MaximumItems', 100);
@@ -680,14 +700,44 @@ end;
 destructor TEFDBFDQuery.Destroy;
 begin
   FreeAndNil(FQuery);
+  FreeAndNil(FOwnedConnection);
   FreeAndNil(FParams);
   inherited;
 end;
 
 procedure TEFDBFDQuery.ConnectionChanged;
+var
+  LParent: TEFDBFDConnection;
 begin
   inherited;
-  FQuery.Connection := (Connection.AsObject as TEFDBFDConnection).FConnection;
+  LParent := Connection.AsObject as TEFDBFDConnection;
+  // If the parent wrapper is currently in a transaction, share its
+  // TFDConnection so the query participates in the transaction. Otherwise
+  // acquire a private TFDConnection from the FDManager pool — isolating
+  // this query from any sibling queries on the parent. The Microsoft ODBC
+  // Driver 17/18 for SQL Server invalidates the outer dataset's Fields
+  // list when a sibling TFDQuery opens on the same TFDConnection (the
+  // legacy SQL Server Native Client 11.0 did not), so we never share a
+  // TFDConnection across queries outside an active transaction.
+  if LParent.FConnection.InTransaction or (LParent.PoolDefName = '') then
+  begin
+    FreeAndNil(FOwnedConnection);
+    FQuery.Connection := LParent.FConnection;
+  end
+  else
+  begin
+    if not Assigned(FOwnedConnection) then
+    begin
+      FOwnedConnection := TFDConnection.Create(nil);
+      FOwnedConnection.LoginPrompt := False;
+      FOwnedConnection.ConnectionDefName := LParent.PoolDefName;
+      FOwnedConnection.FetchOptions.Mode := LParent.FConnection.FetchOptions.Mode;
+      FOwnedConnection.ResourceOptions.DirectExecute := LParent.FConnection.ResourceOptions.DirectExecute;
+      FOwnedConnection.ResourceOptions.MacroCreate := False;
+      FOwnedConnection.ResourceOptions.MacroExpand := False;
+    end;
+    FQuery.Connection := FOwnedConnection;
+  end;
 end;
 
 function TEFDBFDQuery.Execute: Integer;

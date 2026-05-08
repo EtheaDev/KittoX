@@ -28,13 +28,14 @@ uses
   // path of unrelated apps.
   , Kitto.Auth.JWT
   // JWT access controller (AccessControl: JWT) — reads the kx_acl claim
-  // snapshotted at login by TKJWTAuthenticator (Auth/Claims/IncludeACL: True),
-  // with optional DB fallback. Independent from Auth: JWT — you can use one
-  // without the other.
+  // automatically populated at login when AccessControl: JWT is configured.
+  // Closed-world: the claim is the sole source of truth; anything missing
+  // is denied. Independent from Auth: JWT — you can use one without the other.
   , Kitto.AccessControl.JWT
-  // Needed by Kitto.AccessControl.JWT when FallbackToDB is True (lazy create
-  // of a TKDBAccessController at first miss), and required to register the
-  // 'DB' AccessController class id used as the fallback.
+  // TKDBAccessController class registration — TasKitto's wizard SQL templates
+  // (ReadPermissionsCommandText / ReadRolesCommandText under AccessControl)
+  // are still consumed by TKJWTAuthenticator at login to build the claim,
+  // and the 'DB' class id remains useful for migration scenarios.
   , Kitto.AccessControl.DB
   , Kitto.Tool.ADO //For Excel/Import export
   , Kitto.Tool.DebenuQuickPDF //For PDF Merge

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -1101,10 +1101,15 @@ var
   I: Integer;
   LField: TKField;
 begin
+  // Case-insensitive {FieldName} lookup: two field names differing only in
+  // case can't usefully coexist (TEFTree.FindChild uses SameText), so
+  // accepting any case in the macro is unambiguous and lets developers write
+  // {Description} naturally even when the field is declared DESCRIPTION.
   for I := 0 to FieldCount - 1 do
   begin
     LField := Fields[I];
-    ReplaceAllCaseSensitive(AExpression, Format('{%s}',[LField.FieldName]), LField.AsString);
+    AExpression := StringReplace(AExpression, Format('{%s}', [LField.FieldName]),
+      LField.AsString, [rfReplaceAll, rfIgnoreCase]);
   end;
 end;
 

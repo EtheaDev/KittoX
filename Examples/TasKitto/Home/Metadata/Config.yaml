@@ -173,22 +173,20 @@ Auth: JWT
     IncludeDB: True
     IncludeDisplayName: True
     IncludeLanguage: True
-    # When True, TKJWTAuthenticator queries KITTO_PERMISSIONS + KITTO_USER_ROLES
-    # at login (using the SQL templates from AccessControl below) and embeds
-    # the user's grant rows into the kx_acl claim. TKJWTAccessController then
-    # evaluates IsAccessGranted against this snapshot without re-hitting the
-    # DB on every request. Trade-off: changes to the underlying tables are
-    # not reflected until the user logs in again.
-    IncludeACL: True
+    # The kx_acl claim is populated automatically at login when AccessControl
+    # below is set to JWT — no opt-in flag needed. TKJWTAuthenticator queries
+    # KITTO_PERMISSIONS + KITTO_USER_ROLES (using the SQL templates from
+    # AccessControl) and embeds the user's grant rows. TKJWTAccessController
+    # then evaluates IsAccessGranted against this snapshot without re-hitting
+    # the DB on every request. Trade-off: changes to the underlying tables
+    # are not reflected until the user logs in again.
 
 
 AccessControl: JWT
-  # When True (default), if the kx_acl claim does not cover a specific
-  # resource/mode, the controller falls back to a TKDBAccessController so the
-  # database remains the source of truth for grants the JWT did not snapshot.
-  # Set to False to enforce a closed-world model (anything missing from the
-  # claim is denied) — useful if the token must be the only authoritative source.
-  FallbackToDB: True
+  # Closed-world: the kx_acl claim is the sole source of truth. Anything not
+  # covered by the claim is denied. For DB-driven evaluation use
+  # `AccessControl: DB` instead — `Auth: JWT` above can still be used
+  # independently for authentication.
 
 Login: LoginView
 

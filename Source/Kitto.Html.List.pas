@@ -138,6 +138,7 @@ var
   LSortFieldNames: TStringDynArray;
   LInitialSort: string;
   LPagingTools: Boolean;
+  LAutoOpen: Boolean;
   LGridLayout: TKLayout;
   LRowClassProvider: string;
   SB: TStringBuilder;
@@ -167,8 +168,13 @@ begin
     LUrlViewName := '';  // empty = use AViewName for URLs (backward compat)
   end;
 
-  // PagingTools: opt-in paging (default false)
-  LPagingTools := LViewTable.GetBoolean('Controller/PagingTools');
+  // IsLarge drives the defaults:
+  //   PagingTools default = IsLarge
+  //   AutoOpen     default = not IsLarge
+  // When AutoOpen is False the grid does not auto-load; user applies a filter
+  // or clicks Refresh to populate it.
+  LPagingTools := LViewTable.GetBoolean('Controller/PagingTools', LViewTable.IsLarge);
+  LAutoOpen := LViewTable.GetBoolean('Controller/AutoOpen', not LViewTable.IsLarge);
 
   // Check for TemplateFileName (directly or via legacy CenterController)
   LTemplateFile := Config.GetString('TemplateFileName',
@@ -201,7 +207,12 @@ begin
 
     LStore := LViewTable.CreateStore;
     try
-      LTotal := LStore.Load(LDefaultFilterExpr, LSortExpr, 0, LPageSize);
+      // AutoOpen=False (default when IsLarge=True) skips the initial load —
+      // user populates the grid by applying a filter or clicking Refresh.
+      if LAutoOpen then
+        LTotal := LStore.Load(LDefaultFilterExpr, LSortExpr, 0, LPageSize)
+      else
+        LTotal := 0;
 
       SB := TStringBuilder.Create;
       try
@@ -264,10 +275,15 @@ begin
   LFilterPanelHtml := BuildFilterPanel(LViewAlias, LViewTable,
     LDefaultFilterExpr, LUrlViewName);
 
-  // Load first page of data (with default filter and sort expression)
+  // Load first page of data (with default filter and sort expression).
+  // AutoOpen=False (default when IsLarge=True) skips the initial load —
+  // user populates the grid by applying a filter or clicking Refresh.
   LStore := LViewTable.CreateStore;
   try
-    LTotal := LStore.Load(LDefaultFilterExpr, LSortExpr, 0, LPageSize);
+    if LAutoOpen then
+      LTotal := LStore.Load(LDefaultFilterExpr, LSortExpr, 0, LPageSize)
+    else
+      LTotal := 0;
 
     SB := TStringBuilder.Create;
     try
@@ -792,7 +808,12 @@ var
     if not IsActionVisible(AAction) then
       Exit;
     SB.Append('<button class="kx-toolbar-btn');
-    if ARequiresSelection then
+    // Only mark a selection-dependent button if it is actually allowed by
+    // the ACL. The kx-requires-selection class is what kxGrid.updateButtons
+    // toggles `disabled` on when the user picks a row — without this guard
+    // the JS would re-enable buttons that the server had statically disabled
+    // (Edit/Dup/Delete for a viewer with no MODIFY/ADD/DELETE grant).
+    if ARequiresSelection and IsActionAllowed(AAction) then
       SB.Append(' kx-requires-selection');
     SB.Append('"');
     if not IsActionAllowed(AAction) then
@@ -1177,7 +1198,15 @@ var
   LCaptionField: TKModelField;
   LCaptionValue: string;
   LRowClassProvider: string;
-  SB, SBKey, SBFields: TStringBuilder;
+  SB, SBKey, SBFields, SBAutoAdd: TStringBuilder;
+  LIsLookup: Boolean;
+  LCallingViewName, LCallingFieldName: string;
+  LCallingView: TKView;
+  LCallingTable: TKViewTable;
+  LCallingViewField: TKViewField;
+  LAutoAddNode: TEFNode;
+  LAutoAddSourceFields, LAutoAddAliases: TArray<string>;
+  LAutoAddSrcField: TKViewField;
 
   function GetCellField(AIndex: Integer; out AField: TKViewField;
     out ALayoutNode: TEFNode): Boolean;
@@ -1224,6 +1253,43 @@ begin
 
   // RowClassProvider: JS function that returns a CSS class for each row
   LRowClassProvider := AViewTable.GetExpandedString('Controller/RowClassProvider');
+
+  // Lookup mode: resolve AutoAddFields metadata of the calling reference field
+  // so each row can carry the values to fan-out into the calling form.
+  LAutoAddSourceFields := nil;
+  LAutoAddAliases := nil;
+  LIsLookup := SameText(TKWebRequest.Current.GetQueryField('mode'), 'lookup');
+  if LIsLookup then
+  begin
+    LCallingViewName := TKWebRequest.Current.GetQueryField('cv');
+    LCallingFieldName := TKWebRequest.Current.GetQueryField('cf');
+    if (LCallingViewName <> '') and (LCallingFieldName <> '') then
+    begin
+      LCallingView := TKConfig.Instance.Views.FindView(LCallingViewName);
+      if Assigned(LCallingView) and (LCallingView is TKDataView) then
+      begin
+        LCallingTable := TKDataView(LCallingView).MainTable;
+        if Assigned(LCallingTable) then
+        begin
+          LCallingViewField := LCallingTable.FindField(LCallingFieldName);
+          if Assigned(LCallingViewField) and Assigned(LCallingViewField.ModelField) then
+          begin
+            LAutoAddNode := LCallingViewField.ModelField.FindNode('AutoAddFields');
+            if Assigned(LAutoAddNode) and (LAutoAddNode.ChildCount > 0) then
+            begin
+              SetLength(LAutoAddSourceFields, LAutoAddNode.ChildCount);
+              SetLength(LAutoAddAliases, LAutoAddNode.ChildCount);
+              for J := 0 to LAutoAddNode.ChildCount - 1 do
+              begin
+                LAutoAddSourceFields[J] := LAutoAddNode.Children[J].Name;
+                LAutoAddAliases[J] := LAutoAddNode.Children[J].AsExpandedString;
+              end;
+            end;
+          end;
+        end;
+      end;
+    end;
+  end;
 
   if AStore.RecordCount = 0 then
   begin
@@ -1279,6 +1345,40 @@ begin
 
       SB.Append('<tr data-key="').Append(SBKey.ToString).Append('"');
       SB.Append(' data-caption="').Append(TNetEncoding.HTML.Encode(LCaptionValue)).Append('"');
+
+      // AutoAddFields: emit JSON {alias: value} from the referenced model record
+      // so onLookupSelect can fan-out the values into the calling form.
+      if Length(LAutoAddSourceFields) > 0 then
+      begin
+        SBAutoAdd := TStringBuilder.Create;
+        try
+          SBAutoAdd.Append('{');
+          for J := 0 to High(LAutoAddSourceFields) do
+          begin
+            LAutoAddSrcField := AViewTable.FindField(LAutoAddSourceFields[J]);
+            if not Assigned(LAutoAddSrcField) then
+              Continue;
+            LRecordField := LRecord.FindField(LAutoAddSrcField.AliasedName);
+            if not Assigned(LRecordField) then
+              Continue;
+            if SBAutoAdd.Length > 1 then
+              SBAutoAdd.Append(',');
+            SBAutoAdd.Append('"').Append(LAutoAddAliases[J]).Append('":');
+            if LRecordField.IsNull then
+              SBAutoAdd.Append('null')
+            else if LAutoAddSrcField.DataType is TEFBooleanDataType then
+              SBAutoAdd.Append(IfThen(LRecordField.AsBoolean, 'true', 'false'))
+            else if LAutoAddSrcField.DataType is TEFNumericDataTypeBase then
+              SBAutoAdd.Append(LRecordField.GetAsJSONValue(False, False))
+            else
+              SBAutoAdd.Append(QuoteJSONValue(LRecordField.AsString));
+          end;
+          SBAutoAdd.Append('}');
+          SB.Append(' data-autoadd="').Append(TNetEncoding.HTML.Encode(SBAutoAdd.ToString)).Append('"');
+        finally
+          SBAutoAdd.Free;
+        end;
+      end;
 
       // RowClassProvider: emit field values as JSON for client-side class computation
       if LRowClassProvider <> '' then

@@ -1,0 +1,6 @@
+AccessControl: JWT
+# Closed-world JWT-claim-based access control: the kx_acl claim snapshotted
+# at login (auto-populated when AccessControl: JWT is configured) is the
+# sole source of truth. Anything not covered by the claim is denied.
+# For DB-driven evaluation use `AccessControl: DB` instead — `Auth: JWT`
+# can still be used independently for authentication.

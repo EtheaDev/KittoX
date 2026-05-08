@@ -846,7 +846,7 @@ function TKDBCryptAuthenticator.GetRandomSpecialChar: char;
 var
   LSpecialChars: string;
 begin
-  LSpecialChars := '\<>!�$%&/()=?^*�[]{}-+@#�';
+  LSpecialChars := '\<>!£$%&/()=?^*°[]{}-+@#€';
   Result := LSpecialChars[Random(LSpecialChars.Length)+1];
 end;
 

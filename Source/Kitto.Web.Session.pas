@@ -103,7 +103,10 @@ type
     ///  Name of the database connection currently active for this session.
     ///  When empty, the application falls back to Config.DefaultDatabaseName.
     ///  Set at login time when the user picks an "environment" via the
-    ///  Auth/DatabaseChoices combo, persisted across sessions via cookie kx_db.
+    ///  Auth/DatabaseChoices combo. Persisted across sessions: under
+    ///  Auth: JWT via the 'db' claim in kx_token (re-hydrated by
+    ///  AuthorizeRequest at every request); under non-JWT auth via the
+    ///  legacy kx_db cookie (30-day lifetime).
     /// </summary>
     property DatabaseName: string read FDatabaseName write FDatabaseName;
 

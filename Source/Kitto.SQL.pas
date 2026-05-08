@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +41,7 @@ type
   private
     FUsedReferenceFields: TList<TKModelField>;
     FSelectTerms: string;
+    FAddedFKColumns: TStringList;
     FViewTable: TKViewTable;
     FModel: TKModel;
     procedure Clear;
@@ -373,6 +374,7 @@ var
   LValueNames: string;
   J: Integer;
   LProcessedRefFields: TList<TKViewField>;
+  LAddedColumns: TStringList;
 
   function IsRefFieldProcessed(const AViewField: TKViewField): Boolean;
   begin
@@ -390,6 +392,19 @@ var
     LProcessedRefFields.Add(AViewField);
   end;
 
+  // Skip a column already added: two References sharing the same FK column
+  // (e.g. two Reference(MasterModel) fields backed by the same FK) would
+  // otherwise produce duplicate column names in the column list.
+  procedure AddIfNotDuplicate(const ADBColumnName, AParamName: string);
+  begin
+    if LAddedColumns.IndexOf(ADBColumnName) < 0 then
+    begin
+      AddDBColumnName(LDBColumnNames, LValueNames, ADBCommand,
+        ADBColumnName, AParamName);
+      LAddedColumns.Add(ADBColumnName);
+    end;
+  end;
+
 begin
   Assert(Assigned(ADBCommand));
   Assert(Assigned(ARecord));
@@ -404,6 +419,10 @@ begin
     LValueNames := '';
 
     LProcessedRefFields := TList<TKViewField>.Create;
+    LAddedColumns := TStringList.Create;
+    LAddedColumns.CaseSensitive := False;
+    LAddedColumns.Sorted := True;
+    LAddedColumns.Duplicates := dupIgnore;
     try
       for I := 0 to ARecord.FieldCount - 1 do
       begin
@@ -418,19 +437,20 @@ begin
             if not IsRefFieldProcessed(LViewField) then
             begin
               for J := 0 to LViewField.ModelField.FieldCount - 1 do
-                AddDBColumnName(LDBColumnNames, LValueNames, ADBCommand,
+                AddIfNotDuplicate(
                   LViewField.ModelField.Fields[J].DBColumnName,
                   LViewField.ModelField.Fields[J].FieldName);
               MarkRefFieldAsProcessed(LViewField);
             end
           end
           else if LViewField.Model = ARecord.ViewTable.Model then
-            AddDBColumnName(LDBColumnNames, LValueNames, ADBCommand,
+            AddIfNotDuplicate(
               LViewField.ModelField.DBColumnName, ARecord[I].FieldName);
         end;
       end;
     finally
       FreeAndNil(LProcessedRefFields);
+      FreeAndNil(LAddedColumns);
     end;
 
     // Add model fiels with default values that are not in the view.
@@ -469,9 +489,15 @@ var
   LParamName: string;
   J: Integer;
   LProcessedRefFields: TList<TKViewField>;
+  LAddedColumns: TStringList;
 
   procedure AddDBColumnName(const ADBColumnName, AParamName: string);
   begin
+    // Skip a column already added: two References sharing the same FK column
+    // would otherwise emit duplicate `col = :param` pairs in the SET clause.
+    if LAddedColumns.IndexOf(ADBColumnName) >= 0 then
+      Exit;
+    LAddedColumns.Add(ADBColumnName);
     if LDBColumnNames = '' then
       LDBColumnNames := ADBColumnName + ' = :' + AParamName
     else
@@ -508,6 +534,10 @@ begin
     LDBColumnNames := '';
 
     LProcessedRefFields := TList<TKViewField>.Create;
+    LAddedColumns := TStringList.Create;
+    LAddedColumns.CaseSensitive := False;
+    LAddedColumns.Sorted := True;
+    LAddedColumns.Duplicates := dupIgnore;
     try
       for I := 0 to ARecord.FieldCount - 1 do
       begin
@@ -533,6 +563,7 @@ begin
       end;
     finally
       FreeAndNil(LProcessedRefFields);
+      FreeAndNil(LAddedColumns);
     end;
     if LDBColumnNames = '' then
       LCommandText := ''
@@ -675,12 +706,17 @@ procedure TKSQLBuilder.AfterConstruction;
 begin
   inherited;
   FUsedReferenceFields := TList<TKModelField>.Create;
+  FAddedFKColumns := TStringList.Create;
+  FAddedFKColumns.CaseSensitive := False;
+  FAddedFKColumns.Sorted := True;
+  FAddedFKColumns.Duplicates := dupIgnore;
 end;
 
 destructor TKSQLBuilder.Destroy;
 begin
   inherited;
   FreeAndNil(FUsedReferenceFields);
+  FreeAndNil(FAddedFKColumns);
 end;
 
 procedure TKSQLBuilder.ExpandQualification(var AString: string; const AQualification: string);
@@ -696,6 +732,7 @@ begin
   FViewTable := nil;
   FSelectTerms := '';
   FUsedReferenceFields.Clear;
+  FAddedFKColumns.Clear;
 end;
 
 class procedure TKSQLBuilder.CreateAndExecute(const AProc: TProc<TKSQLBuilder>);
@@ -960,7 +997,17 @@ begin
     + ' ' + AViewField.ModelField.FieldName);
   LFields := AViewField.ModelField.GetReferenceFields;
   for I := Low(LFields) to High(LFields) do
-    AddSelectTerm(FViewTable.Model.DBTableName + '.' + LFields[I].DBColumnName);
+  begin
+    // De-duplicate FK columns: when multiple Reference fields on this view
+    // table share the same physical FK column (e.g. two References to the
+    // same master via the same key), emit it only once. SQL Server's outer
+    // ROW_NUMBER wrapper rejects duplicate output column names.
+    if FAddedFKColumns.IndexOf(LFields[I].DBColumnName) < 0 then
+    begin
+      AddSelectTerm(FViewTable.Model.DBTableName + '.' + LFields[I].DBColumnName);
+      FAddedFKColumns.Add(LFields[I].DBColumnName);
+    end;
+  end;
 end;
 
 function TKSQLBuilder.GetSelectWhereClause(const AFilter: string;

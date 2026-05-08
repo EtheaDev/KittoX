@@ -36,19 +36,18 @@ uses
 
 procedure Register;
 begin
-//  ForceDemandLoadState(dlDisable);
-
   // YAML Syntax Highlighter
   RegisterYAMLHighlighter;
 
-  // KittoX projects.
-  RegisterPackageWizard(TVclIOTAProjectWizard.Create);
-  RegisterPackageWizard(TWindowsServiceIOTAProjectWizard.Create);
-  // Kitto files.
-  { TODO : Implement if required. }
-  //RegisterPackageWizard(TKModelIOTAProjectWizard.Create);
-  //RegisterPackageWizard(TKViewIOTAProjectWizard.Create);
-
+  // KittoX projects — one entry per supported deployment mode under
+  // File / New / Other / KittoX Projects. The BDS 37 gallery sorts items
+  // alphabetically with no public priority API, so the desired display
+  // order is enforced via the "1. " / "2. " / "3. " / "4. " prefix on
+  // each wizard's Name (see KIDE.IOTA.ProjectWizard).
+  RegisterPackageWizard(TStandaloneIOTAProjectWizard.Create);
+  RegisterPackageWizard(TDesktopIOTAProjectWizard.Create);
+  RegisterPackageWizard(TIsapiIOTAProjectWizard.Create);
+  RegisterPackageWizard(TApacheIOTAProjectWizard.Create);
 end;
 
 end.

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -170,7 +170,7 @@ begin
 
   LIsReadOnly := View.GetBoolean('IsReadOnly') or LVT.IsReadOnly;
 
-  // Add � visible unless PreventAdding or read-only
+  // Add è visible unless PreventAdding or read-only
   FVisibleActions.AddOrSetValue('Add',
     IsActionSupported('Add')
     and not LVT.GetBoolean('Controller/PreventAdding')
@@ -179,7 +179,7 @@ begin
   FAllowedActions.AddOrSetValue('Add',
     FVisibleActions['Add'] and LVT.IsAccessGranted(ACM_ADD));
 
-  // Dup � visible only if AllowDuplicating and not read-only
+  // Dup è visible only if AllowDuplicating and not read-only
   FVisibleActions.AddOrSetValue('Dup',
     IsActionSupported('Dup')
     and (LVT.GetBoolean('Controller/AllowDuplicating')
@@ -188,7 +188,7 @@ begin
   FAllowedActions.AddOrSetValue('Dup',
     FVisibleActions['Dup'] and LVT.IsAccessGranted(ACM_ADD));
 
-  // Edit � visible unless PreventEditing or read-only
+  // Edit è visible unless PreventEditing or read-only
   FVisibleActions.AddOrSetValue('Edit',
     IsActionSupported('Edit')
     and not LVT.GetBoolean('Controller/PreventEditing')
@@ -197,7 +197,7 @@ begin
   FAllowedActions.AddOrSetValue('Edit',
     FVisibleActions['Edit'] and LVT.IsAccessGranted(ACM_MODIFY));
 
-  // Delete � visible unless PreventDeleting or read-only
+  // Delete è visible unless PreventDeleting or read-only
   FVisibleActions.AddOrSetValue('Delete',
     IsActionSupported('Delete')
     and not LVT.GetBoolean('Controller/PreventDeleting')
@@ -206,7 +206,7 @@ begin
   FAllowedActions.AddOrSetValue('Delete',
     FVisibleActions['Delete'] and LVT.IsAccessGranted(ACM_DELETE));
 
-  // View � visible only if AllowViewing
+  // View è visible only if AllowViewing
   FVisibleActions.AddOrSetValue('View',
     IsActionSupported('View')
     and (LVT.GetBoolean('Controller/AllowViewing')

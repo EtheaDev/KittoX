@@ -2,31 +2,17 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.6 - 01 May 2026**
+**Latest Version 4.0.7 - 08 May 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
 **Kitto<sup>x</sup>** allows to create **Rich Internet Applications** based on a data model that can be mapped onto any database. The client-side part uses **HTMX** (through webbroker technology) to create a fully **AJAX** application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.
 
-**Kitto<sup>x</sup>** uses **HTMX** as its client-side library: the server generates HTML fragments and HTMX handles partial page updates via AJAX, with no need for a heavy JavaScript framework.
-
 **Kitto<sup>x</sup>** is aimed at **Delphi** developers that need to create web or mobile applications without delving into the intricacies of HTML, CSS or Javascript, yet it allows access to the bare metal if required.
 
 **Kitto<sup>x</sup>** includes a **database-agnostic** data-access layer, allowing to create applications that work on any database engine and port applications between database engines.
 
-**Kitto<sup>x</sup>** maintains server-side data stores across HTTP requests, enabling record state tracking, transactional master-detail saving, and blob lazy-loading — ensuring data integrity with atomic database transactions.
-
 A **Kitto<sup>x</sup>** application is described as a set of easily maintained **YAML** files, keeping definitions abstract and declarative and allowing for future extensions. Business rules are enforced either declaratively or through small javascript fragments on the client, or in Delphi code on the server.
-
-![Ethea Logo](./images/Logo-Ethea-200x90.png)
-
-**Kitto** framework was originally designed by _Nando Dessena_ in 2011.
-
-**Kitto<sup>x</sup>** retained some basic concepts but was evolved by _Carlo Barazzetta_ to take advantage of the modern and advanced features provided by HTML and to eliminate the dependency on the ExtJS client library.
-
-The development of **Kitto<sup>x</sup>** is sponsored by [Ethea](http://www.ethea.it/), which uses **Kitto<sup>x</sup>** for projects such as [Sport Club Manager](https://sportclubmanager.it/) application.
-
-### _Happy Kittoing!_
 
 ---
 
@@ -35,6 +21,20 @@ The development of **Kitto<sup>x</sup>** is sponsored by [Ethea](http://www.ethe
 - [Documentation site](https://ethea.it/docs/kittox/) with 50+ pages
 - Pages for all controllers, filters, data concepts, how-to guides, FAQ
 - Three example applications: HelloKitto, TasKitto, KEmployee
+
+---
+
+## Enterprise Edition ##
+
+Beyond the Apache 2.0 Core, **Kitto<sup>x</sup>** ships with Enterprise modules and developer tools under commercial license:
+
+- **Enterprise components** &mdash; interactive Charts (Chart.js), Calendars (EventCalendar), Google Maps with geocoding and markers, Dashboards and FlexPanels &mdash; all driven by YAML metadata, no client-side coding required.
+
+- **KIDE<sup>x</sup>** &mdash; the visual IDE for designing **Kitto<sup>x</sup>** applications. Tree-based YAML editor with **RTTI-based property discovery**, database reverse engineering (FireDAC / DBExpress / ADO), a New Project Wizard that scaffolds complete apps for up to 4 deployment modes (Standalone .exe / Desktop .exe / ISAPI .dll / Apache .dll), and an integrated HTTP server for live preview. Ships with a RAD Studio design-time package (`KittoXIDE.bpl`) that integrates the same wizard under **File &gt; New &gt; Other &gt; KittoX Projects** and adds a YAML syntax highlighter to the IDE editor.
+
+- **MCP-KittoX** &mdash; standalone Model Context Protocol server (`MCPKittoX.exe`) that exposes KIDE<sup>x</sup> functionality to AI agents (Claude Desktop / Code, Codex, LM Studio, any MCP-compatible client). Agents can scaffold complete **Kitto<sup>x</sup>** apps and reverse-engineer Models from a live database conversationally; metadata validation, locale refresh and view scaffolding tools are on the next-phases roadmap. Bundled with KIDE<sup>x</sup>: a single OnGuard registration unlocks both.
+
+[Contact Ethea](https://ethea.it/supporto/) for commercial license details, or see the [Enterprise Edition](https://ethea.it/docs/kittox/KittoEnt.html) page on the documentation site.
 
 ---
 
@@ -57,6 +57,33 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 08 May 2026: ver. 4.0.7 Beta
+
+- `Controller/AutoOpen` and `Controller/PagingTools` based on model's `IsLarge` flag
+- A Reference field whose target Model has `IsLarge: True` renders as a searchable lookup popup
+
+### JWT / ACL hardening
+- `Auth: JWT` no longer emits the legacy `<AppName>` session-id cookie nor `kx_db` — the JWT `sid` and `db` claims carry the same info
+- Server-side ACL enforcement on every `HandleKX*` route (view/data/save/delete/form/lookup/blob/upload/tool/detail*/wizard)
+- New auth gate in `DoHandleRequest` returns 404 on protected routes for unauthenticated requests (public views excluded)
+- Toolbar Add/Edit/Delete/Dup stay `disabled` for ACL-denied users
+- Per-thread JWT context cache uses `TObjectDictionary<TThreadID, ...>`
+
+### IDE / wizard
+- New **RAD Studio IDE plugin gallery**: `KittoXIDE.bpl` registers 4 entries under **File > New > Other > KittoX Projects** (Standalone .exe / Desktop .exe / ISAPI .dll / Apache .dll)
+- **Three paths** to scaffold a new app: KIDEX standalone, the new IDE gallery, and `MCP-KittoX project_create_app`
+- New project default: `Auth: TextFile` with a ready-to-use `Home/FileAuthenticator.txt` (admin/admin demo accounts) so the generated app authenticates out of the box, no users table required. JWT envelope kept as default. `AccessControl` default switched to `Null` to avoid deny-all post-login on a brand-new project. `DB.FD.yaml` template now sets `ODBCAdvanced: TrustServerCertificate=yes` so SQL Server ODBC Driver 17/18 connects on first try
+- Model Wizard `Beautify names` option now also handles DB names with spaces (Northwind-style: `Quarterly Orders` → `QuarterlyOrders`, `Sales by Category` → `SalesByCategory`); the original name is preserved in `PhysicalName` for the SQL layer
+
+### MCP-KittoX
+- New tool **`models_create_from_db`** — the headless equivalent of the Model Wizard. AI agents (Claude Desktop, Claude Code, Codex, …) can reverse-engineer Models from a database connection conversationally: defaults to `dry_run: true` (preview only); pass `dry_run: false` to commit. Output is byte-identical to what the visual wizard writes
+- 9 tools now implemented (was 8)
+- Better error reporting from MCP tools: errors are now propagated verbatim to the JSON-RPC client (class name + message) instead of being replaced by a generic fallback
+
+### Setup / tooling
+- Setup installer ships `MCPKittoX.exe` alongside `KIDEX.exe` sharing OnGuard license
+- `Tools/SetVersion.ps1` now also bumps the 12 dprojs of the 3 official examples (HelloKitto, TasKitto, KEmployee — 4 deployment variants each), and inserts `<VerInfo_Release>` and other VerInfo tags when the .dproj has them stripped (Delphi removes VerInfo tags whose value is 0)
 
 ## 01 May 2026: ver. 4.0.6 Beta
 - New `Auth: JWT` wrapper authenticator (signed `kx_token` cookie, sliding expiration, programmatic key registration)

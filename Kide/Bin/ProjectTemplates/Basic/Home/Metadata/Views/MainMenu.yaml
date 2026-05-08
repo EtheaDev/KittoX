@@ -1,0 +1,21 @@
+# Tree menu rendered by the TreePanel and ToolBar in Home.yaml.
+#
+# This Basic template ships only the User folder with Logout and
+# ChangePassword. Add more folders with View entries pointing to your
+# Models — or run the MCP `menu_generate_main_menu` tool to populate
+# them automatically from the Models catalog.
+Type: Tree
+
+# Placeholder for the application's data views. Populate with
+# `Folder: _(Lookups) / View: <ViewName>` entries.
+# Example:
+#   Folder: _(Customers)
+#     View: Customers
+#     View: CustomerForm
+
+Folder: _(User)
+  IsInitiallyCollapsed: True
+  View:
+    Controller: ChangePassword
+  View:
+    Controller: Logout

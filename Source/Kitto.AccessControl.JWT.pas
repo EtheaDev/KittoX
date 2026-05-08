@@ -18,9 +18,13 @@
 ///   JWT-claim-based access controller. Reads grants from the kx_acl claim
 ///   embedded in the JWT at login time (by TKJWTAuthenticator.BuildAclFromDB)
 ///   and replays the same matching logic as TKDBAccessController/TKUserPermissionStorage.
-///   Falls back to TKDBAccessController when the claim is absent or when
-///   FallbackToDB is enabled and a specific resource/mode is not covered by
-///   the claim.
+///
+///   Closed-world: if the kx_acl claim is missing, or a (resource, mode) is
+///   not covered by any row, the result is "deny" (no fallback to DB). This
+///   matches the contract implied by `AccessControl: JWT` in Config.yaml:
+///   the claim is the sole source of truth. If the application needs DB-driven
+///   ACL evaluation, configure `AccessControl: DB` instead — Auth: JWT can
+///   still be used independently for authentication.
 ///
 ///   Trade-off: ACL grants are snapshotted at login and cached in the JWT for
 ///   its lifetime. A grant change applied to the database mid-session is NOT
@@ -38,25 +42,16 @@ uses
   System.SysUtils,
   EF.Tree,
   Kitto.AccessControl,
-  Kitto.AccessControl.DB,
   Kitto.Web.JWT;
 
 type
   TKJWTAccessController = class(TKAccessController)
   strict private
-    FFallbackToDB: Boolean;
-    FFallbackController: TKDBAccessController;
-    FFallbackInitialized: Boolean;
-    function EnsureFallbackController: TKDBAccessController;
     function EvaluateFromClaim(const AAcl: TKJWTAclArray;
       const AResourceURI, AMode: string): Variant;
   protected
-    procedure InternalInit; override;
     function InternalGetAccessGrantValue(const AUserId: string;
       const AResourceURI: string; const AMode: string): Variant; override;
-  public
-    procedure AfterConstruction; override;
-    destructor Destroy; override;
   end;
 
 implementation
@@ -68,59 +63,6 @@ uses
   Kitto.Auth.JWT;
 
 { TKJWTAccessController }
-
-procedure TKJWTAccessController.AfterConstruction;
-begin
-  inherited;
-  FFallbackToDB := True;
-  FFallbackInitialized := False;
-  FFallbackController := nil;
-end;
-
-destructor TKJWTAccessController.Destroy;
-begin
-  FreeAndNil(FFallbackController);
-  inherited;
-end;
-
-procedure TKJWTAccessController.InternalInit;
-begin
-  inherited;
-  FFallbackToDB := Config.GetBoolean('FallbackToDB', True);
-end;
-
-function TKJWTAccessController.EnsureFallbackController: TKDBAccessController;
-var
-  I: Integer;
-begin
-  // Double-checked locking: many concurrent IsAccessGranted calls can race here
-  // when the JWT claim does not cover a (resource, mode) pair, and an unguarded
-  // check would create multiple TKDBAccessController instances that leak.
-  if FFallbackInitialized then
-    Exit(FFallbackController);
-  TMonitor.Enter(Self);
-  try
-    if FFallbackInitialized then
-      Exit(FFallbackController);
-    if not FFallbackToDB then
-    begin
-      FFallbackInitialized := True;
-      Exit(nil);
-    end;
-
-    FFallbackController := TKDBAccessController.Create;
-    // Carry over the SQL templates and DatabaseRouter (if any) so the fallback
-    // sees the exact same configuration the JWT login-time snapshot used.
-    for I := 0 to Config.ChildCount - 1 do
-      if Config.Children[I].Name <> 'FallbackToDB' then
-        FFallbackController.Config.AddChild(TEFNode.Clone(Config.Children[I]));
-    FFallbackController.Init;
-    FFallbackInitialized := True;
-    Result := FFallbackController;
-  finally
-    TMonitor.Exit(Self);
-  end;
-end;
 
 function TKJWTAccessController.EvaluateFromClaim(const AAcl: TKJWTAclArray;
   const AResourceURI, AMode: string): Variant;
@@ -157,31 +99,16 @@ function TKJWTAccessController.InternalGetAccessGrantValue(
   const AUserId, AResourceURI, AMode: string): Variant;
 var
   LContext: TKJWTContext;
-  LFallback: TKDBAccessController;
 begin
+  // Sole evaluation path: a JWT was validated for this request — read the
+  // ACL snapshotted at login. Closed-world: missing context, missing claim
+  // or unmatched (resource, mode) all yield Null (deny).
   Result := Null;
-
-  // Path 1: a JWT was validated for this request — read the snapshotted ACL.
   if TKJWTAuthenticator.HasContext then
   begin
     LContext := TKJWTAuthenticator.CurrentContext;
     if LContext.HasAcl then
-    begin
       Result := EvaluateFromClaim(LContext.Acl, AResourceURI, AMode);
-      if not VarIsNull(Result) then
-        Exit;
-    end;
-  end;
-
-  // Path 2: claim missing or no match — optionally consult the DB. When the
-  // app uses Auth: JWT but did not opt into kx_acl (Claims/IncludeACL=False),
-  // this is the normal evaluation path. When the claim is present but did
-  // not cover this specific resource/mode, the fallback fills the gap.
-  if FFallbackToDB then
-  begin
-    LFallback := EnsureFallbackController;
-    if Assigned(LFallback) then
-      Result := LFallback.GetAccessGrantValue(AUserId, AResourceURI, AMode, Null);
   end;
 end;
 

@@ -32,7 +32,7 @@ MainTable:
     LabelAlign: left
     ToolViews:
       DownloadText:
-        DisplayLabel: Donwload content in XML
+        DisplayLabel: Download content in XML
         Controller: ExportXMLTool
           RequireSelection: False
           IncludeHeader: False

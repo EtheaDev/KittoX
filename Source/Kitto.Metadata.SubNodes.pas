@@ -339,7 +339,6 @@ type
     function GetIncludeDB: Boolean;
     function GetIncludeDisplayName: Boolean;
     function GetIncludeLanguage: Boolean;
-    function GetIncludeACL: Boolean;
   public
     [YamlNode('IncludeRoles', 'False', 'Embed the user roles list as a custom claim')]
     property IncludeRoles: Boolean read GetIncludeRoles;
@@ -353,8 +352,10 @@ type
     [YamlNode('IncludeLanguage', 'True', 'Embed the active language as the lang claim')]
     property IncludeLanguage: Boolean read GetIncludeLanguage;
 
-    [YamlNode('IncludeACL', 'False', 'Snapshot KITTO_PERMISSIONS rows into the kx_acl claim at login (consumed by AccessControl: JWT)')]
-    property IncludeACL: Boolean read GetIncludeACL;
+    // IncludeACL intentionally not exposed here: it is auto-derived in
+    // TKJWTConfig.Parse from the configured AccessControl (JWT vs. anything
+    // else). Keeping it out of the user-facing schema prevents the footgun
+    // of "AccessControl: JWT but IncludeACL: False" misconfigurations.
   end;
 
   /// <summary>
@@ -564,18 +565,17 @@ type
   private
     function GetReadPermissionsCommandText: string;
     function GetReadRolesCommandText: string;
-    function GetFallbackToDB: Boolean;
   public
-    [YamlNode('ReadPermissionsCommandText', 'SQL command to read permissions. Used by AccessControl: DB at runtime and by Auth: JWT at login when Auth/Claims/IncludeACL is True.')]
+    [YamlNode('ReadPermissionsCommandText', 'SQL command to read permissions. Used by AccessControl: DB at runtime and by Auth: JWT at login when AccessControl: JWT is configured (the JWT then snapshots the rows into the kx_acl claim).')]
     property ReadPermissionsCommandText: string read GetReadPermissionsCommandText;
 
-    [YamlNode('ReadRolesCommandText', 'SQL command to read roles. Used by AccessControl: DB at runtime and by Auth: JWT at login when Auth/Claims/IncludeACL is True.')]
+    [YamlNode('ReadRolesCommandText', 'SQL command to read roles. Used by AccessControl: DB at runtime and by Auth: JWT at login when AccessControl: JWT is configured.')]
     property ReadRolesCommandText: string read GetReadRolesCommandText;
 
-    // --- AccessControl: JWT specific keys (ignored by AccessControl: DB) ---
-
-    [YamlNode('FallbackToDB', 'True', 'When AccessControl: JWT — if the kx_acl claim does not cover a specific (resource, mode), consult a TKDBAccessController for the missing rule. Set False for closed-world (claim is authoritative, anything missing is denied).')]
-    property FallbackToDB: Boolean read GetFallbackToDB;
+    // AccessControl: JWT has no user-tunable keys: it is closed-world
+    // (claim is authoritative). For DB-driven evaluation, configure
+    // AccessControl: DB instead — Auth: JWT can still be used independently
+    // for authentication.
   end;
 
   /// <summary>
@@ -1017,11 +1017,6 @@ begin
   Result := GetBoolean('IncludeLanguage', True);
 end;
 
-function TKAuthClaimsConfig.GetIncludeACL: Boolean;
-begin
-  Result := GetBoolean('IncludeACL', False);
-end;
-
 { TKAuthDefaultsConfig }
 
 function TKAuthDefaultsConfig.GetUserName: string;
@@ -1107,11 +1102,6 @@ end;
 function TKAccessControlConfig.GetReadRolesCommandText: string;
 begin
   Result := GetString('ReadRolesCommandText');
-end;
-
-function TKAccessControlConfig.GetFallbackToDB: Boolean;
-begin
-  Result := GetBoolean('FallbackToDB', True);
 end;
 
 { TKUserFormatsConfig }

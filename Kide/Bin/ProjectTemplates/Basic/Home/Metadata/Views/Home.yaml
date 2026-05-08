@@ -1,0 +1,32 @@
+DisplayLabel: %Config:AppTitle% %APP_VERSION%
+Controller: BorderPanel
+  DisplayMode: FullScreen
+  # Left pane: tree menu plus status bar.
+  WestView:
+    DisplayLabel: _(Main Menu)
+    Controller: BorderPanel
+      Width: 230
+      Collapsible: True
+      Border: True
+      Split: True
+      Header: True
+      CenterView:
+        Controller: TreePanel
+          TreeView: MainMenu
+      SouthView:
+        Controller: StatusBar
+          Text: |
+            <center>Connected to: <b>%Config:DefaultDatabaseName%</b></center>
+            <center>_(User: %Auth:UserName%)</center>
+        ImageName: person
+
+  # Top toolbar mirroring the menu (mobile-friendly fallback).
+  NorthView:
+    Controller: ToolBar
+      TreeView: MainMenu
+
+  # Empty tab area — filled at runtime when the user opens views from
+  # the tree menu. Add `SubViews:` here to pre-open tabs at startup.
+  CenterView:
+    Controller: TabPanel
+      Border: True

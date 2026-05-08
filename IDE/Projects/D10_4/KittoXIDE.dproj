@@ -1,4 +1,4 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{245397D4-4D37-4125-9399-681D24762800}</ProjectGuid>
         <MainSource>KittoXIDE.dpk</MainSource>
@@ -45,7 +45,7 @@
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX IDE Tools Package;FileVersion=4.0.6.0;InternalName=KittoXIDE;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoXIDE;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX IDE Tools Package;FileVersion=4.0.7.0;InternalName=KittoXIDE;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoXIDE;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_Description>KittoX IDE Tools Package</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DesignOnlyPackage>true</DesignOnlyPackage>
@@ -57,7 +57,7 @@
         <DCC_UsePackage>VclSmp;KittoXCore;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>6</VerInfo_Release>
+        <VerInfo_Release>7</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_UsePackage>rtl;$(DCC_UsePackage)</DCC_UsePackage>
@@ -92,32 +92,29 @@
         <DCCReference Include="..\..\Source\KIDE.IOTA.ModuleCreator.pas"/>
         <DCCReference Include="..\..\Source\KIDE.IOTA.MainFormCreator.pas"/>
         <DCCReference Include="..\..\Source\KIDE.YAMLHighlighter.pas"/>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.Controls.pas">
+        <DCCReference Include="..\..\Source\KIDE.Controls.pas"/>
+        <DCCReference Include="..\..\Source\KIDE.BaseFrameUnit.pas">
             <Form>BaseFrame</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.BaseFrameUnit.pas">
-            <Form>BaseFrame</Form>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.ProjectTemplateFrameUnit.pas">
+        <DCCReference Include="..\..\Source\KIDE.ProjectTemplateFrameUnit.pas">
             <Form>ProjectTemplateFrame</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.ProjectTemplate.pas"/>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.BaseFormUnit.pas">
+        <DCCReference Include="..\..\Source\KIDE.ProjectTemplate.pas"/>
+        <DCCReference Include="..\..\Source\KIDE.BaseFormUnit.pas">
             <Form>BaseForm</Form>
         </DCCReference>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.BaseWizardFormUnit.pas">
+        <DCCReference Include="..\..\Source\KIDE.BaseWizardFormUnit.pas">
             <Form>BaseWizardForm</Form>
         </DCCReference>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.NewProjectWizardFormUnit.pas">
+        <DCCReference Include="..\..\Source\KIDE.NewProjectWizardFormUnit.pas">
             <Form>NewProjectWizardForm</Form>
         </DCCReference>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.MRUOptions.pas"/>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.Config.pas"/>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.Project.pas"/>
-        <DCCReference Include="..\..\..\Kide\Source\KIDE.MainDataModuleUnit.pas">
+        <DCCReference Include="..\..\Source\KIDE.MRUOptions.pas"/>
+        <DCCReference Include="..\..\Source\KIDE.Config.pas"/>
+        <DCCReference Include="..\..\Source\KIDE.Project.pas"/>
+        <DCCReference Include="..\..\Source\KIDE.MainDataModuleUnit.pas">
             <Form>MainDataModule</Form>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>

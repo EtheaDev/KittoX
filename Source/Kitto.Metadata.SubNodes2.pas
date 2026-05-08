@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 -------------------------------------------------------------------------------}
 
 /// <summary>
-///  Sub-node classes for YAML config blocks � Part 2.
+///  Sub-node classes for YAML config blocks — Part 2.
 ///  ViewTable controller config, layout elements, chart nodes, filter items,
 ///  and DB adapter connection configs.
 /// </summary>
@@ -234,13 +234,13 @@ type
     function GetGrouping: TKGroupingConfig;
     function GetFormController: TKFormControllerConfig;
   public
-    [YamlNode('AutoOpen', 'False', 'Automatically open the first record in edit form')]
+    [YamlNode('AutoOpen', 'True', 'Auto-load grid data when view opens (default: not IsLarge)')]
     property AutoOpen: Boolean read GetAutoOpen;
 
     [YamlNode('PageRecordCount', 'Number of records per page')]
     property PageRecordCount: Integer read GetPageRecordCount;
 
-    [YamlNode('PagingTools', 'True', 'Show paging toolbar')]
+    [YamlNode('PagingTools', 'False', 'Show paging toolbar (default: IsLarge)')]
     property PagingTools: Boolean read GetPagingTools;
 
     [YamlNode('RowClassProvider', 'Server-side function returning CSS class per row')]

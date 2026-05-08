@@ -243,6 +243,21 @@ type
     ///  authenticator's third-party libraries.
     /// </summary>
     procedure AuthorizeRequest; virtual;
+
+    /// <summary>
+    ///  Tells the framework whether this authenticator's credential already
+    ///  carries the session id (e.g. JWT 'sid' claim). When True, the engine
+    ///  must NOT emit a separate session id cookie because the credential
+    ///  itself binds the request to the server-side TKWebSession. Default is
+    ///  False — Auth: DB / TextFile / Null and similar plain authenticators
+    ///  rely on a separate session id cookie named after AppName.
+    ///
+    ///  Class function so the engine can probe the registered authenticator
+    ///  class at startup, well before any request thread sets up
+    ///  TKAuthenticator.Current — which is nil again by the time the engine's
+    ///  AfterHandleRequest runs (DeactivateInstance has already cleared it).
+    /// </summary>
+    class function CarriesSessionIdInCredential: Boolean; virtual;
   end;
   TKAuthenticatorClass = class of TKAuthenticator;
 
@@ -479,6 +494,11 @@ end;
 procedure TKAuthenticator.AuthorizeRequest;
 begin
   // Default no-op. Descendants override.
+end;
+
+class function TKAuthenticator.CarriesSessionIdInCredential: Boolean;
+begin
+  Result := False;
 end;
 
 procedure TKAuthenticator.Logout;

@@ -165,6 +165,44 @@ begin
   end;
 end;
 
+function GetFieldNotifyChange(AViewField: TKViewField): Boolean;
+var
+  LNode: TEFNode;
+begin
+  // Explicit YAML opt-in/out wins (view field, fallback to model field).
+  LNode := AViewField.FindNode('NotifyChange');
+  if not Assigned(LNode) and Assigned(AViewField.ModelField) then
+    LNode := AViewField.ModelField.FindNode('NotifyChange');
+  if Assigned(LNode) then
+    Exit(LNode.AsBoolean);
+  // Reference fields default to True: their selection commonly cascades into
+  // other fields via AfterFieldChange rules.
+  if AViewField.IsReference then
+    Exit(True);
+  // Otherwise the global default applies.
+  Result := TKConfig.Instance.Config.GetBoolean('Defaults/AlwaysNotifyChange', False);
+end;
+
+// Resolves whether a Reference field renders as a lookup popup instead of
+// the default combo. A per-field IsLarge override (view-field, then
+// model-field) wins over the referenced Model's flag, so a single
+// Reference can opt out of the popup even when the target Model is IsLarge
+// (for example when a LookupFilter restricts the candidate set to a few
+// rows that fit better in a dropdown).
+function GetReferenceIsLarge(AViewField: TKViewField): Boolean;
+var
+  LNode: TEFNode;
+begin
+  LNode := AViewField.FindNode('IsLarge');
+  if not Assigned(LNode) and Assigned(AViewField.ModelField) then
+    LNode := AViewField.ModelField.FindNode('IsLarge');
+  if Assigned(LNode) then
+    Exit(LNode.AsBoolean);
+  Result := Assigned(AViewField.ModelField)
+    and Assigned(AViewField.ModelField.ReferencedModel)
+    and AViewField.ModelField.ReferencedModel.IsLarge;
+end;
+
 { TKXFormPanelController }
 
 function TKXFormPanelController.GetDefaultIsModal: Boolean;
@@ -486,7 +524,9 @@ begin
   LPreviewWindow := AViewField.GetBoolean('PreviewWindow', False);
   LPreviewW := AViewField.GetInteger('PreviewWindow/Width', 600);
   LPreviewH := AViewField.GetInteger('PreviewWindow/Height', 400);
-  LIsReadOnly := FIsViewMode or AViewField.IsReadOnly;
+  LIsReadOnly := FIsViewMode or AViewField.IsReadOnly
+    or (SameText(FOperation, 'add') and not AViewField.CanInsert)
+    or ((not SameText(FOperation, 'add')) and not AViewField.CanUpdate);
   // Preview window title: field's form display label (same as Kitto1 AViewField.DisplayLabel_Form)
   LPreviewTitle := AViewField.DisplayLabel_Form;
   if LPreviewTitle = '' then
@@ -987,8 +1027,15 @@ begin
 
   // Determine required/readonly
   LIsRequired := AViewField.IsRequired;
+  // Expression / computed fields are non-modifiable at the model level
+  // (TKModelField.CanActuallyModify = False), and per-operation CanInsert /
+  // CanUpdate may be denied in YAML — both must render as read-only,
+  // regardless of the IsReadOnly flag. Mirrors Kitto1's Ext editor behavior
+  // (TKExtFormPanelController honours CanInsert/CanUpdate at editor build).
   LIsReadOnly := FIsViewMode or AViewField.IsReadOnly
-    or ((FFKFieldName <> '') and SameText(AViewField.FieldName, FFKFieldName));
+    or ((FFKFieldName <> '') and SameText(AViewField.FieldName, FFKFieldName))
+    or (SameText(FOperation, 'add') and not AViewField.CanInsert)
+    or ((not SameText(FOperation, 'add')) and not AViewField.CanUpdate);
 
   // CharWidth calculation (aligned with ExtJS TKExtLayoutProcessor logic)
   LCharWidth := AViewField.DisplayWidth;
@@ -1027,9 +1074,21 @@ begin
   LCtx.WidthStyle := LWidthStyle;
   LCtx.TriggerWidthStyle := LTriggerWidthStyle;
   LCtx.IsReadOnly := LIsReadOnly;
+  // Read-only-by-design (vs only-for-current-mode): excludes FIsViewMode.
+  LCtx.IsIntrinsicallyReadOnly := AViewField.IsReadOnly
+    or ((FFKFieldName <> '') and SameText(AViewField.FieldName, FFKFieldName))
+    or (SameText(FOperation, 'add') and not AViewField.CanInsert)
+    or ((not SameText(FOperation, 'add')) and not AViewField.CanUpdate);
   LCtx.IsRequired := LIsRequired;
   LCtx.IsKey := AViewField.IsKey;
   LCtx.ExtraAttrs := GetFieldRuleAttrs(AViewField);
+  // NotifyChange: emit an onchange that fires the server-side cascade
+  // (FieldChanged → derived fields + AfterFieldChange rules). Small reference
+  // fields rendered as <select> dispatch change natively; large references
+  // (lookup dialog) call kxForm.notifyFieldChange from onLookupSelect.
+  if not LIsReadOnly and GetFieldNotifyChange(AViewField) then
+    LCtx.ExtraAttrs := LCtx.ExtraAttrs +
+      ' onchange="kxForm.notifyFieldChange(''' + FViewName + ''',''' + LFieldName + ''')"';
   LCtx.CssInputClass := 'kx-form-input';
   LCtx.EffWidth := LEffWidth;
 
@@ -1066,8 +1125,7 @@ begin
     // Reference field
     else if AViewField.IsReference then
     begin
-      if Assigned(AViewField.ModelField) and Assigned(AViewField.ModelField.ReferencedModel)
-        and AViewField.ModelField.ReferencedModel.IsLarge then
+      if GetReferenceIsLarge(AViewField) then
       begin
         SB.Append(RenderLargeReferenceEditor(AViewField, LInputName, LInputId,
           LIsReadOnly, LTriggerWidthStyle));
@@ -1501,9 +1559,12 @@ begin
 
       SB.Append('<button type="button" class="kx-form-btn"');
       SB.Append(' title="').Append(TNetEncoding.HTML.Encode(LToolLabel)).Append('"');
-      // Data attributes for JS executeTool handler (same as List toolbar)
+      // Data attributes for JS executeTool handler (same as List toolbar).
+      // data-key carries the form's current record key so the backend operates
+      // on the open record (Kitto1 ServerRecord parity).
       SB.Append(' data-view="').Append(FViewName).Append('"');
       SB.Append(' data-tool="').Append(TNetEncoding.HTML.Encode(LToolName)).Append('"');
+      SB.Append(' data-key="').Append(TNetEncoding.HTML.Encode(GetRecordKeyString)).Append('"');
       if LToolConfirmMsg <> '' then
         SB.Append(' data-confirm="').Append(
           TNetEncoding.HTML.Encode(ReplaceStr(_(Trim(LToolConfirmMsg)), #13#10, ' '))).Append('"');

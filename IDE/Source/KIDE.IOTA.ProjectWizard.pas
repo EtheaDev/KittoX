@@ -1,4 +1,4 @@
-{ -------------------------------------------------------------------------------
+﻿{ -------------------------------------------------------------------------------
   Copyright 2012-2026 Ethea S.r.l.
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,9 +23,7 @@ unit KIDE.IOTA.ProjectWizard;
 interface
 
 uses
-  ToolsAPI
-  , KIDE.IOTA.ProjectCreator
-  ;
+  ToolsAPI;
 
 type
   TIOTAProjectWizard = class(
@@ -38,7 +36,10 @@ type
     , IOTAProjectWizard100
   )
   strict protected
-    function GetProjectCreatorClass: TIOTAProjectCreatorClass; virtual; abstract;
+    // Deployment mode pre-selected by this gallery entry (Standalone, Desktop,
+    // ISAPI, Apache). Passed to the wizard form so its Deploy page shows
+    // exactly that one ticked, and used to pick the right .dproj file to open.
+    function GetDeployMode: string; virtual; abstract;
   public
     const
       GALLERY_PAGE = 'KittoX Projects';
@@ -58,7 +59,7 @@ type
     // IOTARepositoryWizard
     function GetAuthor: string;
     function GetComment: string; virtual; abstract;
-    function GetGlyph: Cardinal;
+    function GetGlyph: {$if compilerversion < 35}Cardinal{$else}THandle{$endif};
     function GetPage: string;
 
     // IOTARepositoryWizard60
@@ -72,18 +73,40 @@ type
     function IsVisible(Project: IOTAProject): Boolean;
   end;
 
-  TVclIOTAProjectWizard = class(TIOTAProjectWizard)
+  // Standalone Windows App / Service (.exe) — embedded Indy HTTP server.
+  TStandaloneIOTAProjectWizard = class(TIOTAProjectWizard)
   strict protected
-    function GetProjectCreatorClass: TIOTAProjectCreatorClass; override;
+    function GetDeployMode: string; override;
   public
     function GetName: string; override;
     function GetIDString: string; override;
     function GetComment: string; override;
   end;
 
-  TWindowsServiceIOTAProjectWizard = class(TIOTAProjectWizard)
+  // Windows Desktop App (.exe) — Indy server + embedded WebView2 form.
+  TDesktopIOTAProjectWizard = class(TIOTAProjectWizard)
   strict protected
-    function GetProjectCreatorClass: TIOTAProjectCreatorClass; override;
+    function GetDeployMode: string; override;
+  public
+    function GetName: string; override;
+    function GetIDString: string; override;
+    function GetComment: string; override;
+  end;
+
+  // ISAPI Module (.dll) — IIS-hosted via Web.Win.ISAPIApp + WebBroker.
+  TIsapiIOTAProjectWizard = class(TIOTAProjectWizard)
+  strict protected
+    function GetDeployMode: string; override;
+  public
+    function GetName: string; override;
+    function GetIDString: string; override;
+    function GetComment: string; override;
+  end;
+
+  // Apache Module (.dll) — Apache-hosted via Web.ApacheApp + WebBroker.
+  TApacheIOTAProjectWizard = class(TIOTAProjectWizard)
+  strict protected
+    function GetDeployMode: string; override;
   public
     function GetName: string; override;
     function GetIDString: string; override;
@@ -98,9 +121,10 @@ uses
   , Vcl.Dialogs
   , KIDE.NewProjectWizardFormUnit
   , KIDE.ProjectTemplate
+  , KIDE.IOTA.ProjectCreator
   ;
 
-{ TKProjectWizard }
+{ TIOTAProjectWizard }
 
 constructor TIOTAProjectWizard.Create;
 var
@@ -114,11 +138,22 @@ end;
 procedure TIOTAProjectWizard.Execute;
 var
   LProjectTemplate: TProjectTemplate;
+  LDprojPath: string;
 begin
-  if TNewProjectWizardForm.ShowDialog(LProjectTemplate) then
+  if TNewProjectWizardForm.ShowDialog(LProjectTemplate, GetDeployMode) then
   begin
     try
-      (BorlandIDEServices as IOTAModuleServices).CreateModule(GetProjectCreatorClass.Create(LProjectTemplate));
+      // The wizard's PAGE_PROJECT BeforeLeavePage already wrote every .dpr,
+      // .dproj, .pas and resource for the selected deployments to disk via
+      // FTemplate.CreateProject. We just need the IDE to OPEN the .dproj
+      // that matches the deployment picked in the gallery — no IOTA project
+      // creator dance (which fights with the IDE's MSBProject construction
+      // and crashes inside TBaseDelphiProject.Create / DocModul.ValidateIdent).
+      LDprojPath := GetDprojFileNameForDeployMode(LProjectTemplate, GetDeployMode);
+      if FileExists(LDprojPath) then
+        (BorlandIDEServices as IOTAActionServices).OpenProject(LDprojPath, True)
+      else
+        ShowMessageFmt('Generated .dproj not found: %s', [LDprojPath]);
     finally
       FreeAndNIl(LProjectTemplate);
     end;
@@ -148,10 +183,10 @@ end;
 
 function TIOTAProjectWizard.GetAuthor: string;
 begin
-  Result := 'KittoX Development Team';
+  Result := 'Ethea S.r.l.';
 end;
 
-function TIOTAProjectWizard.GetGlyph: Cardinal;
+function TIOTAProjectWizard.GetGlyph: {$if compilerversion < 35}Cardinal{$else}THandle{$endif};
 begin
   Result := LoadIcon(HInstance, PChar(GetIDString.Replace('.', '')));
 end;
@@ -178,56 +213,104 @@ end;
 
 function TIOTAProjectWizard.IsVisible(Project: IOTAProject): Boolean;
 begin
-{ TODO : There may be cases in which the wizard shouldn't be available }
   Result := True;
 end;
 
-{ TWindowsServiceIOTAProjectWizard }
+{ TStandaloneIOTAProjectWizard }
 
-function TWindowsServiceIOTAProjectWizard.GetComment: string;
+function TStandaloneIOTAProjectWizard.GetComment: string;
 begin
-  Result := 'Creates a new Windows Service KittoX application. This is the preferred option ' +
-    'for deployment of a KittoX application in a production Windows-based environment.';
+  Result := 'Creates a new KittoX standalone Windows application (.exe) that ' +
+    'auto-detects whether to run as a Windows Service or a VCL desktop GUI. ' +
+    'Uses the embedded Indy HTTP server. Recommended for production deployment.';
 end;
 
-function TWindowsServiceIOTAProjectWizard.GetIDString: string;
+function TStandaloneIOTAProjectWizard.GetDeployMode: string;
 begin
-  Result := ID_STRING + '.WindowsService.Application';
+  Result := 'Standalone';
 end;
 
-function TWindowsServiceIOTAProjectWizard.GetName: string;
+function TStandaloneIOTAProjectWizard.GetIDString: string;
 begin
-  Result := 'KittoX Windows Service application';
+  // The BDS 37 gallery sorts entries alphabetically by IDString (NOT by
+  // visible Name). The .1./.2./.3./.4. infix forces the display order
+  // Standalone → Desktop → ISAPI → Apache. The infix is invisible to users.
+  Result := ID_STRING + '.1.Standalone.Application';
 end;
 
-function TWindowsServiceIOTAProjectWizard.GetProjectCreatorClass: TIOTAProjectCreatorClass;
+function TStandaloneIOTAProjectWizard.GetName: string;
 begin
-  Result := TWindowsServiceIOTAProjectCreator;
+  Result := 'KittoX Windows App / Service (.exe)';
 end;
 
-{ TWindowsGUIIOTAProjectWizard }
+{ TDesktopIOTAProjectWizard }
 
-function TVclIOTAProjectWizard.GetComment: string;
+function TDesktopIOTAProjectWizard.GetComment: string;
 begin
-  Result := 'Creates a new VCL KittoX application. This type of project is mostly ' +
-    'useful for debugging and internal use, as the application can be run inside ' +
-    'the Delphi debugger and the visual GUI displays lots of useful information.';
+  Result := 'Creates a new KittoX desktop Windows application (.exe) with an ' +
+    'embedded WebView2 form pointing at the integrated Indy HTTP server. ' +
+    'Useful for standalone single-user desktop deployments.';
 end;
 
-function TVclIOTAProjectWizard.GetIDString: string;
+function TDesktopIOTAProjectWizard.GetDeployMode: string;
 begin
-  Result := ID_STRING + '.Vcl.Application';
+  Result := 'Desktop';
 end;
 
-function TVclIOTAProjectWizard.GetName: string;
+function TDesktopIOTAProjectWizard.GetIDString: string;
 begin
-  Result := 'KittoX VCL application';
+  Result := ID_STRING + '.2.Desktop.Application';
 end;
 
-function TVclIOTAProjectWizard.GetProjectCreatorClass: TIOTAProjectCreatorClass;
+function TDesktopIOTAProjectWizard.GetName: string;
 begin
-  Result := TVclIOTAProjectCreator;
+  Result := 'KittoX Windows Desktop App (.exe)';
+end;
+
+{ TIsapiIOTAProjectWizard }
+
+function TIsapiIOTAProjectWizard.GetComment: string;
+begin
+  Result := 'Creates a new KittoX ISAPI module (.dll) hosted by IIS via the ' +
+    'Web.Win.ISAPIApp + WebBroker bridge. Suitable for IIS deployments.';
+end;
+
+function TIsapiIOTAProjectWizard.GetDeployMode: string;
+begin
+  Result := 'ISAPI';
+end;
+
+function TIsapiIOTAProjectWizard.GetIDString: string;
+begin
+  Result := ID_STRING + '.3.ISAPI.Library';
+end;
+
+function TIsapiIOTAProjectWizard.GetName: string;
+begin
+  Result := 'KittoX ISAPI Module (.dll)';
+end;
+
+{ TApacheIOTAProjectWizard }
+
+function TApacheIOTAProjectWizard.GetComment: string;
+begin
+  Result := 'Creates a new KittoX Apache module (.dll) hosted by Apache via the ' +
+    'Web.ApacheApp + WebBroker bridge. Suitable for Apache deployments.';
+end;
+
+function TApacheIOTAProjectWizard.GetDeployMode: string;
+begin
+  Result := 'Apache';
+end;
+
+function TApacheIOTAProjectWizard.GetIDString: string;
+begin
+  Result := ID_STRING + '.4.Apache.Library';
+end;
+
+function TApacheIOTAProjectWizard.GetName: string;
+begin
+  Result := 'KittoX Apache Module (.dll)';
 end;
 
 end.
-

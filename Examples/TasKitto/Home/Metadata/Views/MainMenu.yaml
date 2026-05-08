@@ -29,6 +29,10 @@ Folder: _(Statistics)
 Folder: _(Maintenance)
   View: Users
     ImageName: group
+  View: Build AutoList
+    Model: KITTO_USER_ROLES
+  View: Build AutoList
+    Model: KITTO_PERMISSIONS
   View: UserForm
     ImageName: manage_accounts
   View:

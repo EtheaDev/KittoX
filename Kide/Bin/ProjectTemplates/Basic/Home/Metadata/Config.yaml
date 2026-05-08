@@ -1,5 +1,7 @@
-﻿AppTitle: {AppTitle}
+AppTitle: {AppTitle}
 
+# Default database connection name. ProcessConfigTemplate fills `Databases`
+# with `Main: <FD/DBX/ADO>` based on which drivers are enabled.
 DefaultDatabaseName: Main
 
 Databases:
@@ -7,20 +9,32 @@ Databases:
 Auth: Null
 
 AccessControl: Null
-    
-# Change this to use a custom view for the home page.
-# Alternatively, customize the Home view by replacing its controller.
-# Default: Home.
-#HomeView: Home
 
-ExtJS:
-  Theme: classic
-  AjaxTimeout: 100000
+# Theme. Options: Mode = Light | Dark | Auto.
+# IconStyle = filled | outlined | round | sharp | two-tone.
+# IconSize = Small | Medium | Large.
+Theme:
+  Mode: Auto
+  IconStyle: outlined
+  IconSize: Medium
 
+# Default UI language. The runtime can switch language per session via
+# the Accept-Language header or the kx_lang cookie.
 LanguageId: en
+
 # Either utf-8 or a SBCS corresponding to the system code page
 # (such as iso-8859-1 for Western Europe). Defaults to utf-8.
 Charset: utf-8
+
+# AJAX timeout in seconds for HTMX and fetch channels. Applies to long
+# requests (e.g. heavy queries, exports). Default: 30.
+AjaxTimeout: 30
+
+# Initial UI: Home view + main menu. The Basic template ships a minimal
+# tree menu containing Logout and ChangePassword (under Views/MainMenu).
+# Add views auto-generated from your Models with `kx menu_generate_main_menu`
+# (MCP-KittoX) or by hand in Views/MainMenu.yaml.
+HomeView: Home
 
 Server:
   Port: 8080

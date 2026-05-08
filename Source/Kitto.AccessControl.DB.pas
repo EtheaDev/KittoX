@@ -58,6 +58,7 @@ type
     procedure SetUserId(const AValue: string);
     procedure ReloadCurrentUserPermissions;
     procedure LoadGranteePermissions(const AGranteeId: string);
+    procedure DeduplicatePermissions;
     procedure GetUserRoles(const AUserId: string; const ARoleList: TStrings);
     function GetDatabaseName: string;
   public
@@ -316,6 +317,44 @@ begin
     finally
       LRoles.Free;
     end;
+    // The default ReadPermissionsCommandText matches both :GRANTEE_NAME and the
+    // wildcard '*', so the wildcard rows get re-loaded once per LoadGranteePermissions
+    // call. When user_name == role_name (e.g. 'admin' user mapped to 'admin' role)
+    // the role-specific rows get loaded twice as well. Deduplicate to keep the
+    // in-memory store and the kx_acl JWT claim minimal.
+    DeduplicatePermissions;
+  end;
+end;
+
+procedure TKUserPermissionStorage.DeduplicatePermissions;
+var
+  LSeen: TStringList;
+  I: Integer;
+  LRecord: TKRecord;
+  LKey: string;
+begin
+  LSeen := TStringList.Create;
+  try
+    LSeen.CaseSensitive := True;
+    LSeen.Sorted := True;
+    LSeen.Duplicates := dupIgnore;
+    I := 0;
+    while I < FPermissions.RecordCount do
+    begin
+      LRecord := FPermissions.Records[I];
+      LKey := LRecord[RESOURCE_URI_PATTERN].AsString + #1
+            + LRecord[ACCESS_MODES].AsString + #1
+            + LRecord[GRANT_VALUE].AsString;
+      if LSeen.IndexOf(LKey) >= 0 then
+        FPermissions.Records.Remove(LRecord)
+      else
+      begin
+        LSeen.Add(LKey);
+        Inc(I);
+      end;
+    end;
+  finally
+    LSeen.Free;
   end;
 end;
 

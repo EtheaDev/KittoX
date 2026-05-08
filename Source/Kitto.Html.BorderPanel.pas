@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -266,8 +266,8 @@ begin
   LIsSideRegion := SameText(ARegionName, 'East') or SameText(ARegionName, 'West');
 
   // In CSS grid border layout, side regions (West/East) fill the full height
-  // between North and South � only Width is meaningful. Top/bottom regions
-  // (North/South) span the full width � only Height is meaningful.
+  // between North and South è only Width is meaningful. Top/bottom regions
+  // (North/South) span the full width è only Height is meaningful.
   // This matches the original ExtJS border layout semantics.
   LStyleStr := '';
   if LIsSideRegion then

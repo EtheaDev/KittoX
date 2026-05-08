@@ -344,7 +344,7 @@ type
   TEFNodeCompareFunc = TFunc<TEFNode, TEFNode, Integer>;
 
   /// <summary>
-  ///  The root of�a tree. Contains a set of nodes which are in turn trees.
+  ///  The root of a tree. Contains a set of nodes which are in turn trees.
   /// </summary>
   TEFTree = class
   strict private
@@ -387,7 +387,7 @@ type
     constructor Clone(const ASource: TEFTree; const AProc: TAssignNodeProc = nil); virtual;
 
     /// <summary>
-    ///  Access to the�set of children as a list.
+    ///  Access to the set of children as a list.
     /// </summary>
     property NodeList: TEFNodes read FNodes;
 
@@ -963,7 +963,7 @@ type
     constructor Create(const AName: string); reintroduce; overload;
 
     /// <summary>
-    ///   Creates a node with�no name and no value.
+    ///   Creates a node with no name and no value.
     /// </summary>
     constructor Create; reintroduce; overload;
 
@@ -984,7 +984,7 @@ type
     procedure Delete;
 
     /// <summary>
-    ///   Identifies the node among its siblings. Should be unique inside�the
+    ///   Identifies the node among its siblings. Should be unique inside the
     ///   parent.
     /// </summary>
     property Name: string read GetName write SetName;
@@ -1054,7 +1054,7 @@ type
     property AsPairs: TEFPairs read GetAsPairs write SetAsPairs;
 
     /// <summary>
-    ///   Node value as an expanded�string.
+    ///   Node value as an expanded string.
     /// </summary>
     property AsExpandedString: string read GetAsExpandedString;
 
@@ -1275,7 +1275,7 @@ type
   ///   <para>
   ///     The need for a name space stems from the fact that you can have
   ///     multiple macro expanders of this kind active at the same time, each
-  ///     linked to a different�tree object, and use the namespace string to
+  ///     linked to a differentàtree object, and use the namespace string to
   ///     differentiate them.
   ///   </para>
   ///   <para>

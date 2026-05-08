@@ -65,16 +65,16 @@ contains
   KIDE.IOTA.ModuleCreator in '..\..\Source\KIDE.IOTA.ModuleCreator.pas',
   KIDE.IOTA.MainFormCreator in '..\..\Source\KIDE.IOTA.MainFormCreator.pas',
   KIDE.YAMLHighlighter in '..\..\Source\KIDE.YAMLHighlighter.pas',
-  KIDE.Controls in '..\..\..\Kide\Source\KIDE.Controls.pas',
-  KIDE.BaseFrameUnit in '..\..\..\Kide\Source\KIDE.BaseFrameUnit.pas' {BaseFrame: TFrame},
-  KIDE.ProjectTemplateFrameUnit in '..\..\..\Kide\Source\KIDE.ProjectTemplateFrameUnit.pas' {ProjectTemplateFrame: TFrame},
-  KIDE.ProjectTemplate in '..\..\..\Kide\Source\KIDE.ProjectTemplate.pas',
-  KIDE.BaseFormUnit in '..\..\..\Kide\Source\KIDE.BaseFormUnit.pas' {BaseForm},
-  KIDE.BaseWizardFormUnit in '..\..\..\Kide\Source\KIDE.BaseWizardFormUnit.pas' {BaseWizardForm},
-  KIDE.NewProjectWizardFormUnit in '..\..\..\Kide\Source\KIDE.NewProjectWizardFormUnit.pas' {NewProjectWizardForm},
-  KIDE.MRUOptions in '..\..\..\Kide\Source\KIDE.MRUOptions.pas',
-  KIDE.Config in '..\..\..\Kide\Source\KIDE.Config.pas',
-  KIDE.Project in '..\..\..\Kide\Source\KIDE.Project.pas',
-  KIDE.MainDataModuleUnit in '..\..\..\Kide\Source\KIDE.MainDataModuleUnit.pas' {MainDataModule: TDataModule};
+  KIDE.Controls in '..\..\Source\KIDE.Controls.pas',
+  KIDE.BaseFrameUnit in '..\..\Source\KIDE.BaseFrameUnit.pas' {BaseFrame: TFrame},
+  KIDE.ProjectTemplateFrameUnit in '..\..\Source\KIDE.ProjectTemplateFrameUnit.pas' {ProjectTemplateFrame: TFrame},
+  KIDE.ProjectTemplate in '..\..\Source\KIDE.ProjectTemplate.pas',
+  KIDE.BaseFormUnit in '..\..\Source\KIDE.BaseFormUnit.pas' {BaseForm},
+  KIDE.BaseWizardFormUnit in '..\..\Source\KIDE.BaseWizardFormUnit.pas' {BaseWizardForm},
+  KIDE.NewProjectWizardFormUnit in '..\..\Source\KIDE.NewProjectWizardFormUnit.pas' {NewProjectWizardForm},
+  KIDE.MRUOptions in '..\..\Source\KIDE.MRUOptions.pas',
+  KIDE.Config in '..\..\Source\KIDE.Config.pas',
+  KIDE.Project in '..\..\Source\KIDE.Project.pas',
+  KIDE.MainDataModuleUnit in '..\..\Source\KIDE.MainDataModuleUnit.pas' {MainDataModule: TDataModule};
 
 end.

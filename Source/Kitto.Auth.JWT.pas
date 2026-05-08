@@ -57,17 +57,18 @@ type
   ///  inherited CanBypassURLParam guards them.
   /// </summary>
   TKJWTAuthenticator = class(TKClassicAuthenticator)
-  // The per-thread JWT context cache used by TKJWTAccessController is
-  // declared as a unit-level threadvar in the implementation section
-  // (not as 'class threadvar' inside this class). Reason: the Delphi
-  // compiler has been observed to compute wrong instance-memory offsets
-  // when 'class threadvar' declarations of record types (TKJWTContext)
-  // are mixed with regular instance fields in the same visibility block.
-  // The symptom is silent field-offset corruption: writes to FConfig /
-  // FConfigInitialized from one method appear to "reset themselves" by
-  // the time another method reads them on the same instance pointer.
-  // Keeping the threadvar entirely outside the class declaration is the
-  // safe, observable, layout-stable choice.
+  // The per-thread JWT context cache used by TKJWTAccessController lives
+  // in a unit-level TObjectDictionary keyed by ThreadID (not in a class
+  // threadvar). Two reasons:
+  //   1) Avoids a Delphi compiler bug where 'class threadvar' declarations
+  //      of record types mixed with regular instance fields cause silent
+  //      field-offset corruption.
+  //   2) Threadvar finalization in Delphi does NOT release managed members
+  //      of records (strings, dynamic arrays). With Indy keeping ~20 worker
+  //      threads alive for the server's lifetime, every populated context
+  //      record was leaking strings and the kx_acl array on shutdown. The
+  //      dictionary is freed deterministically in the unit's finalization
+  //      section, so every record's Clear gets invoked.
   strict private
     FInner: TKAuthenticator;
     FConfig: TKJWTConfig;
@@ -89,7 +90,7 @@ type
 
     /// Override to enrich the JWT context with custom claims before it is
     /// signed. The default fills sub/name/db/lang from session state, and
-    /// (when Auth/Claims/IncludeACL=True) snapshots ACL rows into kx_acl.
+    /// (when AccessControl: JWT is configured) snapshots ACL rows into kx_acl.
     /// Phase C subclasses override to pull IdP-specific claims into the
     /// internal token.
     procedure BuildContext(out AContext: TKJWTContext); virtual;
@@ -122,6 +123,11 @@ type
     ///  TKWebApplication.DoHandleRequest immediately after ActivateInstance.
     /// </summary>
     procedure AuthorizeRequest; override;
+
+    /// The kx_token cookie carries the 'sid' claim that correlates the
+    /// request to its server-side TKWebSession, so the legacy session id
+    /// cookie named after AppName is redundant under Auth: JWT.
+    class function CarriesSessionIdInCredential: Boolean; override;
 
     /// Phase C extension point — the login template uses this to pick
     /// between rendering form fields or a "Login with X" button.
@@ -168,6 +174,8 @@ implementation
 
 uses
   System.DateUtils,
+  System.SyncObjs,
+  System.Generics.Collections,
   EF.Localization,
   EF.StrUtils,
   EF.Logger,
@@ -178,15 +186,56 @@ uses
   Kitto.Store,
   JOSE.Core.JWA;
 
+type
+  // Per-thread holder for the validated JWT context. Lives in the
+  // FContextsByThread dictionary keyed by ThreadID. The dictionary owns the
+  // holders, so finalization disposes of every record (and its managed
+  // members — strings, dynamic arrays) in one shot.
+  TKJWTContextHolder = class
+  public
+    Context: TKJWTContext;
+    HasContext: Boolean;
+    destructor Destroy; override;
+  end;
+
+destructor TKJWTContextHolder.Destroy;
+begin
+  Context.Clear;
+  inherited;
+end;
+
 // Per-thread context cache populated by TKJWTAuthenticator.AuthorizeRequest
 // and read by TKJWTAccessController.InternalGetAccessGrantValue. Each request
-// runs on its own Indy worker thread; the threadvar isolates the cache so
-// concurrent requests do not see each other's claims. See the comment in the
-// class declaration for why these live here, NOT as 'class threadvar' inside
-// the class body.
-threadvar
-  FCurrentContext: TKJWTContext;
-  FHasCurrentContext: Boolean;
+// runs on its own Indy worker thread; the dictionary keyed by ThreadID
+// isolates the cache so concurrent requests do not see each other's claims.
+//
+// Why a dictionary instead of a threadvar: Delphi's threadvar finalization
+// does NOT release managed members (strings, dynamic arrays) of records when
+// a worker thread exits. With Indy's TIdSchedulerOfThreadPool keeping ~20
+// workers alive for the server's lifetime, every populated FCurrentContext
+// record was leaking its strings and the kx_acl array on shutdown. Owning
+// the holders from a unit-level TObjectDictionary lets the finalization
+// section free them deterministically.
+var
+  FContextsLock: TCriticalSection;
+  FContextsByThread: TObjectDictionary<TThreadID, TKJWTContextHolder>;
+
+function GetThreadContextHolder: TKJWTContextHolder;
+var
+  LTID: TThreadID;
+begin
+  LTID := TThread.Current.ThreadID;
+  FContextsLock.Enter;
+  try
+    if not FContextsByThread.TryGetValue(LTID, Result) then
+    begin
+      Result := TKJWTContextHolder.Create;
+      FContextsByThread.Add(LTID, Result);
+    end;
+  finally
+    FContextsLock.Leave;
+  end;
+end;
 
 const
   CFG_INNER = 'Inner';
@@ -487,18 +536,21 @@ end;
 
 class function TKJWTAuthenticator.HasContext: Boolean;
 begin
-  Result := FHasCurrentContext;
+  Result := GetThreadContextHolder.HasContext;
 end;
 
 class function TKJWTAuthenticator.CurrentContext: TKJWTContext;
 begin
-  Result := FCurrentContext;
+  Result := GetThreadContextHolder.Context;
 end;
 
 class procedure TKJWTAuthenticator.ClearCurrentContext;
+var
+  LHolder: TKJWTContextHolder;
 begin
-  FCurrentContext.Clear;
-  FHasCurrentContext := False;
+  LHolder := GetThreadContextHolder;
+  LHolder.Context.Clear;
+  LHolder.HasContext := False;
 end;
 
 function TKJWTAuthenticator.EffectiveConfigNode: TEFTree;
@@ -510,11 +562,17 @@ begin
     Result := inherited EffectiveConfigNode;
 end;
 
+class function TKJWTAuthenticator.CarriesSessionIdInCredential: Boolean;
+begin
+  Result := True;
+end;
+
 procedure TKJWTAuthenticator.AuthorizeRequest;
 var
   LCookie: string;
   LContext: TKJWTContext;
   LErr: string;
+  LHolder: TKJWTContextHolder;
 begin
   // Reset any context left over from a previous request on this thread.
   ClearCurrentContext;
@@ -551,17 +609,22 @@ begin
   // Cache the validated context on the thread for the rest of this request.
   // TKJWTAccessController reads it (and especially the kx_acl claim) without
   // having to re-validate the JWT on every IsAccessGranted call.
-  FCurrentContext := LContext;
-  FHasCurrentContext := True;
+  LHolder := GetThreadContextHolder;
+  LHolder.Context := LContext;
+  LHolder.HasContext := True;
 
   if TKJWTCookieHelper.ShouldSlide(LContext, FConfig) then
     SlideToken(LContext);
 end;
 
 initialization
+  FContextsLock := TCriticalSection.Create;
+  FContextsByThread := TObjectDictionary<TThreadID, TKJWTContextHolder>.Create([doOwnsValues]);
   TKAuthenticatorRegistry.Instance.RegisterClass('JWT', TKJWTAuthenticator);
 
 finalization
   TKAuthenticatorRegistry.Instance.UnregisterClass('JWT');
+  FreeAndNil(FContextsByThread);
+  FreeAndNil(FContextsLock);
 
 end.

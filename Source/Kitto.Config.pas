@@ -208,6 +208,17 @@ type
     class property Instance: TKConfig read GetInstance;
 
     /// <summary>
+    ///   Returns the framework-owned canonical singleton (the one created
+    ///   from FConfigClass on first access), bypassing the OnGetInstance
+    ///   hook. Use this when you specifically want the configured
+    ///   TKConfig subclass instance regardless of whether a redirector
+    ///   (e.g. KIDEX's project-config hook, or TKWebApplication's
+    ///   per-request hook) is currently installed. The hook-aware
+    ///   accessor is `Instance` above.
+    /// </summary>
+    class function GetCanonicalInstance: TKConfig; static;
+
+    /// <summary>
     ///   Returns the per-thread cached connection for the default database.
     ///   The connection is lazily created on first access and released by
     ///   ClearDatabase at the end of each web request (the engine does it
@@ -508,10 +519,12 @@ end;
 function TKConfig.CreateDBConnection(const ADatabaseName: string): TEFDBConnection;
 var
   LConfig: TEFNode;
+  LDatabaseNode: TEFNode;
 begin
   Result := GetDBAdapter(ADatabaseName).CreateDBConnection;
   try
-    Result.Config.AddChild(TEFNode.Clone(Config.GetNode('Databases/' + ADatabaseName + '/Connection')));
+    LDatabaseNode := Config.GetNode('Databases/' + ADatabaseName + '/Connection');
+    Result.Config.AddChild(TEFNode.Clone(LDatabaseNode));
     LConfig := Config.FindNode('Databases/' + ADatabaseName + '/Config');
     if Assigned(LConfig) then
       Result.Config.AddChild(TEFNode.Clone(LConfig));
@@ -710,6 +723,20 @@ end;
 function TKConfig.GetAppIcon: string;
 begin
   Result := Config.GetString('AppIcon', 'kitto_128');
+end;
+
+class function TKConfig.GetCanonicalInstance: TKConfig;
+begin
+  // Lazily allocate the framework-owned singleton, ignoring any hook.
+  // FConfigClass is set by SetConfigClass at unit init time (e.g. KIDEX
+  // sets it to TKideConfig). Used by code paths that need the configured
+  // subclass instance regardless of any active redirection — most
+  // notably TKideConfig.GetInstance, which returns the KIDEX-specific
+  // config even when a project's hook redirects TKConfig.Instance to
+  // a TProjectConfig.
+  if not Assigned(FInstance) then
+    FInstance := FConfigClass.Create;
+  Result := FInstance;
 end;
 
 class function TKConfig.GetInstance: TKConfig;

@@ -94,15 +94,15 @@ Auth: JWT
     IncludeDB: False
     IncludeDisplayName: True
     IncludeLanguage: True
-    # KEmployee uses AccessControl: Null (no permissions). Setting IncludeACL
-    # to True here would be wasted bytes in the cookie — leave it False.
-    IncludeACL: False
+    # The kx_acl claim is included automatically only when AccessControl
+    # below is set to JWT. KEmployee uses AccessControl: Null so the
+    # claim is omitted by the framework.
 
 AccessControl: Null
 
 Login:
   Controller:
-    Title: %Config:AppTitle% %APP_VERSION%
+    Title: %Config:AppTitle% %APP_VERSION_FULL%
     BorderPanel:
       NorthView:
         Controller: HtmlPanel

@@ -85,8 +85,9 @@ type
     /// Raw token compact form, kept for cookie refresh decisions.
     CompactToken: string;
     IsValid: Boolean;
-    /// ACL grant rows snapshotted at login time when Auth/Claims/IncludeACL=True.
-    /// Empty when the claim is absent.
+    /// ACL grant rows snapshotted at login time when AccessControl: JWT is
+    /// configured (the framework sets IncludeACL automatically based on the
+    /// configured access controller). Empty otherwise.
     Acl: TKJWTAclArray;
     HasAcl: Boolean;
     procedure Clear;
@@ -244,6 +245,7 @@ uses
   System.StrUtils,
   EF.StrUtils,
   EF.Logger,
+  Kitto.Config,
   Kitto.Web.Request,
   Kitto.Web.Response,
   JOSE.Core.Base,
@@ -623,7 +625,6 @@ begin
   FIncludeDB := True;
   FIncludeDisplayName := True;
   FIncludeLanguage := True;
-  FIncludeACL := False;
   LClaims := FAuthNode.FindNode('Claims');
   if Assigned(LClaims) then
   begin
@@ -631,8 +632,17 @@ begin
     FIncludeDB := LClaims.GetBoolean('IncludeDB', FIncludeDB);
     FIncludeDisplayName := LClaims.GetBoolean('IncludeDisplayName', FIncludeDisplayName);
     FIncludeLanguage := LClaims.GetBoolean('IncludeLanguage', FIncludeLanguage);
-    FIncludeACL := LClaims.GetBoolean('IncludeACL', FIncludeACL);
   end;
+
+  // IncludeACL is NOT user-configurable: it is fully derived from the
+  // configured AccessControl. The kx_acl claim is meaningful only when
+  // `AccessControl: JWT` consumes it; with any other controller
+  // (DB, Null, ...) snapshotting permission rows into the cookie would
+  // be wasted bytes and could leak unused grants. Tying the two settings
+  // together at parse time keeps the model unambiguous: the user picks the
+  // access controller, the framework picks the JWT shape.
+  FIncludeACL := SameText(
+    TKConfig.Instance.Config.GetExpandedString('AccessControl', ''), 'JWT');
 end;
 
 procedure TKJWTConfig.ResolveKey;

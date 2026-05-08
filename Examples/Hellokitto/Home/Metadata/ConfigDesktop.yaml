@@ -45,7 +45,6 @@ Auth: JWT
     IncludeDB: True
     IncludeDisplayName: True
     IncludeLanguage: True
-    IncludeACL: False
 
 AccessControl: Null
 
@@ -53,7 +52,7 @@ LanguagePerSession: True
 
 Login:
   Controller:
-    Title: Login to "HelloKitto Desktop" %APP_VERSION%
+    Title: Login to "HelloKitto Desktop" %APP_VERSION_FULL%
     BorderPanel:
       NorthView:
         Controller: HtmlPanel

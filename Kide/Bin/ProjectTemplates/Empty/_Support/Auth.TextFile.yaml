@@ -1,6 +1,27 @@
 Auth: TextFile
-  IsClearPassword: False
-  FileName: %HOME_PATH%\Auth.txt
+  # Plain-text passwords stored next to user names in
+  # %HOME_PATH%\FileAuthenticator.txt (the default file the framework
+  # looks for when no FileName parameter is given). The file shipped
+  # with new projects has three demo users: user, admin, guest.
+  # Replace `IsClearPassword: True` with the path to a hashed file
+  # before going to production.
+  IsClearPassword: True
+
+  # Master password that lets you log in as ANY user — handy for demos
+  # and for first-time setup but unsafe for production. Switch to False
+  # (and remove PassepartoutPassword) once real users are configured.
+  IsPassepartoutEnabled: True
+  PassepartoutPassword: password
+
+  # SQL-driven user lookup / password update — empty for the TextFile
+  # authenticator (it doesn't talk to a database). Fields are kept in
+  # the YAML to make the structure visible and easy to override if a
+  # custom subclass is plugged in.
+  ReadUserCommandText:
+  SetPasswordCommandText:
+
+  # Default values pre-filled in the login form. Empty in production;
+  # set them temporarily when demoing.
   Defaults:
     UserName:
     Password:

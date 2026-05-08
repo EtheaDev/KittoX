@@ -1,4 +1,4 @@
-unit UseKitto;
+﻿unit UseKitto;
 
 interface
 
@@ -6,12 +6,12 @@ uses
   {DB/ADO},
   {DB/FD},
   {DB/DBX},{AC}{Auth}
-  Kitto.Auth.DB,
-  Kitto.Localization.dxgettext,
-  Kitto.Ext.TilePanel,
   Kitto.Metadata.ModelImplementation,
   Kitto.Metadata.ViewBuilders,
-  Kitto.Ext.All
+  // Activates the file logger endpoint declared in Config.yaml under
+  // Log/TextFile (auto-registered via the unit's initialization).
+  EF.Logger.TextFile,
+  Kitto.Html.All
   ;
 
 implementation

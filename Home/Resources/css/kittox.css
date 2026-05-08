@@ -2650,6 +2650,13 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   border-right: none;
 }
 
+/* Restore right border / radius on the display when trigger buttons are
+   hidden in view mode (setMode toggles kx-btn-editmode visibility). */
+[data-mode="view"] .kx-form-lookup-display {
+  border-radius: 4px;
+  border-right: 1px solid var(--kx-input-border);
+}
+
 .kx-form-lookup-btn {
   display: inline-flex;
   align-items: center;

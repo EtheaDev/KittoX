@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -447,8 +447,15 @@ end;
 procedure TKXUploadFileController.ProcessUploadedFile(const AFile: TAbstractWebRequestFile);
 var
   LFileStream: TFileStream;
+  LFullName: string;
 begin
-  LFileStream := TFileStream.Create(TPath.Combine(Path, AFile.FileName), fmCreate or fmShareExclusive);
+  // No-op when Path is empty: subclasses that override and don't save to disk
+  // (e.g. TUploadExcelToolController) call inherited but have no Path.
+  if Path = '' then
+    Exit;
+  LFullName := TPath.Combine(Path, AFile.FileName);
+  ForceDirectories(ExtractFilePath(LFullName));
+  LFileStream := TFileStream.Create(LFullName, fmCreate or fmShareExclusive);
   try
     LFileStream.CopyFrom(AFile.Stream, 0);
   finally

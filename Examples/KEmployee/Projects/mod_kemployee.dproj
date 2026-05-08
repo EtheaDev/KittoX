@@ -40,7 +40,7 @@
         <SanitizedProjectName>mod_kemployee</SanitizedProjectName>
         <DCC_DUPLICATE_CTOR_DTOR>false</DCC_DUPLICATE_CTOR_DTOR>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KEmployee;FileVersion=4.0.0.0;InternalName=KEmployee;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KEmployee;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KEmployee;FileVersion=4.0.7.0;InternalName=KEmployee;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KEmployee;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>KEmployee_Icon.ico</Icon_MainIcon>
         <DCC_ExeOutput>D:\Apache24\htdocs\KittoX\App\KEmployee\Home</DCC_ExeOutput>
         <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
@@ -55,6 +55,7 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_Define>IBFB_SUPPORT;$(DCC_Define)</DCC_Define>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
+        <VerInfo_Release>7</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>

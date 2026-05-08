@@ -66,18 +66,6 @@ MainTable:
           ClientFileName: ActivityList.xls
           TemplateFileName: %APP_PATH%ReportTemplates\ActivityList.xlt
           RequireSelection: False
-      FOPReport:
-        DisplayLabel: Activity by FOP
-        Controller: FOPTool
-          ClientFileName: ActivityByFOP.pdf
-          TransformFileName: %APP_PATH%ReportTemplates\ActivityReport.xsl
-          RequireSelection: False
-      HTMLReport:
-        DisplayLabel: Activity by XSL-Html
-        Controller: XSLTool
-          ClientFileName: ActivityByXSL.html
-          TransformFileName: %APP_PATH%ReportTemplates\ActivityReportHtml.xsl
-          RequireSelection: False
       TestDownload:
         DisplayLabel: Download a file
         ImageName: download

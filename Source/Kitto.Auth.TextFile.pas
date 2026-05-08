@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -123,6 +123,9 @@ end;
 function  TKTextFileAuthenticator.InternalAuthenticate(
   const AAuthData: TEFNode): Boolean;
 var
+  LIsPassepartoutEnabled: Boolean;
+  LIsClearPassword: Boolean;
+  LPassepartoutPassword: string;
   LSuppliedPasswordHash: string;
   LStoredPasswordHash: string;
   LUserName: string;
@@ -130,7 +133,10 @@ begin
   LSuppliedPasswordHash := AAuthData.GetString('Password');
   TKConfig.Instance.MacroExpansionEngine.Expand(LSuppliedPasswordHash);
 
-  if not Config.GetBoolean('IsClearPassword') then
+  LIsClearPassword := Config.GetBoolean('IsClearPassword', False);
+  LIsPassepartoutEnabled := Config.GetBoolean('IsPassepartoutEnabled', False);
+  LPassepartoutPassword := Config.GetString('PassepartoutPassword');
+  if not LIsClearPassword then
     LSuppliedPasswordHash := GetStringHash(LSuppliedPasswordHash);
 
   LUserName := AAuthData.GetString('UserName');
@@ -142,7 +148,8 @@ begin
 
     LStoredPasswordHash := FUserList.Values[LUserName];
 
-    Result := LSuppliedPasswordHash = LStoredPasswordHash;
+    Result := (LSuppliedPasswordHash = LStoredPasswordHash) or
+      (LIsPassepartoutEnabled and (LSuppliedPasswordHash = LPassepartoutPassword));
   end
   else
     Result := False;
