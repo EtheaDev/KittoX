@@ -10,13 +10,22 @@ Auth: Null
 
 AccessControl: Null
 
-# Theme. Options: Mode = Light | Dark | Auto.
+# Theme. Mode = Auto (follow OS) | Light | Dark.
 # IconStyle = filled | outlined | round | sharp | two-tone.
 # IconSize = Small | Medium | Large.
+# UserSelection: True shows a ThemeSwitcher (only when Mode=Auto); the choice
+# is persisted per-app in the browser localStorage.
+# Add Light:/Dark: sub-nodes with a Primary-Color to colour each mode; with no
+# Primary-Color the framework's neutral slate palette is used.
 Theme:
   Mode: Auto
+  UserSelection: True
   IconStyle: outlined
   IconSize: Medium
+  #Light:
+  #  Primary-Color: SteelBlue
+  #Dark:
+  #  Primary-Color: SteelBlue
 
 # Default UI language. The runtime can switch language per session via
 # the Accept-Language header or the kx_lang cookie.
@@ -26,9 +35,10 @@ LanguageId: en
 # (such as iso-8859-1 for Western Europe). Defaults to utf-8.
 Charset: utf-8
 
-# AJAX timeout in seconds for HTMX and fetch channels. Applies to long
-# requests (e.g. heavy queries, exports). Default: 30.
-AjaxTimeout: 30
+# AJAX timeout in milliseconds for HTMX and fetch channels (passed verbatim
+# to htmx.config.timeout and to the fetch wrapper in kxgrid.js). Applies to
+# long requests (e.g. heavy queries, exports). Default: 100000 (100 s).
+AjaxTimeout: 100000
 
 # Initial UI: Home view + main menu. The Basic template ships a minimal
 # tree menu containing Logout and ChangePassword (under Views/MainMenu).

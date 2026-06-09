@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,7 +60,7 @@ type
     property ExcelRangeName: string read GetExcelRangeName;
     [YamlNode('TemplateFileName', 'Path to Excel template file')]
     property TemplateFileName: string read GetTemplateFileName;
-    [YamlNode('UseDisplayLabels', 'False', 'Use display labels instead of field names for column headers')]
+    [YamlNode('UseDisplayLabels', 'True', 'Use display labels instead of field names for column headers')]
     property UseDisplayLabels: boolean read GetUseDisplayLabels;
   end;
 

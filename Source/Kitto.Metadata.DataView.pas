@@ -152,9 +152,9 @@ type
     property DBNameOrExpression: string read GetDBNameOrExpression;
     property AllowedValues: TEFPairs read GetAllowedValues;
 
-    [YamlNode('CanInsert', 'True', 'Field is editable when inserting a new record')]
+    [YamlNode('CanInsert', 'False', 'Field is editable when inserting a new record')]
     property CanInsert: Boolean read GetCanInsert;
-    [YamlNode('CanUpdate', 'True', 'Field is editable when updating an existing record')]
+    [YamlNode('CanUpdate', 'False', 'Field is editable when updating an existing record')]
     property CanUpdate: Boolean read GetCanUpdate;
 
     /// <summary>
@@ -261,13 +261,13 @@ type
     property FieldName: string read GetFieldName;
 
     property IsKey: Boolean read GetIsKey;
-    [YamlNode('IsVisible', 'True', 'Field visibility in views')]
+    [YamlNode('IsVisible', 'False', 'Field visibility in views')]
     property IsVisible: Boolean read GetIsVisible;
     [YamlNode('IsRequired', 'Field is mandatory')]
     property IsRequired: Boolean read GetIsRequired;
-    [YamlNode('IsReadOnly', 'False', 'Field is not editable')]
+    [YamlNode('IsReadOnly', 'True', 'Field is not editable')]
     property IsReadOnly: Boolean read GetIsReadOnly;
-    [YamlNode('IsPassword', 'False', 'Mask input for password fields')]
+    [YamlNode('IsPassword', 'True', 'Mask input for password fields')]
     property IsPassword: Boolean read GetIsPassword;
     [YamlNode('EmptyAsNull', 'Convert empty input to NULL in the database')]
     property EmptyAsNull: Boolean read GetEmptyAsNull;
@@ -307,7 +307,7 @@ type
     property EditFormat: string read GetEditFormat;
     [YamlNode('DisplayFormat', 'Display format for rendering values')]
     property DisplayFormat: string read GetDisplayFormat;
-    [YamlNode('BlankValue', 'False', 'Hide field value when an image is displayed')]
+    [YamlNode('BlankValue', 'True', 'Hide field value when an image is displayed')]
     property BlankValue: Boolean read GetBlankValue;
     [YamlNode('AutoCompleteMinChars', '4', 'Minimum characters before autocomplete starts')]
     property AutoCompleteMinChars: Integer read GetAutoCompleteMinChars;
@@ -386,10 +386,10 @@ type
     /// </summary>
     function BuildSortClause(const AIsDescending: Boolean): string;
 
-    [YamlNode('IsPicture', 'False', 'Field contains image data')]
+    [YamlNode('IsPicture', 'True', 'Field contains image data')]
     property IsPicture: Boolean read GetIsPicture;
 
-    [YamlNode('UseSpeedButtons', 'False', 'Show spin buttons on integer input fields')]
+    [YamlNode('UseSpeedButtons', 'True', 'Show spin buttons on integer input fields')]
     property UseSpeedButtons: Boolean read GetUseSpeedButtons;
 
     function GetURLFieldName: string;
@@ -731,7 +731,7 @@ type
 
     function IsFieldVisible(const AField: TKViewField): Boolean;
 
-    [YamlNode('IsReadOnly', 'False', 'Table data is not editable')]
+    [YamlNode('IsReadOnly', 'True', 'Table data is not editable')]
     property IsReadOnly: Boolean read GetIsReadOnly;
 
     /// <summary>
@@ -820,7 +820,7 @@ type
     ///  view table level to override the setting in the model (for example if
     ///  the view table is filtered).
     /// </summary>
-    [YamlNode('IsLarge', 'False', 'Optimize for large datasets')]
+    [YamlNode('IsLarge', 'True', 'Optimize for large datasets')]
     property IsLarge: Boolean read GetIsLarge;
 
     [YamlSubNode('Controller', TKViewTableControllerConfig, 'List/form controller settings')]
@@ -1819,10 +1819,22 @@ end;
 
 function TKViewField.HasModelField: boolean;
 var
-  LModelField: TKModelField;
+  LCatalog: TKModels;
+  LModelName: string;
+  LModel: TKModel;
 begin
-  LModelField := Model.FindField(FieldName);
-  Result := Assigned(LModelField);
+  Result := False;
+  if not Assigned(Table) or not Assigned(Table.View) or
+     not Assigned(Table.View.Catalog) then
+    Exit;
+  LCatalog := Table.View.Catalog.Models;
+  LModelName := Table.ModelName;
+  if LModelName = '' then
+    Exit;
+  LModel := LCatalog.FindModel(LModelName);
+  if not Assigned(LModel) then
+    Exit;
+  Result := Assigned(LModel.FindField(FieldName));
 end;
 
 function TKViewField.HasServerSideRules: Boolean;
@@ -2005,10 +2017,12 @@ var
   LDataTypeName: string;
 begin
   LDataTypeName := GetString('DataType');
-  if LDataTypeName = '' then
+  if LDataTypeName <> '' then
+    Result := TEFDataTypeFactory.Instance.GetDataType(LDataTypeName)
+  else if HasModelField then
     Result := ModelField.DataType
   else
-    Result := TEFDataTypeFactory.Instance.GetDataType(LDataTypeName);
+    Result := TEFDataTypeFactory.Instance.GetDataType('String');
 end;
 
 function TKViewField.GetDBName: string;

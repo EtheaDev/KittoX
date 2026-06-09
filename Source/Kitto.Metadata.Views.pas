@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -143,10 +143,22 @@ type
     function ViewByNode(const ANode: TEFNode): TKView;
     function FindViewByNode(const ANode: TEFNode): TKView;
 
+    /// <summary>
+    ///  Reads the Views/ directory from disk and fills AList with all
+    ///  views found. AList is cleared first. If the catalog is not yet
+    ///  open it calls Open; if already open it calls Refresh, so each
+    ///  call reflects the current on-disk state.
+    /// </summary>
+    procedure GetViewList(const AList: TKViewList);
+
     property Models: TKModels read FModels;
     property Layouts: TKLayouts read GetLayouts;
     procedure Open; override;
+    procedure Refresh; override;
     procedure Close; override;
+  end;
+
+  TKLayoutList = class(TList<TKLayout>)
   end;
 
   /// <summary>
@@ -168,6 +180,14 @@ type
 
     function LayoutByNode(const ANode: TEFNode): TKLayout;
     function FindLayoutByNode(const ANode: TEFNode): TKLayout;
+
+    /// <summary>
+    ///  Reads the Layouts/ directory from disk and fills AList with all
+    ///  layouts found. AList is cleared first. If the catalog is not yet
+    ///  open it calls Open; if already open it calls Refresh, so each
+    ///  call reflects the current on-disk state.
+    /// </summary>
+    procedure GetLayoutList(const AList: TKLayoutList);
   end;
 
   /// <summary>
@@ -220,7 +240,7 @@ type
   private
     function GetIsInitiallyCollapsed: Boolean;
   public
-    [YamlNode('IsInitiallyCollapsed', 'False', 'Folder starts collapsed in tree view')]
+    [YamlNode('IsInitiallyCollapsed', 'True', 'Folder starts collapsed in tree view')]
     property IsInitiallyCollapsed: Boolean read GetIsInitiallyCollapsed;
     function FindView(const AViews: TKViews): TKView; override;
   end;
@@ -436,6 +456,20 @@ begin
   Result := ObjectCount;
 end;
 
+procedure TKViews.GetViewList(const AList: TKViewList);
+var
+  I: Integer;
+begin
+  Assert(Assigned(AList));
+  AList.Clear;
+  if not IsOpen then
+    Open
+  else
+    Refresh;
+  for I := 0 to ViewCount - 1 do
+    AList.Add(Views[I]);
+end;
+
 procedure TKViews.Open;
 begin
   Synchronize(
@@ -443,6 +477,17 @@ begin
     begin
       inherited;
       Layouts.Open;
+    end
+  );
+end;
+
+procedure TKViews.Refresh;
+begin
+  Synchronize(
+    procedure
+    begin
+      inherited;
+      Layouts.Refresh;
     end
   );
 end;
@@ -500,6 +545,20 @@ end;
 function TKLayouts.GetLayoutCount: Integer;
 begin
   Result := ObjectCount;
+end;
+
+procedure TKLayouts.GetLayoutList(const AList: TKLayoutList);
+var
+  I: Integer;
+begin
+  Assert(Assigned(AList));
+  AList.Clear;
+  if not IsOpen then
+    Open
+  else
+    Refresh;
+  for I := 0 to LayoutCount - 1 do
+    AList.Add(Layouts[I]);
 end;
 
 function TKLayouts.GetMetadataRegistry: TKMetadataRegistry;

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,7 @@ uses
   Kitto.Html.TreePanel,
   Kitto.Html.HtmlPanel,
   Kitto.Html.StatusBar,
+  Kitto.Html.ThemeSwitcher,
   Kitto.Html.ToolBar,
   Kitto.Html.Login,
   Kitto.Html.FormController,

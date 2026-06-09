@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.7 - 08 May 2026**
+**Latest Version 4.0.8 - 08 Jun 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -58,6 +58,21 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 
 # Release Notes
 
+## 08 Jun 2026: ver. 4.0.8 Beta
+
+### Theming
+- **User-selectable theme**: set `Theme/UserSelection: True` and drop a `Controller: ThemeSwitcher` anywhere in the GUI — the end user picks Light / Auto / Dark live, persisted per-app in `localStorage`, FOUC-safe boot, no page reload
+- **`Theme` is now a structured config block** discoverable by KIDE<sup>x</sup>: `Theme/Mode` (Auto/Light/Dark), shared font/icon settings, and per-mode `Light:`/`Dark:` palettes (each with its own `Primary-Color`) — replaces the old flat `Theme: <mode>` value (existing configs still load)
+
+### Login
+- Full-width footer and side-panel layout refinements; optional per-section theme switcher
+
+### KIDE<sup>x</sup>
+- Boolean `[YamlNode]` defaults now carry the inverse of the runtime default, so the "Add node" menu writes the meaningful value instead of a no-op
+
+### MCP-KittoX
+- Many new tools added — full CRUD on Models / Views / Layouts, database introspection (connections, tables, columns), config read/update, locale (`.po`) reading, metadata validation, and grid/list view scaffolding (40+ tools total, up from 16)
+
 ## 08 May 2026: ver. 4.0.7 Beta
 
 - `Controller/AutoOpen` and `Controller/PagingTools` based on model's `IsLarge` flag
@@ -75,10 +90,15 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 - **Three paths** to scaffold a new app: KIDEX standalone, the new IDE gallery, and `MCP-KittoX project_create_app`
 - New project default: `Auth: TextFile` with a ready-to-use `Home/FileAuthenticator.txt` (admin/admin demo accounts) so the generated app authenticates out of the box, no users table required. JWT envelope kept as default. `AccessControl` default switched to `Null` to avoid deny-all post-login on a brand-new project. `DB.FD.yaml` template now sets `ODBCAdvanced: TrustServerCertificate=yes` so SQL Server ODBC Driver 17/18 connects on first try
 - Model Wizard `Beautify names` option now also handles DB names with spaces (Northwind-style: `Quarterly Orders` → `QuarterlyOrders`, `Sales by Category` → `SalesByCategory`); the original name is preserved in `PhysicalName` for the SQL layer
+- Model Wizard — new editable **`DisplayLabel`** and **`Hint`** fields on every Add/Update Field action: auto-populated from the database's native column comment when present (MSSQL `MS_Description`, PostgreSQL `pg_description`, Firebird `RDB$DESCRIPTION`, MySQL `COLUMN_COMMENT`, Oracle `USER_COL_COMMENTS`), fully editable before Apply
+- Action "New TreeView..." on the Views folder is now **idempotent**: pointing it at an existing `MainMenu.yaml` merges the Models that aren't yet referenced under the `Folder: Menu` block, preserving every hand-edited entry, instead of raising a duplicate-object error
 
 ### MCP-KittoX
-- New tool **`models_create_from_db`** — the headless equivalent of the Model Wizard. AI agents (Claude Desktop, Claude Code, Codex, …) can reverse-engineer Models from a database connection conversationally: defaults to `dry_run: true` (preview only); pass `dry_run: false` to commit. Output is byte-identical to what the visual wizard writes
-- 9 tools now implemented (was 8)
+- New tool **`models_create_from_db`** — the headless equivalent of the Model Wizard. AI agents can reverse-engineer Models from a database connection conversationally: defaults to `dry_run: true` (preview only); pass `dry_run: false` to commit. Output is byte-identical to what the visual wizard writes. `DisplayLabel` auto-populated from the database's native column comments; optional `field_descriptions` array lets the agent inject labels from a non-DB source (CSV, glossary, prior YAML) with per-property override precedence
+- New tools **`models_list` / `models_read` / `views_list` / `views_read` / `resources_list` / `resources_read`** — enumerate and read project metadata and static resources headlessly
+- New tool **`menu_generate_main_menu`** — create or refresh `MainMenu.yaml` with one entry per Model under a top-level `Folder: Menu`; idempotent (existing entries preserved, only missing Models appended)
+- **Database column comments** are now auto-fetched for all 5 supported engines (MSSQL, PostgreSQL, Firebird, MySQL, Oracle) and flow into both the KIDEX wizard and the MCP tool
+- 16 tools now implemented (was 9)
 - Better error reporting from MCP tools: errors are now propagated verbatim to the JSON-RPC client (class name + message) instead of being replaced by a generic fallback
 
 ### Setup / tooling
@@ -103,12 +123,11 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 
 ## 23 Apr 2026: ver. 4.0.5 Beta
 
-### Architectural refactor: DB connection ownership unified in TKConfig
-- New public API `TKConfig.DatabaseFor(Name)`
+- Architectural refactor: DB connection ownership unified in `TKConfig`
+- New API `TKConfig.DatabaseFor(Name)` and `TKConfig.CreateStandaloneDBConnection(Name)`
 - `CreateDBConnection` moved from `public` to `protected`
-- New public API `TKConfig.CreateStandaloneDBConnection(Name)`
-- `ClearDatabase` and `DestroyInstance` now clear both** `FDatabase` and `FDatabases`
-- `InDBConnection` / `InDBTransaction` helpers
+- `ClearDatabase` / `DestroyInstance` now clear both `FDatabase` and `FDatabases`
+- New `InDBConnection` / `InDBTransaction` helpers
 
 ## 22 Apr 2026: ver. 4.0.4 Beta
 - Manual column resize in grids

@@ -52,15 +52,15 @@ type
     class function GetDefaultIncludeHeader: boolean; virtual;
     class function GetDefaultImageName: string; override;
   //published
-    [YamlNode('IncludeHeader', 'False', 'Include column headers in output')]
+    [YamlNode('IncludeHeader', 'True', 'Include column headers in output')]
     property IncludeHeader: boolean read GetIncludeHeader;
-    [YamlNode('FixedLength', 'True', 'Use fixed-length columns instead of delimited')]
+    [YamlNode('FixedLength', 'False', 'Use fixed-length columns instead of delimited')]
     property FixedLength: boolean read GetFixedLength;
     [YamlNode('Delimiter', ';', 'Column delimiter character')]
     property Delimiter: char read GetDelimiter;
     [YamlNode('QuoteChar', '"', 'Character used to quote field values')]
     property QuoteChar: char read GetQuoteChar;
-    [YamlNode('UseDisplayLabels', 'False', 'Use display labels instead of field names for headers')]
+    [YamlNode('UseDisplayLabels', 'True', 'Use display labels instead of field names for headers')]
     property UseDisplayLabels: boolean read GetUseDisplayLabels;
   end;
 
@@ -84,7 +84,7 @@ type
     class function GetDefaultIncludeHeader: boolean; virtual;
     class function GetDefaultImageName: string; override;
   //published
-    [YamlNode('IncludeHeader', 'True', 'Include XML header declaration')]
+    [YamlNode('IncludeHeader', 'False', 'Include XML header declaration')]
     property IncludeHeader: boolean read GetIncludeHeader;
   end;
 

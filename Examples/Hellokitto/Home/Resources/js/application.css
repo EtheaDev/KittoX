@@ -1,11 +1,15 @@
 /* This file is automatically included in all rendered pages. */
 /* Put extra CSS classes used in views here. */
+
+/* Row highlight tints — mixed with the theme surface so contrast against
+   --kx-text stays readable in both light and dark mode without overriding
+   the text colour. */
 .important-row
 {
-  background-color: #FFB2B2;
+  background-color: color-mix(in srgb, var(--kx-surface), #E0B020 30%);
 }
 
 .semi-important-row
 {
-  background-color: #FFEB99;
+  background-color: color-mix(in srgb, var(--kx-surface), #DC3C3C 30%);
 }

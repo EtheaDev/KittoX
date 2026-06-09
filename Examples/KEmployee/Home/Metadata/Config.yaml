@@ -114,6 +114,10 @@ Login:
               <p><H1>Firebird Employee Demo</H1></p>
               <p/>
             </div>
+      # User-selectable theme switcher under the form (Light / Auto / Dark).
+      # Renders only when Theme: Auto / UserSelection: True; otherwise no-op.
+      SouthView:
+        Controller: ThemeSwitcher
     ExtraWidth: 400
     LabelWidth: 150
     ExtraHeight: 210
@@ -127,10 +131,13 @@ Login:
 # Default: Home.
 #HomeView: Home
 
-#Theme: Auto
-Theme: Light
+# UserSelection: True shows the ThemeSwitcher (only honoured when Mode=Auto);
+# the choice is persisted per-app in localStorage (kx_theme:KEmployeeX).
+# No Primary-Color → neutral slate palette in both light and dark.
+Theme:
+  Mode: Auto
+  UserSelection: True
   IconStyle: outlined
-#Theme: Dark
 
 AjaxTimeout: 100000
 

@@ -148,6 +148,10 @@ Login:
               <p><img src="%IMAGE(hello_kitto_150)%"></img></p>
               <p/>
             </div>
+      # User-selectable theme switcher under the form (Light / Auto / Dark).
+      # Renders only when Theme: Auto / UserSelection: True; otherwise no-op.
+      SouthView:
+        Controller: ThemeSwitcher
     LabelWidth: 150
     EditWidth: 200
     ExtraHeight: 100
@@ -162,16 +166,16 @@ HomeView: Home
 #HomeView: HomeTiny
 #HomeView: HomeSmall
 
-#Theme: Auto
-Theme: Light
-  Primary-Color: FireBrick
+Theme:
+  Mode: Auto
+  UserSelection: True
   Font-Family: Comic Sans MS
   Font-Size: 12px
   IconStyle: filled
-.Theme: Dark
-  #Primary-Color: Gold
-  #Font-Family: Comic Sans MS
-  #Font-Size: 12px
+  Light:
+    Primary-Color: FireBrick
+  Dark:
+    Primary-Color: Gold
 
 AjaxTimeout: 100000
 

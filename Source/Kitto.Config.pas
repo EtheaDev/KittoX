@@ -98,6 +98,7 @@ type
     function GetUserFormats: TKUserFormatsConfig;
     function GetLogTextFile: TKLogTextFileConfig;
     function GetDesktop: TKDesktopConfig;
+    function GetTheme: TKThemeConfig;
   strict protected
     function GetUploadPath: string;
     function GetConfigFileName: string; override;
@@ -344,10 +345,10 @@ type
     [YamlNode('MultiFieldSeparator', '~', 'Separator for multi-field composite keys')]
     property MultiFieldSeparator: string read GetMultiFieldSeparator;
 
-    [YamlNode('LanguagePerSession', 'False', 'Allow language selection per session')]
+    [YamlNode('LanguagePerSession', 'True', 'Allow language selection per session')]
     property LanguagePerSession: Boolean read GetLanguagePerSession;
 
-    [YamlNode('UseAltLanguage', 'False', 'Enable alternate language for localizable labels')]
+    [YamlNode('UseAltLanguage', 'True', 'Enable alternate language for localizable labels')]
     property UseAltLanguage: Boolean read GetUseAltLanguage;
 
     /// <summary>
@@ -379,6 +380,9 @@ type
 
     [YamlSubNode('Desktop', TKDesktopConfig, 'Desktop embedded mode settings (window size, position, border icons)')]
     property Desktop: TKDesktopConfig read GetDesktop;
+
+    [YamlSubNode('Theme', TKThemeConfig, 'Colour theme: Mode (Auto/Light/Dark), UserSelection, fonts, icons, and per-mode Light/Dark palettes')]
+    property Theme: TKThemeConfig read GetTheme;
 
     /// <summary>Access to the current authenticator. Delegates to
     /// TKWebApplication.Current.Authenticator for backward compatibility
@@ -966,6 +970,11 @@ end;
 function TKConfig.GetDesktop: TKDesktopConfig;
 begin
   Result := nil; // RTTI discovery only
+end;
+
+function TKConfig.GetTheme: TKThemeConfig;
+begin
+  Result := nil; // RTTI discovery only — runtime uses TKThemeConfig class methods
 end;
 
 { TKConfigMacroExpander }

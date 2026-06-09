@@ -195,19 +195,23 @@ GoogleMapsApiKey: XYZ
 
 HomeView: Home
 
-#Theme: Auto
-  Font-Size: 12px
-  IconStyle: two-tone
-.Theme: Light
-  Primary-Color: Green
+# Single Theme node: Mode (default), shared settings, per-mode Light/Dark palettes.
+# - Mode: the startup mode (Auto follows the OS; Light/Dark fix the palette).
+# - UserSelection: True shows the ThemeSwitcher (only honoured when Mode=Auto);
+#   the choice is persisted per-app in localStorage (kx_theme:TaskittoX).
+# - Shared Font-*/IconStyle/IconSize apply to all modes (icons are server-side
+#   and do not change on a live switch).
+# - Light has Primary-Color: Green; Dark has none → dark uses the framework's
+#   neutral slate. Give Dark a Primary-Color to tint the dark chrome too.
+Theme:
+  Mode: Auto
+  UserSelection: True
   Font-Size: 12px
   IconStyle: two-tone
   IconSize: small
-Theme: Dark
-  #Primary-Color: White
-  Font-Size: 12px
-  IconStyle: two-tone
-  IconSize: medium
+  Light:
+    Primary-Color: Green
+  Dark:
 
 AjaxTimeout: 100000
 

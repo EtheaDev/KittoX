@@ -319,6 +319,7 @@ uses
   Kitto.Html.List,
   Kitto.Html.Filters,
   Kitto.Metadata.Models,
+  Kitto.Metadata.SubNodes,
   Kitto.Html.Form,
   Kitto.Html.Utils,
   Kitto.Html.Panel,
@@ -4827,142 +4828,9 @@ begin
     ReloadOrDisplayHomeView;
 end;
 
-function IsCssColorLight(const AColor: string): Boolean;
-var
-  LColor, LHex: string;
-  R, G, B: Integer;
-  LLuminance: Double;
-  LColorMap: TDictionary<string, string>;
-begin
-  LColor := LowerCase(Trim(AColor));
-  LHex := '';
-
-  // Handle hex colors directly
-  if (LColor <> '') and (LColor[1] = '#') then
-    LHex := LColor
-  else
-  begin
-    // Map common CSS named colors to hex for luminance computation
-    LColorMap := TDictionary<string, string>.Create;
-    try
-      // Yellows / Golds
-      LColorMap.Add('gold', '#FFD700');
-      LColorMap.Add('yellow', '#FFFF00');
-      LColorMap.Add('khaki', '#F0E68C');
-      LColorMap.Add('darkkhaki', '#BDB76B');
-      LColorMap.Add('goldenrod', '#DAA520');
-      LColorMap.Add('darkgoldenrod', '#B8860B');
-      // Oranges
-      LColorMap.Add('orange', '#FFA500');
-      LColorMap.Add('darkorange', '#FF8C00');
-      LColorMap.Add('coral', '#FF7F50');
-      LColorMap.Add('tomato', '#FF6347');
-      LColorMap.Add('orangered', '#FF4500');
-      // Reds
-      LColorMap.Add('red', '#FF0000');
-      LColorMap.Add('crimson', '#DC143C');
-      LColorMap.Add('firebrick', '#B22222');
-      LColorMap.Add('darkred', '#8B0000');
-      LColorMap.Add('maroon', '#800000');
-      // Pinks
-      LColorMap.Add('pink', '#FFC0CB');
-      LColorMap.Add('hotpink', '#FF69B4');
-      LColorMap.Add('deeppink', '#FF1493');
-      LColorMap.Add('salmon', '#FA8072');
-      LColorMap.Add('lightsalmon', '#FFA07A');
-      // Purples
-      LColorMap.Add('purple', '#800080');
-      LColorMap.Add('indigo', '#4B0082');
-      LColorMap.Add('darkviolet', '#9400D3');
-      LColorMap.Add('darkorchid', '#9932CC');
-      LColorMap.Add('mediumpurple', '#9370DB');
-      LColorMap.Add('slateblue', '#6A5ACD');
-      LColorMap.Add('darkslateblue', '#483D8B');
-      LColorMap.Add('violet', '#EE82EE');
-      LColorMap.Add('plum', '#DDA0DD');
-      LColorMap.Add('magenta', '#FF00FF');
-      LColorMap.Add('fuchsia', '#FF00FF');
-      // Blues
-      LColorMap.Add('blue', '#0000FF');
-      LColorMap.Add('darkblue', '#00008B');
-      LColorMap.Add('navy', '#000080');
-      LColorMap.Add('midnightblue', '#191970');
-      LColorMap.Add('royalblue', '#4169E1');
-      LColorMap.Add('dodgerblue', '#1E90FF');
-      LColorMap.Add('steelblue', '#4682B4');
-      LColorMap.Add('cornflowerblue', '#6495ED');
-      LColorMap.Add('deepskyblue', '#00BFFF');
-      LColorMap.Add('lightblue', '#ADD8E6');
-      LColorMap.Add('lightskyblue', '#87CEFA');
-      // Greens
-      LColorMap.Add('green', '#008000');
-      LColorMap.Add('darkgreen', '#006400');
-      LColorMap.Add('forestgreen', '#228B22');
-      LColorMap.Add('seagreen', '#2E8B57');
-      LColorMap.Add('olive', '#808000');
-      LColorMap.Add('olivedrab', '#6B8E23');
-      LColorMap.Add('darkolivegreen', '#556B2F');
-      LColorMap.Add('teal', '#008080');
-      LColorMap.Add('darkcyan', '#008B8B');
-      LColorMap.Add('lime', '#00FF00');
-      LColorMap.Add('limegreen', '#32CD32');
-      LColorMap.Add('lightgreen', '#90EE90');
-      LColorMap.Add('springgreen', '#00FF7F');
-      LColorMap.Add('aqua', '#00FFFF');
-      LColorMap.Add('cyan', '#00FFFF');
-      LColorMap.Add('turquoise', '#40E0D0');
-      // Browns
-      LColorMap.Add('brown', '#A52A2A');
-      LColorMap.Add('saddlebrown', '#8B4513');
-      LColorMap.Add('sienna', '#A0522D');
-      LColorMap.Add('chocolate', '#D2691E');
-      LColorMap.Add('peru', '#CD853F');
-      LColorMap.Add('tan', '#D2B48C');
-      LColorMap.Add('sandybrown', '#F4A460');
-      // Grays
-      LColorMap.Add('black', '#000000');
-      LColorMap.Add('dimgray', '#696969');
-      LColorMap.Add('gray', '#808080');
-      LColorMap.Add('darkgray', '#A9A9A9');
-      LColorMap.Add('silver', '#C0C0C0');
-      LColorMap.Add('lightgray', '#D3D3D3');
-      LColorMap.Add('white', '#FFFFFF');
-      LColorMap.Add('slategray', '#708090');
-      LColorMap.Add('darkslategray', '#2F4F4F');
-
-      if not LColorMap.TryGetValue(LColor, LHex) then
-      begin
-        Result := False; // Unknown color name: assume dark (safe for white text)
-        Exit;
-      end;
-    finally
-      LColorMap.Free;
-    end;
-  end;
-
-  // Parse hex to RGB
-  if Length(LHex) = 4 then // #RGB shorthand
-  begin
-    R := StrToIntDef('$' + LHex[2] + LHex[2], 0);
-    G := StrToIntDef('$' + LHex[3] + LHex[3], 0);
-    B := StrToIntDef('$' + LHex[4] + LHex[4], 0);
-  end
-  else if Length(LHex) >= 7 then // #RRGGBB
-  begin
-    R := StrToIntDef('$' + Copy(LHex, 2, 2), 0);
-    G := StrToIntDef('$' + Copy(LHex, 4, 2), 0);
-    B := StrToIntDef('$' + Copy(LHex, 6, 2), 0);
-  end
-  else
-  begin
-    Result := False;
-    Exit;
-  end;
-
-  // Perceived luminance (ITU-R BT.601)
-  LLuminance := 0.299 * R + 0.587 * G + 0.114 * B;
-  Result := LLuminance > 160;
-end;
+// NOTE: the former unit-level IsCssColorLight() and the inline theme-CSS
+// generation have been moved into TKThemeConfig (Kitto.Metadata.SubNodes),
+// so all theme reading/CSS lives behind the decorated Theme config class.
 
 procedure TKWebApplication.ServeHomePage(const ABodyContent: string);
 var
@@ -4972,107 +4840,21 @@ var
   LAppleIconLink: string;
   LManifestLink: string;
   LLoadingImageURL: string;
-  LTheme: string;
-  LThemeAttr: string;
   LThemeNode: TEFNode;
-  LPrimaryColor, LFontFamily, LFontSize: string;
+  LThemeAttr: string;
   LThemeStyle: string;
-  LChromeText, LChromeBlock, LFontBlock: string;
+  LThemeBoot: string;
 begin
-  // Build data-theme attribute from Config Theme setting
-  LTheme := LowerCase(Config.Config.GetString('Theme', 'Auto'));
-  if LTheme = 'light' then
-    LThemeAttr := ' data-theme="light"'
-  else if LTheme = 'dark' then
-    LThemeAttr := ' data-theme="dark"'
-  else
-    LThemeAttr := ''; // 'auto' or unset: no attribute, CSS @media handles it
-
-  // Build theme style overrides from Config Theme sub-nodes
-  LThemeStyle := '';
-  // Set icon style and default size from Theme config
+  // All theme reading + CSS generation is encapsulated in TKThemeConfig
+  // (Kitto.Metadata.SubNodes), so the Theme node is managed by the same
+  // decorated config-class pattern KIDEX discovers via RTTI. Here we just
+  // delegate. Icon style/size are applied server-side (they don't switch live).
   LThemeNode := Config.Config.FindNode('Theme');
-  if Assigned(LThemeNode) then
-  begin
-    SetIconStyle(LThemeNode.GetString('IconStyle', 'filled'));
-    SetDefaultIconSize(LThemeNode.GetString('IconSize', 'Medium'));
-  end
-  else
-  begin
-    SetIconStyle('filled');
-    SetDefaultIconSize('Medium');
-  end;
-
-  if Assigned(LThemeNode) then
-  begin
-    LPrimaryColor := LThemeNode.GetString('Primary-Color');
-    LFontFamily := LThemeNode.GetString('Font-Family');
-    LFontSize := LThemeNode.GetString('Font-Size');
-
-    if (LPrimaryColor <> '') or (LFontFamily <> '') or (LFontSize <> '') then
-    begin
-      // Font overrides (theme-independent, only in :root)
-      LFontBlock := '';
-      if LFontFamily <> '' then
-        LFontBlock := LFontBlock +
-          '--kx-font:"' + LFontFamily + '",sans-serif;';
-      if LFontSize <> '' then
-        LFontBlock := LFontBlock +
-          '--kx-font-size:' + LFontSize + ';';
-
-      // Chrome/accent block (shared between light and dark themes)
-      LChromeBlock := '';
-      if LPrimaryColor <> '' then
-      begin
-        // Determine chrome text color based on primary color luminance
-        if IsCssColorLight(LPrimaryColor) then
-          LChromeText := '#1a1a1a' // Dark text for light chrome backgrounds
-        else
-          LChromeText := '#ecf0f1'; // Light text for dark chrome backgrounds
-        LChromeBlock :=
-          // Chrome palette derived from Primary-Color via color-mix()
-          '--kx-chrome:' + LPrimaryColor + ';' +
-          '--kx-chrome-dark:color-mix(in srgb,' + LPrimaryColor + ',black 25%);' +
-          '--kx-chrome-hover:color-mix(in srgb,' + LPrimaryColor + ',white 15%);' +
-          '--kx-chrome-mid:color-mix(in srgb,' + LPrimaryColor + ',white 22%);' +
-          '--kx-chrome-light:color-mix(in srgb,' + LPrimaryColor + ',white 30%);' +
-          '--kx-chrome-text:' + LChromeText + ';' +
-          '--kx-chrome-btn-hover:' + IfThen(LChromeText = '#ecf0f1',
-            'rgba(255,255,255,0.15)', 'rgba(0,0,0,0.10)') + ';' +
-          // Status bar follows chrome
-          '--kx-status-bg:color-mix(in srgb,' + LPrimaryColor + ',black 25%);' +
-          '--kx-status-text:' + LChromeText + ';' +
-          '--kx-status-border:color-mix(in srgb,' + LPrimaryColor + ',black 40%);' +
-          // Accent = primary color
-          '--kx-accent:' + LPrimaryColor + ';' +
-          '--kx-accent-bg:color-mix(in srgb,' + LPrimaryColor + ',white 85%);' +
-          '--kx-accent-ring:color-mix(in srgb,' + LPrimaryColor + ' 15%,transparent);';
-      end;
-
-      // :root block — light theme: font + chrome + page text derived from primary
-      LThemeStyle := '<style>:root{' + LFontBlock + LChromeBlock;
-      if LPrimaryColor <> '' then
-        LThemeStyle := LThemeStyle +
-          // Page text derived from primary (very dark shade) — light theme only
-          '--kx-text:color-mix(in srgb,' + LPrimaryColor + ',black 60%);' +
-          '--kx-text-secondary:color-mix(in srgb,' + LPrimaryColor + ',black 40%);' +
-          '--kx-text-muted:color-mix(in srgb,' + LPrimaryColor + ',black 20%);' +
-          // Tree text follows page text
-          '--kx-tree-folder-text:color-mix(in srgb,' + LPrimaryColor + ',black 60%);' +
-          '--kx-tree-leaf-text:color-mix(in srgb,' + LPrimaryColor + ',black 60%);';
-      LThemeStyle := LThemeStyle + '}';
-
-      // Dark theme blocks — higher specificity, chrome+accent only (no page text override)
-      if LChromeBlock <> '' then
-        LThemeStyle := LThemeStyle +
-          // Explicit dark: html[data-theme="dark"] (specificity 0,1,1 > 0,1,0)
-          'html[data-theme="dark"]{' + LChromeBlock + '}' +
-          // Auto dark: same overrides within prefers-color-scheme media query
-          '@media(prefers-color-scheme:dark){:root:not([data-theme]){' + LChromeBlock + '}}';
-
-      LThemeStyle := LThemeStyle + '</style>';
-    end;
-  end;
+  SetIconStyle(TKThemeConfig.ResolveIconStyle(LThemeNode));
+  SetDefaultIconSize(TKThemeConfig.ResolveIconSize(LThemeNode));
+  LThemeAttr  := TKThemeConfig.DataThemeAttr(LThemeNode);
+  LThemeBoot  := TKThemeConfig.BuildBootScript(LThemeNode, TKConfig.AppName);
+  LThemeStyle := TKThemeConfig.BuildStyleBlock(LThemeNode);
 
   if Config.AppIcon <> '' then
   begin
@@ -5111,6 +4893,7 @@ begin
         ATemplate.SetData('loadingImageURL', TValue.From<string>(LLoadingImageURL));
         ATemplate.SetData('loadingMessage', TValue.From<string>(Format(_('Loading %s...'), [Config.AppTitle])));
         ATemplate.SetData('themeAttr', TValue.From<string>(LThemeAttr));
+        ATemplate.SetData('themeBoot', TValue.From<string>(LThemeBoot));
         ATemplate.SetData('themeStyle', TValue.From<string>(LThemeStyle));
         ATemplate.SetData('homeContent', TValue.From<string>(ABodyContent));
         ATemplate.SetData('ajaxTimeout', TValue.From<string>(

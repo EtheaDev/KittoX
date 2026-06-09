@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,13 +67,13 @@ type
     property TileWidth: string read GetTileWidth;
     [YamlNode('TileHeight', '50', 'Tile height in pixels or CSS units')]
     property TileHeight: string read GetTileHeight;
-    [YamlNode('ShowImage', 'False', 'Show icon images on tiles')]
+    [YamlNode('ShowImage', 'True', 'Show icon images on tiles')]
     property ShowImage: Boolean read GetShowImage;
     [YamlNode('ColorSet', 'Color set name (Blue/Red/Gold/Violet/Green/Metro/Theme)')]
     property ColorSet: string read GetColorSet;
     [YamlNode('TreeView', 'MainMenu', 'Name of the tree view to render as tiles')]
     property TreeViewName: string read GetTreeView;
-    [YamlNode('Border', 'False', 'Show border around tiles')]
+    [YamlNode('Border', 'True', 'Show border around tiles')]
     property BorderVisible: Boolean read GetBorderVisible;
     [YamlNode('BorderColor', '', 'Border color for individual tiles (e.g. #e18325)')]
     property BorderColor: string read GetBorderColor;

@@ -12,10 +12,15 @@ GROUP BY
 ;
 GO
 
+-- Total hours per activity type, used by the Hours-by-Type pie on the
+-- dashboard. SUM (not AVG): a pie chart represents proportions, so each
+-- slice must reflect the share of total hours invested per type. AVG of
+-- per-activity duration would yield ~uniform values (everyone clocks
+-- ~1-3h per task) and produce a near-equal-slice pie that says nothing.
 CREATE VIEW ACTIVITY_BY_TYPE (DURATION, TYPE_NAME)
-AS    
+AS
 SELECT
-  CAST(AVG(DATEDIFF(millisecond, A.START_TIME, A.END_TIME) / CAST(3600000 AS FLOAT)) AS DECIMAL(8,4)) DURATION, 
+  CAST(SUM(DATEDIFF(millisecond, A.START_TIME, A.END_TIME) / CAST(3600000 AS FLOAT)) AS DECIMAL(8,2)) DURATION,
   T.TYPE_NAME
 FROM ACTIVITY A
 join ACTIVITY_TYPE T on A.TYPE_ID = T.TYPE_ID

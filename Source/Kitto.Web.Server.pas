@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -143,7 +143,17 @@ begin
   LScheduler := TIdSchedulerOfThreadPool.Create(Self);
   LScheduler.PoolSize := AThreadPoolSize;
   Scheduler := LScheduler;
-  MaxConnections := LScheduler.PoolSize;
+  // MaxConnections must NOT be capped to PoolSize. With TIdSchedulerOfThreadPool,
+  // PoolSize only sets how many worker threads are kept warm in the pool — Indy
+  // spawns transient threads on demand beyond it. Setting MaxConnections =
+  // PoolSize artificially refuses the (PoolSize+1)-th concurrent connection and,
+  // worse, makes Indy close the excess socket (handle -> -1 = INVALID_SOCKET);
+  // a follow-up op on that closed handle raises a first-chance AV
+  // ("reading 0xFFFFFFFFFFFFFFFF") that Indy swallows internally — invisible
+  // standalone, but the native Win64 IDE debugger breaks on it. 0 = unlimited:
+  // the pool keeps PoolSize warm threads, never refuses a connection, no
+  // closed-socket AV. See KITTOX.md for the full diagnosis.
+  MaxConnections := 0;
 end;
 
 procedure TKWebServer.Setup(AConfig: TKConfig);

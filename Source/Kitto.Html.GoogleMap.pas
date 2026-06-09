@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    This file is part of KittoX Enterprise Edition.
@@ -103,19 +103,19 @@ type
     property SidebarPosition: string read GetSidebarPosition;
     [YamlNode('GoogleMap/SidebarWidth', '400', 'Sidebar width in pixels')]
     property SidebarWidth: Integer read GetSidebarWidth;
-    [YamlNode('GoogleMap/MapControls/Zoom', 'True', 'Show zoom control on map')]
+    [YamlNode('GoogleMap/MapControls/Zoom', 'False', 'Show zoom control on map')]
     property MapControlZoom: Boolean read GetMapControlZoom;
-    [YamlNode('GoogleMap/MapControls/MapType', 'True', 'Show map type control')]
+    [YamlNode('GoogleMap/MapControls/MapType', 'False', 'Show map type control')]
     property MapControlMapType: Boolean read GetMapControlMapType;
-    [YamlNode('GoogleMap/MapControls/FullScreen', 'True', 'Show fullscreen control')]
+    [YamlNode('GoogleMap/MapControls/FullScreen', 'False', 'Show fullscreen control')]
     property MapControlFullScreen: Boolean read GetMapControlFullScreen;
-    [YamlNode('GoogleMap/MapControls/StreetView', 'False', 'Show street view control')]
+    [YamlNode('GoogleMap/MapControls/StreetView', 'True', 'Show street view control')]
     property MapControlStreetView: Boolean read GetMapControlStreetView;
-    [YamlNode('GoogleMap/MapView/Traffic', 'False', 'Show traffic layer')]
+    [YamlNode('GoogleMap/MapView/Traffic', 'True', 'Show traffic layer')]
     property MapViewTraffic: Boolean read GetMapViewTraffic;
-    [YamlNode('GoogleMap/MapView/Bicycling', 'False', 'Show bicycling layer')]
+    [YamlNode('GoogleMap/MapView/Bicycling', 'True', 'Show bicycling layer')]
     property MapViewBicycling: Boolean read GetMapViewBicycling;
-    [YamlNode('GoogleMap/MapView/Markers', 'True', 'Show markers')]
+    [YamlNode('GoogleMap/MapView/Markers', 'False', 'Show markers')]
     property MapViewMarkers: Boolean read GetMapViewMarkers;
   end;
 

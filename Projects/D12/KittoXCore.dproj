@@ -49,7 +49,7 @@
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.0.7.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.0.8.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_Description>KittoX Core Run-Time Package</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
@@ -58,7 +58,7 @@
         <DllSuffix>$(Auto)</DllSuffix>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>7</VerInfo_Release>
+        <VerInfo_Release>8</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <BT_BuildType>Debug</BT_BuildType>
@@ -164,6 +164,7 @@
         <DCCReference Include="..\..\Source\Kitto.Html.TabPanel.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Html.TemplateDataPanel.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Html.TemplateEngine.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Html.ThemeSwitcher.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Html.ToolBar.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Html.Tools.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Html.TilePanel.pas"/>

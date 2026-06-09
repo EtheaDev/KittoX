@@ -1086,9 +1086,11 @@ begin
   // (FieldChanged → derived fields + AfterFieldChange rules). Small reference
   // fields rendered as <select> dispatch change natively; large references
   // (lookup dialog) call kxForm.notifyFieldChange from onLookupSelect.
+  // Passing 'this' lets the client filter out partial date/time values fired
+  // mid-typing by the browser (see kxForm._isCompleteDateTimeInput).
   if not LIsReadOnly and GetFieldNotifyChange(AViewField) then
     LCtx.ExtraAttrs := LCtx.ExtraAttrs +
-      ' onchange="kxForm.notifyFieldChange(''' + FViewName + ''',''' + LFieldName + ''')"';
+      ' onchange="kxForm.notifyFieldChange(''' + FViewName + ''',''' + LFieldName + ''',this)"';
   LCtx.CssInputClass := 'kx-form-input';
   LCtx.EffWidth := LEffWidth;
 

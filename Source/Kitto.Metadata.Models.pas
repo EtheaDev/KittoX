@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -279,32 +279,32 @@ type
     /// <summary>
     ///   Default visibility status of this field in views. Defaults to True.
     /// </summary>
-    [YamlNode('IsVisible', 'True', 'Field visibility in views')]
+    [YamlNode('IsVisible', 'False', 'Field visibility in views')]
     property IsVisible: Boolean read GetIsVisible;
 
     /// <summary>
     ///   Default read-only status of this field in views. Defaults to False.
     /// </summary>
-    [YamlNode('IsReadOnly', 'False', 'Field is not editable')]
+    [YamlNode('IsReadOnly', 'True', 'Field is not editable')]
     property IsReadOnly: Boolean read GetIsReadOnly;
 
     /// <summary>
     ///   A field computed on server side. At client side is not editable. Defaults to False.
     /// </summary
-    [YamlNode('IsComputed', 'False', 'Server-side computed field (not editable)')]
+    [YamlNode('IsComputed', 'True', 'Server-side computed field (not editable)')]
     property IsComputed: Boolean read GetIsComputed;
 
     /// <summary>
     ///   Returns True if the field is auto-generated at the database level,
     ///   such as an auto-increment field. Default is False.
     /// </summary>
-    [YamlNode('IsGenerated', 'False', 'Auto-generated at DB level (e.g. auto-increment)')]
+    [YamlNode('IsGenerated', 'True', 'Auto-generated at DB level (e.g. auto-increment)')]
     property IsGenerated: Boolean read GetIsGenerated;
 
-    [YamlNode('IsPassword', 'False', 'Mask input and enable hashed storage')]
+    [YamlNode('IsPassword', 'True', 'Mask input and enable hashed storage')]
     property IsPassword: Boolean read GetIsPassword;
 
-    [YamlNode('IsPicture', 'False', 'Blob field contains image data')]
+    [YamlNode('IsPicture', 'True', 'Blob field contains image data')]
     property IsPicture: Boolean read GetIsPicture;
 
     /// <summary>A field that is not a physical field but rather computed by a
@@ -319,7 +319,7 @@ type
     /// adding 'CanInsert: False' to its definition.</summary>
     /// <remarks>You can't make editable a field that is naturally non
     /// editable, such as an expression field.</remarks>
-    [YamlNode('CanInsert', 'True', 'Field is editable when inserting a new record')]
+    [YamlNode('CanInsert', 'False', 'Field is editable when inserting a new record')]
     property CanInsert: Boolean read GetCanInsert;
 
     /// <summary>Returns True if the field can be modified when editing an
@@ -328,7 +328,7 @@ type
     /// during update by adding 'CanUpdate: False' to its definition.</summary>
     /// <remarks>You can't make editable a field that is naturally non
     /// editable, such as an expression field.</remarks>
-    [YamlNode('CanUpdate', 'True', 'Field is editable when updating an existing record')]
+    [YamlNode('CanUpdate', 'False', 'Field is editable when updating an existing record')]
     property CanUpdate: Boolean read GetCanUpdate;
 
     /// <summary>Returns True if a field is natually editable. All fields
@@ -361,7 +361,7 @@ type
     property AllowedValues: TEFPairs read GetAllowedValues;
 
     /// <summary>
-    ///   Default label for this field in views. Defaults to a beautified�field
+    ///   Default label for this field in views. Defaults to a beautified field
     ///   name. The beautifying function can be customized.
     /// </summary>
     [YamlNode('DisplayLabel', '', 'Label shown in forms and grids', True)]
@@ -408,7 +408,7 @@ type
     ///   (otherwise both image and value are shown).
     ///   If no image is displayed, this property is ignored.
     /// </summary>
-    [YamlNode('BlankValue', 'False', 'Hide field value when an image is displayed')]
+    [YamlNode('BlankValue', 'True', 'Hide field value when an image is displayed')]
     property BlankValue: Boolean read GetBlankValue;
 
     /// <summary>
@@ -440,7 +440,7 @@ type
     /// </summary>
     property DefaultEmptyAsNull: Boolean read GetDefaultEmptyAsNull;
 
-    [YamlNode('IsKey', 'False', 'Field is part of the primary key')]
+    [YamlNode('IsKey', 'True', 'Field is part of the primary key')]
     property IsKey: Boolean read GetIsKey;
 
     [YamlContainer('Rules', TKRule, 'Business rules applied to this field')]
@@ -713,7 +713,7 @@ type
     /// <remarks>Not all reference fields have a ForeignKeyName set.</remarks>
     function FindReferenceField(const AForeignKeyName: string): TKModelField; overload;
 
-    [YamlNode('IsReadOnly', 'False', 'Model data is read-only')]
+    [YamlNode('IsReadOnly', 'True', 'Model data is read-only')]
     property IsReadOnly: Boolean read GetIsReadOnly;
 
     [YamlNode('DefaultFilter', 'SQL WHERE clause applied by default')]
@@ -724,7 +724,7 @@ type
     /// the cardinality of the underlying database table exceeds what you are
     /// comfortable to put in an Ajax response (typically a few hundred records,
     /// depending on the number and size of columns).</summary>
-    [YamlNode('IsLarge', 'False', 'Large dataset: use autocomplete instead of full combo')]
+    [YamlNode('IsLarge', 'True', 'Large dataset: use autocomplete instead of full combo')]
     property IsLarge: Boolean read GetIsLarge;
 
     /// <summary>
@@ -876,6 +876,14 @@ type
     ///  instead.
     /// </summary>
     function FindModelByPhysicalName(const APhysicalName: string): TKModel;
+
+    /// <summary>
+    ///  Reads the Models/ directory from disk and fills AList with all
+    ///  models found. AList is cleared first. If the catalog is not yet
+    ///  open it calls Open; if already open it calls Refresh, so each
+    ///  call reflects the current on-disk state.
+    /// </summary>
+    procedure GetModelList(const AList: TKModelList);
   end;
 
   TKModelRegistry = class(TKMetadataRegistry)
@@ -1791,7 +1799,7 @@ end;
 
 function TKModelField.CanActuallyModify: Boolean;
 begin
-  Result := (Expression = '') and not IsComputed;
+  Result := (Expression = '') and not IsComputed and not IsGenerated;
 end;
 
 function TKModelField.GetCanUpdate: Boolean;
@@ -1837,13 +1845,26 @@ var
   LIsKey: Boolean;
   LReferencedModel: string;
   LParentField: TKModelField;
+  LParentRefModel: TKModel;
   LDataType: string;
 begin
   if Assigned(Model) and Assigned(Model.Catalog) then
   begin
     LParentField := ParentField;
     if Assigned(LParentField) and LParentField.IsReference then
-      Result := LParentField.ReferencedModel.KeyFields[Index].GetActualDataType
+    begin
+      LParentRefModel := Model.Catalog.FindModel(LParentField.ReferencedModelName);
+      if Assigned(LParentRefModel) and (Index < LParentRefModel.KeyFieldCount) then
+        Result := LParentRefModel.KeyFields[Index].GetActualDataType
+      else
+      begin
+        GetFieldSpec(LDataType, LSize, LDecimalPrecision, LIsRequired, LIsKey, LReferencedModel);
+        if LDataType <> '' then
+          Result := TEFDataTypeFactory.Instance.GetDataType(LDataType)
+        else
+          Result := TEFDataTypeFactory.Instance.GetDataType('String');
+      end;
+    end
     else
     begin
       GetFieldSpec(LDataType, LSize, LDecimalPrecision, LIsRequired, LIsKey, LReferencedModel);
@@ -2250,6 +2271,20 @@ end;
 function TKModels.GetModelCount: Integer;
 begin
   Result := ObjectCount;
+end;
+
+procedure TKModels.GetModelList(const AList: TKModelList);
+var
+  I: Integer;
+begin
+  Assert(Assigned(AList));
+  AList.Clear;
+  if not IsOpen then
+    Open
+  else
+    Refresh;
+  for I := 0 to ModelCount - 1 do
+    AList.Add(Models[I]);
 end;
 
 function TKModels.GetModelRegistry: TKModelRegistry;

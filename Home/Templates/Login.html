@@ -3,12 +3,21 @@
     <div class="kx-login-header">
       <span class="kx-login-title">{{:title}}</span>
     </div>
-    {{:northContent$}}
     <form id="kx-login-form" class="kx-login-form" hx-post="kx/login" hx-target="#kx-login-status" hx-swap="innerHTML">
-      <div class="kx-login-fields">
-        {{:fieldsContent$}}
+      <div class="kx-login-body">
+        {{:westContent$}}
+        <div class="kx-login-center">
+          {{:northContent$}}
+          <div class="kx-login-fields">
+            {{:fieldsContent$}}
+          </div>
+          {{:linksContent$}}
+          {{:southContent$}}
+        </div>
+        {{:eastContent$}}
       </div>
-      {{:linksContent$}}
+      <!-- Full-width footer below the West|Center|East row: login status /
+           error on the left, the Login button on the right. -->
       <div class="kx-login-footer">
         <div id="kx-login-status" class="kx-login-status">
           <div class="kx-login-indicator htmx-indicator">
@@ -22,7 +31,6 @@
         </button>
       </div>
     </form>
-    {{:southContent$}}
   </div>
 </div>
 {{:scriptContent$}}

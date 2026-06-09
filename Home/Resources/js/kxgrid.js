@@ -1873,6 +1873,28 @@ var kxForm = {
   },
 
   /**
+   * Returns true if a date/time/datetime-local input holds a value the server
+   * can parse: empty (the user cleared the field) or a complete value with a
+   * year of at least 1000 (4 effective digits). Browsers — especially Firefox —
+   * fire 'change' while the user is still typing a date segment, producing
+   * values like '0002-07-01' that yield TDateTime out of range when sent to the
+   * server, triggering spurious rule errors. Mirrors the filter-grid guard in
+   * Kitto.Html.List.pas (hx-trigger="change[...]").
+   */
+  _isCompleteDateTimeInput: function(el) {
+    if (!el || !el.type) return true;
+    var v = el.value;
+    if (v === '' || v == null) return true;
+    if (el.type === 'date')
+      return /^[1-9]\d{3}-\d{2}-\d{2}$/.test(v);
+    if (el.type === 'time')
+      return v.length >= 5;
+    if (el.type === 'datetime-local')
+      return /^[1-9]\d{3}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v);
+    return true;
+  },
+
+  /**
    * Posts the current form to /kx/view/{view}/notify/{field}; the server applies
    * values, runs FieldChanged + AfterFieldChange rules, and returns JSON of the
    * fields whose value changed as a side effect. We then apply those values to
@@ -1880,14 +1902,24 @@ var kxForm = {
    * @param {string} viewName - Calling form's view name
    * @param {string} fieldName - The field that triggered the notification
    *   (matches the AliasedName used in the input id)
+   * @param {HTMLElement} [triggerEl] - The input that fired the change event
+   *   (optional). When passed, partial date/time/datetime-local values are
+   *   filtered out so the server never sees out-of-range TDateTime values.
    */
-  notifyFieldChange: function(viewName, fieldName) {
+  notifyFieldChange: function(viewName, fieldName, triggerEl) {
     var form = document.getElementById('kx-form-' + viewName);
     if (!form) return;
+    // Skip the whole cycle if the input that fired the event holds a partial
+    // date/time value: the user is still typing.
+    if (triggerEl && !kxForm._isCompleteDateTimeInput(triggerEl)) return;
     var body = new URLSearchParams();
     form.querySelectorAll('input, select, textarea').forEach(function(inp) {
       if (!inp.name) return;
       if (inp.type === 'file') return;
+      // Omit any other date/time/datetime-local input that holds a partial
+      // value: the server will preserve the record's current value instead of
+      // assigning an out-of-range TDateTime that would trip validation rules.
+      if (!kxForm._isCompleteDateTimeInput(inp)) return;
       if (inp.type === 'checkbox') body.append(inp.name, inp.checked ? 'true' : 'false');
       else body.append(inp.name, inp.value);
     });
@@ -2598,16 +2630,29 @@ var kxChart = {
   _instances: {},  // viewName -> Chart instance
 
   /**
+   * Resolves --kx-tree-leaf-text to an rgb() string via a DOM probe.
+   * Functional notations (color-mix(), oklch(), …) are not understood by
+   * Chart.js's @kurkle/color parser; reading via getComputedStyle on a
+   * temporary element forces the browser to compute the final rgb() value.
+   */
+  _resolveTextColor: function() {
+    var probe = document.createElement('div');
+    probe.style.color = 'var(--kx-tree-leaf-text,#333)';
+    probe.style.display = 'none';
+    document.body.appendChild(probe);
+    var c = getComputedStyle(probe).color || '#333';
+    document.body.removeChild(probe);
+    return c;
+  },
+
+  /**
    * Initializes a Chart.js chart on the canvas for the given view.
    * Destroys any previous instance (e.g. when tab is re-opened).
    */
   init: function(viewName, config) {
     var canvas = document.getElementById('kx-chart-canvas-' + viewName);
     if (!canvas) return;
-    // Read theme text color from CSS custom properties so charts match the theme
-    var textColor = getComputedStyle(document.documentElement)
-      .getPropertyValue('--kx-text').trim() || '#333';
-    Chart.defaults.color = textColor;
+    Chart.defaults.color = kxChart._resolveTextColor();
     // Destroy previous instance if it exists
     if (kxChart._instances[viewName]) {
       kxChart._instances[viewName].destroy();
@@ -2661,6 +2706,41 @@ var kxChart = {
     }
   }
 };
+
+// Live theme refresh: when the user toggles the theme via ThemeSwitcher
+// (kxtheme.js dispatches 'kx-theme-changed' on window) re-resolve the text
+// color and update every active Chart.js instance. requestAnimationFrame
+// gives the browser one frame to apply the new data-theme attribute before
+// probing computed styles. Chart.js v4 caches resolved color values per
+// instance at creation time, so changing Chart.defaults.color alone has no
+// effect on existing charts: we have to write the new color into each
+// instance's text-rendering options (legend / title / scale ticks / scale
+// titles) and then call update('none').
+window.addEventListener('kx-theme-changed', function() {
+  requestAnimationFrame(function() {
+    if (typeof Chart === 'undefined' || !kxChart._instances) return;
+    var c = kxChart._resolveTextColor();
+    Chart.defaults.color = c;
+    for (var name in kxChart._instances) {
+      var chart = kxChart._instances[name];
+      if (!chart || !chart.options) continue;
+      chart.options.color = c;
+      var p = chart.options.plugins;
+      if (p) {
+        if (p.legend && p.legend.labels) p.legend.labels.color = c;
+        if (p.title) p.title.color = c;
+      }
+      var scales = chart.options.scales;
+      if (scales) {
+        for (var s in scales) {
+          if (scales[s].ticks) scales[s].ticks.color = c;
+          if (scales[s].title) scales[s].title.color = c;
+        }
+      }
+      chart.update('none');
+    }
+  });
+});
 
 // kxDashboard — silent polling for views with Controller: Dashboard +
 // RefreshInterval > 0. Patches .kx-kpi-value textContent and updates Chart.js

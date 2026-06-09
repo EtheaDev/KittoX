@@ -16,12 +16,12 @@ Controller: BorderPanel
       CenterView:
         Controller: TreePanel
           TreeView: MainMenu
+      # User-selectable theme switcher at the bottom of the left menu panel
+      # (Light / Auto / Dark). Renders only when Theme: Auto /
+      # UserSelection: True; otherwise the band collapses.
       SouthView:
-        Controller: StatusBar
-          Text: | 
-            <center>Connected to: <b>%Config:DefaultDatabaseName%</b></center> 
-            <center>_(User: %Auth:UserName%)</center>
-        ImageName: person          
+        Height: 44
+        Controller: ThemeSwitcher
 
   CenterView:
     Controller: TabPanel
@@ -34,3 +34,12 @@ Controller: BorderPanel
   NorthView:
     Controller: ToolBar
       TreeView: MainMenu
+
+  # Status bar as a full-width bottom band (moved here from the menu's south
+  # so the menu south can host the theme switcher, matching TasKitto).
+  SouthView:
+    Controller: StatusBar
+      Text: |
+        <center>Connected to: <b>%Config:DefaultDatabaseName%</b></center>
+        <center>_(User: %Auth:UserName%)</center>
+      ImageName: person

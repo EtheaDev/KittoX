@@ -73,13 +73,13 @@ type
     [YamlNode('SortFieldNames', 'Comma-separated fields to sort within groups')]
     property SortFieldNames: string read GetSortFieldNames;
 
-    [YamlNode('EnableMenu', 'False', 'Show grouping context menu')]
+    [YamlNode('EnableMenu', 'True', 'Show grouping context menu')]
     property EnableMenu: Boolean read GetEnableMenu;
 
-    [YamlNode('StartCollapsed', 'False', 'Initially collapse all groups')]
+    [YamlNode('StartCollapsed', 'True', 'Initially collapse all groups')]
     property StartCollapsed: Boolean read GetStartCollapsed;
 
-    [YamlNode('ShowName', 'False', 'Display group field name in header')]
+    [YamlNode('ShowName', 'True', 'Display group field name in header')]
     property ShowName: Boolean read GetShowName;
 
     [YamlSubNode('ShowCount', TKGroupingShowCountConfig, 'Show count display options')]
@@ -137,7 +137,7 @@ type
     function GetCancelButton: TKFormControllerButtonConfig;
     function GetCloseButton: TKFormControllerButtonConfig;
   public
-    [YamlNode('KeepOpenAfterOperation', 'False', 'Keep form open after save/delete')]
+    [YamlNode('KeepOpenAfterOperation', 'True', 'Keep form open after save/delete')]
     property KeepOpenAfterOperation: Boolean read GetKeepOpenAfterOperation;
 
     [YamlNode('ButtonScale', 'CSS scale class for form buttons')]
@@ -181,7 +181,7 @@ type
     [YamlNode('Controller', 'Controller type for this tool')]
     property ControllerType: string read GetControllerType;
 
-    [YamlNode('RequireSelection', 'False', 'Require a selected record before executing')]
+    [YamlNode('RequireSelection', 'True', 'Require a selected record before executing')]
     property RequireSelection: Boolean read GetRequireSelection;
 
     [YamlNode('AutoRefresh', 'All', 'Refresh mode after execution: All, Current, None')]
@@ -246,19 +246,19 @@ type
     [YamlNode('RowClassProvider', 'Server-side function returning CSS class per row')]
     property RowClassProvider: string read GetRowClassProvider;
 
-    [YamlNode('AllowViewing', 'False', 'Show a read-only View button')]
+    [YamlNode('AllowViewing', 'True', 'Show a read-only View button')]
     property AllowViewing: Boolean read GetAllowViewing;
 
-    [YamlNode('PreventEditing', 'False', 'Hide the Edit button')]
+    [YamlNode('PreventEditing', 'True', 'Hide the Edit button')]
     property PreventEditing: Boolean read GetPreventEditing;
 
-    [YamlNode('PreventAdding', 'False', 'Hide the Add button')]
+    [YamlNode('PreventAdding', 'True', 'Hide the Add button')]
     property PreventAdding: Boolean read GetPreventAdding;
 
-    [YamlNode('PreventDeleting', 'False', 'Hide the Delete button')]
+    [YamlNode('PreventDeleting', 'True', 'Hide the Delete button')]
     property PreventDeleting: Boolean read GetPreventDeleting;
 
-    [YamlNode('AllowDuplicating', 'False', 'Show a Duplicate button')]
+    [YamlNode('AllowDuplicating', 'True', 'Show a Duplicate button')]
     property AllowDuplicating: Boolean read GetAllowDuplicating;
 
     [YamlSubNode('ToolViews', TKToolViewsConfig, 'Tool buttons and actions')]
@@ -297,7 +297,7 @@ type
     [YamlNode('Alignment', 'Text alignment: left, center, right')]
     property Alignment: string read GetAlignment;
 
-    [YamlNode('IsReadOnly', 'False', 'Force field to read-only in this layout')]
+    [YamlNode('IsReadOnly', 'True', 'Force field to read-only in this layout')]
     property IsReadOnly: Boolean read GetIsReadOnly;
 
     [YamlNode('DisplayFormat', 'Format string for display rendering')]
@@ -316,7 +316,7 @@ type
     [YamlNode('Title', 'FieldSet title')]
     property Title: string read GetTitle;
 
-    [YamlNode('Collapsible', 'False', 'Allow the fieldset to be collapsed')]
+    [YamlNode('Collapsible', 'True', 'Allow the fieldset to be collapsed')]
     property Collapsible: Boolean read GetCollapsible;
   end;
 

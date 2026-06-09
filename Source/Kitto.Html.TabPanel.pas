@@ -50,9 +50,9 @@ type
     function RenderChildren: string;
     function Render: string; override;
 
-    [YamlNode('TabIconsVisible', 'True', 'Show icons on tab buttons')]
+    [YamlNode('TabIconsVisible', 'False', 'Show icons on tab buttons')]
     property TabIconsVisible: Boolean read GetTabIconsVisible;
-    [YamlNode('TabsVisible', 'True', 'Show tab bar (False renders only the first tab)')]
+    [YamlNode('TabsVisible', 'False', 'Show tab bar (False renders only the first tab)')]
     property TabsVisible: Boolean read GetTabsVisible;
   end;
 

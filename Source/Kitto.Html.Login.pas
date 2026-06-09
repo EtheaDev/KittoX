@@ -45,8 +45,11 @@ type
     FLocalStorageAskUser: Boolean;
     FLocalStorageAutoLogin: Boolean;
     function GetAppName: string;
+    function RenderRegionContent(const ARegion, ACssClass: string): string;
     function RenderNorthContent: string;
     function RenderSouthContent: string;
+    function RenderWestContent: string;
+    function RenderEastContent: string;
     function RenderFields: string;
     function RenderLinks: string;
     function RenderLocalStorageCheckbox: string;
@@ -135,34 +138,43 @@ begin
     Result := Result + LStyle;
 end;
 
-function TKXLoginPanelController.RenderNorthContent: string;
+function TKXLoginPanelController.RenderRegionContent(const ARegion, ACssClass: string): string;
 var
-  LNorthNode: TEFNode;
+  LNode: TEFNode;
   LController: IKXController;
 begin
+  // Generic renderer for the four optional BorderPanel regions of the login
+  // dialog (NorthView / SouthView / WestView / EastView). Each hosts a single
+  // child controller (HtmlPanel with a logo, ThemeSwitcher, etc.). Returns ''
+  // when the region is not declared, so the template/CSS collapse it.
   Result := '';
-  LNorthNode := Config.FindNode('BorderPanel/NorthView/Controller');
-  if not Assigned(LNorthNode) then
+  LNode := Config.FindNode('BorderPanel/' + ARegion + '/Controller');
+  if not Assigned(LNode) then
     Exit;
 
-  LController := TKXControllerFactory.Instance.CreateController(View, nil, LNorthNode);
+  LController := TKXControllerFactory.Instance.CreateController(View, nil, LNode);
   LController.Display;
-  Result := '<div class="kx-login-north">' + LController.Render + '</div>';
+  Result := '<div class="' + ACssClass + '">' + LController.Render + '</div>';
+end;
+
+function TKXLoginPanelController.RenderNorthContent: string;
+begin
+  Result := RenderRegionContent('NorthView', 'kx-login-north');
 end;
 
 function TKXLoginPanelController.RenderSouthContent: string;
-var
-  LSouthNode: TEFNode;
-  LController: IKXController;
 begin
-  Result := '';
-  LSouthNode := Config.FindNode('BorderPanel/SouthView/Controller');
-  if not Assigned(LSouthNode) then
-    Exit;
+  Result := RenderRegionContent('SouthView', 'kx-login-south');
+end;
 
-  LController := TKXControllerFactory.Instance.CreateController(View, nil, LSouthNode);
-  LController.Display;
-  Result := '<div class="kx-login-south">' + LController.Render + '</div>';
+function TKXLoginPanelController.RenderWestContent: string;
+begin
+  Result := RenderRegionContent('WestView', 'kx-login-west');
+end;
+
+function TKXLoginPanelController.RenderEastContent: string;
+begin
+  Result := RenderRegionContent('EastView', 'kx-login-east');
 end;
 
 function TKXLoginPanelController.RenderFields: string;
@@ -470,6 +482,8 @@ var
   LDialogStyle: string;
   LNorthContent: string;
   LSouthContent: string;
+  LWestContent: string;
+  LEastContent: string;
   LFieldsContent: string;
   LLinksContent: string;
   LLoginLabel: string;
@@ -491,6 +505,8 @@ begin
   LDialogStyle := GetDialogStyle;
   LNorthContent := RenderNorthContent;
   LSouthContent := RenderSouthContent;
+  LWestContent := RenderWestContent;
+  LEastContent := RenderEastContent;
   LFieldsContent := RenderFields;
   LLinksContent := RenderLinks;
   LLoginLabel := _('Login');
@@ -521,6 +537,8 @@ begin
         ATemplate.SetData('dialogStyle', TValue.From<string>(LDialogStyle));
         ATemplate.SetData('northContent', TValue.From<string>(LNorthContent));
         ATemplate.SetData('southContent', TValue.From<string>(LSouthContent));
+        ATemplate.SetData('westContent', TValue.From<string>(LWestContent));
+        ATemplate.SetData('eastContent', TValue.From<string>(LEastContent));
         ATemplate.SetData('fieldsContent', TValue.From<string>(LFieldsContent));
         ATemplate.SetData('linksContent', TValue.From<string>(LLinksContent));
         ATemplate.SetData('loginLabel', TValue.From<string>(LLoginLabel));

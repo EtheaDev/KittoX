@@ -4,18 +4,33 @@
   FormPanel:
     UserName: Account/UserName
   BorderPanel:
-    NorthView:
+    # Logo + short app description + copyright on the LEFT of the form
+    # (WestView hosts a single controller, so it's all one HtmlPanel).
+    # Colours use var(--kx-text*) so they stay readable in both light and
+    # dark themes (a hardcoded color:white would vanish on a light surface).
+    WestView:
       Controller: HtmlPanel
-        Height: 110
         Html: |
-          <div style="text-align: center">
-            <center>
-              <p><img src="%IMAGE(taskitto_logo_150)%"></img></p>
-              <p><h3>%Config:AppTitle% %APP_VERSION_FULL%</h3></p>
-            </center>
-            <p/>
+          <div style="text-align: center; max-width: 200px;">
+            <img src="%IMAGE(taskitto_logo_150)%"></img>
+            <p style="margin: 14px 0 0; font-size: 13px; line-height: 1.5; color: var(--kx-text);">
+              <b>%Config:AppTitle%</b><br>
+              A sample activity-tracking application built with
+              Kitto<sup>x</sup> &mdash; HTMX, YAML metadata and
+              server-generated HTML.
+            </p>
+            <p style="margin: 18px 0 0; font-size: 11px; color: var(--kx-text-muted);">
+              &copy; 2012-2026 Ethea S.r.l.
+            </p>
           </div>
-  ExtraWidth: 400
+    # User-selectable theme switcher under the form, bottom-right
+    # (Light / Auto / Dark). Renders only when Config.yaml has
+    # Theme: Auto / UserSelection: True; otherwise this region is a no-op.
+    SouthView:
+      Controller: ThemeSwitcher
+  # Wider than a plain login: the WestView logo (~150px + padding) sits beside
+  # the form, so the dialog needs room for both. ~560 keeps the fields roomy.
+  ExtraWidth: 560
   LabelWidth: 150
   ExtraHeight: 120
   ResetPassword: True

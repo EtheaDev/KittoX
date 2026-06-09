@@ -147,6 +147,7 @@ type
     FDataType: TEFDataType;
     FSize: Integer;
     FScale: Integer;
+    FDescription, FFullDescription: string;
     function GetIsKey: Boolean;
     function GetIsForeignKey: Boolean;
   public
@@ -175,6 +176,14 @@ type
     ///	<summary>Returns True if the field is part of any of its table's foreign
     ///	keys.</summary>
     property IsForeignKey: Boolean read GetIsForeignKey;
+
+    ///	<summary>Returns the Description of the field
+    ///	provided by the Database layer.</summary>
+    property Description: string read FDescription write FDescription;
+
+    ///	<summary>Returns the Full Description of the field
+    ///	provided by the Database layer.</summary>
+    property FullDescription: string read FFullDescription write FFullDescription;
   end;
 
   ///	<summary>
@@ -385,7 +394,7 @@ type
 
   ///	<summary>Descendants of this class encapsulate differences among
   ///	different DB engines, mainly SQL dialect differences.</summary>
-  TEFDBMacroKind = (mkDateDiff, mkDateTimeFrom);
+  TEFDBMacroKind = (mkDateDiff, mkDateTimeFrom, mkExtract);
 
   TEFDBEngineType = class(TEFComponent)
   private
@@ -400,6 +409,13 @@ type
     ///	database-specific expression that combines a DATE and a TIME into a
     ///	single DATETIME/TIMESTAMP value. Override in each dialect subclass.</summary>
     function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; virtual;
+    ///	<summary>Translates %DB.EXTRACT(unit,expr)% into the database-specific
+    ///	expression that extracts a date/time component (year, month, day, hour,
+    ///	minute, second) from a date/time value. Default uses ANSI SQL syntax
+    ///	EXTRACT(unit FROM expr) — supported by PostgreSQL, Firebird, Oracle and
+    ///	MySQL. Override for dialects that lack EXTRACT (e.g. SQL Server uses
+    ///	DATEPART).</summary>
+    function ExpandExtract(const AUnit, AExpr: string): string; virtual;
     ///	<summary>SQL literal for a TRUE boolean value, dialect-specific.
     ///	Used by the %DB.TRUE% macro. Override in each dialect subclass.</summary>
     function GetBoolTrueLiteral: string; virtual;
@@ -460,6 +476,7 @@ type
   protected
     function ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string; override;
     function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; override;
+    function ExpandExtract(const AUnit, AExpr: string): string; override;
     function GetBoolTrueLiteral: string; override;
     function GetBoolFalseLiteral: string; override;
   public
@@ -1364,6 +1381,12 @@ begin
     Result := Format('EXTRACT(EPOCH FROM (%s - %s))', [AExpr2, AExpr1]); // SECOND
 end;
 
+function TEFDBEngineType.ExpandExtract(const AUnit, AExpr: string): string;
+begin
+  // Default: ANSI SQL — works on PostgreSQL, Firebird, Oracle, MySQL.
+  Result := Format('EXTRACT(%s FROM %s)', [UpperCase(AUnit), AExpr]);
+end;
+
 function TEFDBEngineType.ExpandParamMacro(const AText, APattern: string;
   const AKind: TEFDBMacroKind): string;
 var
@@ -1393,6 +1416,10 @@ begin
           LExpansion := ExpandDateTimeFrom(
             Trim(LMatch.Groups[1].Value),
             Trim(LMatch.Groups[2].Value));
+        mkExtract:
+          LExpansion := ExpandExtract(
+            Trim(LMatch.Groups[1].Value),
+            Trim(LMatch.Groups[2].Value));
       else
         LExpansion := LMatch.Value;
       end;
@@ -1412,6 +1439,7 @@ function TEFDBEngineType.ExpandCommandText(const ACommandText: string): string;
 const
   DATEDIFF_PATTERN      = '%DB\.DATEDIFF\(\s*(\w+)\s*,\s*([^,]+?)\s*,\s*(.+?)\s*\)%';
   DATETIME_FROM_PATTERN = '%DB\.DATETIME_FROM\(\s*([^,]+?)\s*,\s*(.+?)\s*\)%';
+  EXTRACT_PATTERN       = '%DB\.EXTRACT\(\s*(\w+)\s*,\s*(.+?)\s*\)%';
 begin
   Result := ReplaceText(ACommandText, '%DB.CURRENT_DATE%', 'current_date');
   Result := ReplaceText(Result, '%DB.FROM_DUAL%', 'FROM DUAL');
@@ -1419,6 +1447,7 @@ begin
   Result := ReplaceText(Result, '%DB.FALSE%', GetBoolFalseLiteral);
   Result := ExpandParamMacro(Result, DATEDIFF_PATTERN, mkDateDiff);
   Result := ExpandParamMacro(Result, DATETIME_FROM_PATTERN, mkDateTimeFrom);
+  Result := ExpandParamMacro(Result, EXTRACT_PATTERN, mkExtract);
 end;
 
 function TEFDBEngineType.FormatDateTime(const ADateTimeValue: TDateTime): string;
@@ -1460,6 +1489,14 @@ end;
 function TEFSQLServerDBEngineType.ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string;
 begin
   Result := Format('(CAST(%s AS datetime) + CAST(%s AS datetime))', [ADateExpr, ATimeExpr]);
+end;
+
+function TEFSQLServerDBEngineType.ExpandExtract(const AUnit, AExpr: string): string;
+begin
+  // SQL Server has no EXTRACT — DATEPART covers all the same units (year,
+  // quarter, month, dayofyear, day, week, weekday, hour, minute, second,
+  // millisecond) and accepts the unit as an unquoted identifier.
+  Result := Format('DATEPART(%s, %s)', [LowerCase(AUnit), AExpr]);
 end;
 
 function TEFSQLServerDBEngineType.GetBoolTrueLiteral: string;

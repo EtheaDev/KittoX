@@ -3202,9 +3202,10 @@ var
 begin
   if VarIsStr(AValue) then
   begin
+    LFormatSetting := TFormatSettings.Create('en-US');
     LFormatSetting.ShortDateFormat := 'yyyy-mm-dd';
     LFormatSetting.DateSeparator := '-';
-    Result := StrToDateTime(AValue, LFormatSetting);
+    Result := StrToDate(VarToStr(AValue), LFormatSetting);
   end
   else if VarIsNull(AValue) then
     Result := 0
@@ -3296,6 +3297,7 @@ var
 begin
   if VarIsStr(AValue) then
   begin
+    LFormatSetting := TFormatSettings.Create('en-US');
     LFormatSetting.ShortTimeFormat := 'hh:nn';
     LFormatSetting.LongTimeFormat := 'hh:nn:ss';
     LFormatSetting.TimeSeparator := ':';
@@ -3490,14 +3492,18 @@ end;
 
 function TEFDateDataType.ValueToString(const AValue: Variant): string;
 begin
- if VarIsNull(AValue) or VarIsEmpty(AValue) then
+  if VarIsNull(AValue) or VarIsEmpty(AValue) then
     Result := ''
+  else if VarIsStr(AValue) then
+    // Already textual — return as-is rather than re-parse via VarToDateTime.
+    Result := VarToStr(AValue)
   else
-//    try
-//      Result := DateToStr(AValue); //Use FormatSettings to convert Date To String
-//    except
+    try
+      // varDouble (produced by DateToValue) → format as date, not raw float.
+      Result := DateToStr(VarToDateTime(AValue));
+    except
       Result := EFVarToStr(AValue);
-//    end;
+    end;
 end;
 
 { TEFTimeDataType }
@@ -3555,12 +3561,15 @@ function TEFTimeDataType.ValueToString(const AValue: Variant): string;
 begin
   if VarIsNull(AValue) or VarIsEmpty(AValue) then
     Result := ''
+  else if VarIsStr(AValue) then
+    Result := VarToStr(AValue)
   else
-//    try
-//      Result := TimeToStr(AValue); //Use FormatSettings to convert Date To String
-//    except
+    try
+      // See TEFDateDataType.ValueToString for the rationale.
+      Result := TimeToStr(VarToDateTime(AValue));
+    except
       Result := EFVarToStr(AValue);
-//    end;
+    end;
 end;
 
 { TEFDateTimeDataType }
@@ -3626,12 +3635,15 @@ function TEFDateTimeDataType.ValueToString(const AValue: Variant): string;
 begin
   if VarIsNull(AValue) or VarIsEmpty(AValue) then
     Result := ''
+  else if VarIsStr(AValue) then
+    Result := VarToStr(AValue)
   else
-//    try
-//      Result := DateToStr(AValue); //Use FormatSettings to convert Date To String
-//    except
+    try
+      // See TEFDateDataType.ValueToString for the rationale.
+      Result := DateTimeToStr(VarToDateTime(AValue));
+    except
       Result := EFVarToStr(AValue);
-//    end;
+    end;
 end;
 
 { TEFBooleanDataType }

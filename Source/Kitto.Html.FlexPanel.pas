@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,7 +82,7 @@ type
   public
     [YamlNode('Direction', 'Row', 'Flex direction: Row, Column, RowReverse, ColumnReverse')]
     property Direction: string read FDirection write FDirection;
-    [YamlNode('Wrap', 'True', 'Enable flex wrapping')]
+    [YamlNode('Wrap', 'False', 'Enable flex wrapping')]
     property Wrap: Boolean read FWrap write FWrap;
     [YamlNode('Gap', 'Flex gap in pixels')]
     property Gap: Integer read FGap write FGap;

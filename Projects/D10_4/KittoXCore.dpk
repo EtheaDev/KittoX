@@ -113,6 +113,7 @@ contains
   Kitto.Html.TabPanel in '..\..\Source\Kitto.Html.TabPanel.pas',
   Kitto.Html.TemplateDataPanel in '..\..\Source\Kitto.Html.TemplateDataPanel.pas',
   Kitto.Html.TemplateEngine in '..\..\Source\Kitto.Html.TemplateEngine.pas',
+  Kitto.Html.ThemeSwitcher in '..\..\Source\Kitto.Html.ThemeSwitcher.pas',
   Kitto.Html.ToolBar in '..\..\Source\Kitto.Html.ToolBar.pas',
   Kitto.Html.Tools in '..\..\Source\Kitto.Html.Tools.pas',
   Kitto.Html.TilePanel in '..\..\Source\Kitto.Html.TilePanel.pas',

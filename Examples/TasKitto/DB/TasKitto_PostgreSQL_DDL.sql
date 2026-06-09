@@ -138,9 +138,13 @@ ALTER TABLE taskitto.project ADD CONSTRAINT dt_project_customer
 /********************* VIEWS **********************/
 
 -- Used by ACTIVITY_BY_TYPE model (no PhysicalName → view name must be activity_by_type)
+-- Total hours per activity type, used by the Hours-by-Type pie on the
+-- dashboard. SUM (not AVG) so the pie reflects share of total time per
+-- type — AVG of per-activity duration is ~uniform across types and would
+-- produce equal slices.
 CREATE VIEW taskitto.activity_by_type AS
 SELECT
-  CAST(AVG(EXTRACT(EPOCH FROM (a.end_time - a.start_time)) / 3600.0) AS DECIMAL(8,4)) AS duration,
+  CAST(SUM(EXTRACT(EPOCH FROM (a.end_time - a.start_time)) / 3600.0) AS DECIMAL(8,2)) AS duration,
   t.type_name
 FROM taskitto.activity a
 JOIN taskitto.activity_type t ON a.type_id = t.type_id

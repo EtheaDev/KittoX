@@ -21,6 +21,12 @@ Controller: BorderPanel
       CenterView:
         Controller: TreePanel
           TreeView: MainMenu
+      # User-selectable theme switcher at the bottom of the left menu panel.
+      # Renders only when Config.yaml has Theme: Auto / UserSelection: True;
+      # otherwise the controller emits nothing and the band collapses.
+      SouthView:
+        Height: 44
+        Controller: ThemeSwitcher
 
   CenterController: TabPanel
     Border: True

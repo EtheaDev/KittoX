@@ -49,9 +49,13 @@ INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('three',   
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('*',                            '*',      'VIEW,READ',                     '1');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('*',                            'admin',  'MODIFY,ADD,DELETE,RUN',         '1');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('*',                            'user',   'MODIFY,ADD,DELETE,RUN',         '1');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/Users',        'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/Users',        'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/ActivityInput','viewer', 'MODIFY,ADD,DELETE',             '0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/Users',             'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/Users',             'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_USER_ROLES',  'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_USER_ROLES',  'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_PERMISSIONS', 'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_PERMISSIONS', 'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/ActivityInput',     'viewer', 'MODIFY,ADD,DELETE',             '0');
 
 -- customer
 INSERT INTO taskitto.customer (customer_id, customer_name, address, city, phone, email, status) VALUES ('C001AA00000000000000000000000003', 'Blue Horizon Labs', 'viale Europa 15', 'BOLOGNA', '051-3344556', 'contact@bluehorizon.io', 'Active');

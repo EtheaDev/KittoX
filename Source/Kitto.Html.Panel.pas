@@ -105,23 +105,23 @@ type
     property Width: Integer read GetWidth write FWidth;
     [YamlNode('Height', 'Panel height in pixels (0 = auto)')]
     property Height: Integer read GetHeight write FHeight;
-    [YamlNode('IsModal', 'False', 'Show as dialog overlay (True for forms, False for lists)')]
+    [YamlNode('IsModal', 'True', 'Show as dialog overlay (True for forms, False for lists)')]
     property IsModal: Boolean read GetIsModal write FIsModal;
-    [YamlNode('Maximized', 'False', 'Dialog fills the entire viewport (default True on mobile)')]
+    [YamlNode('Maximized', 'True', 'Dialog fills the entire viewport (default True on mobile)')]
     property Maximized: Boolean read GetMaximized write FMaximized;
-    [YamlNode('AllowClose', 'True', 'Show close button in dialog and Close button in forms')]
+    [YamlNode('AllowClose', 'False', 'Show close button in dialog and Close button in forms')]
     property AllowClose: Boolean read FAllowClose write FAllowClose;
-    [YamlNode('Autoscroll', 'False', 'Enable scrollbars when content overflows')]
+    [YamlNode('Autoscroll', 'True', 'Enable scrollbars when content overflows')]
     property Autoscroll: Boolean read FAutoscroll write FAutoscroll;
-    [YamlNode('Resizable', 'True', 'Allow dialog resizing (when IsModal is True)')]
+    [YamlNode('Resizable', 'False', 'Allow dialog resizing (when IsModal is True)')]
     property Resizable: Boolean read FResizable write FResizable;
-    [YamlNode('Border', 'False', 'Show panel border')]
+    [YamlNode('Border', 'True', 'Show panel border')]
     property Border: Boolean read FBorder write FBorder;
-    [YamlNode('Header', 'False', 'Show panel header bar')]
+    [YamlNode('Header', 'True', 'Show panel header bar')]
     property Header: Boolean read FHeader write FHeader;
-    [YamlNode('Collapsible', 'False', 'Allow panel to be collapsed')]
+    [YamlNode('Collapsible', 'True', 'Allow panel to be collapsed')]
     property Collapsible: Boolean read FCollapsible write FCollapsible;
-    [YamlNode('Collapsed', 'False', 'Panel starts in collapsed state')]
+    [YamlNode('Collapsed', 'True', 'Panel starts in collapsed state')]
     property Collapsed: Boolean read FCollapsed write FCollapsed;
   end;
 

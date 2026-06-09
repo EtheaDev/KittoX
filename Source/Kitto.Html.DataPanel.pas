@@ -89,15 +89,15 @@ type
     /// <summary>Returns True if the action is visible AND the user has ACL permission.</summary>
     function IsActionAllowed(const AActionName: string): Boolean;
 
-    [YamlNode('PreventAdding', 'False', 'Hide the Add button')]
+    [YamlNode('PreventAdding', 'True', 'Hide the Add button')]
     property PreventAdding: Boolean read GetPreventAdding;
-    [YamlNode('PreventEditing', 'False', 'Hide the Edit button')]
+    [YamlNode('PreventEditing', 'True', 'Hide the Edit button')]
     property PreventEditing: Boolean read GetPreventEditing;
-    [YamlNode('PreventDeleting', 'False', 'Hide the Delete button')]
+    [YamlNode('PreventDeleting', 'True', 'Hide the Delete button')]
     property PreventDeleting: Boolean read GetPreventDeleting;
-    [YamlNode('AllowDuplicating', 'False', 'Show the Duplicate button')]
+    [YamlNode('AllowDuplicating', 'True', 'Show the Duplicate button')]
     property AllowDuplicating: Boolean read GetAllowDuplicating;
-    [YamlNode('AllowViewing', 'False', 'Show the View (read-only) button')]
+    [YamlNode('AllowViewing', 'True', 'Show the View (read-only) button')]
     property AllowViewing: Boolean read GetAllowViewing;
   end;
 

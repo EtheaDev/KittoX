@@ -19,6 +19,7 @@ Defaults:
       Item: View
 Authentication:
   Authenticators:
+    Item: JWT
     Item: DB
     Item: DBServer
     Item: OSDB
@@ -27,10 +28,6 @@ AccessControl:
   AccessControllers:
     Item: JWT
     Item: DB
-Theme:
-  Item: Auto
-  Item: Dark
-  Item: Light
 LanguageIds:
   item: en
   item: it

@@ -171,10 +171,14 @@ FROM ACTIVITY A
 GROUP BY
   ACTIVITY_DATE
 ;
+-- Total hours per activity type, used by the Hours-by-Type pie on the
+-- dashboard. SUM (not AVG) so the pie reflects share of total time per
+-- type — AVG of per-activity duration is ~uniform across types and would
+-- produce equal slices.
 CREATE VIEW ACTIVITY_BY_TYPE (DURATION, TYPE_NAME)
 AS
 SELECT
-  CAST(AVG(DATEDIFF(millisecond, A.START_TIME, A.END_TIME) / CAST(3600000 AS FLOAT)) AS DECIMAL(8,4)) DURATION,
+  CAST(SUM(DATEDIFF(millisecond, A.START_TIME, A.END_TIME) / CAST(3600000 AS FLOAT)) AS DECIMAL(8,2)) DURATION,
   T.TYPE_NAME
 FROM ACTIVITY A
 join ACTIVITY_TYPE T on A.TYPE_ID = T.TYPE_ID

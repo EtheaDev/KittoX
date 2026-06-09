@@ -1,4 +1,7 @@
 <style type="text/css">
+body{
+  font-family: Arial, Helvetica, sans-serif;
+}
 code{
   font-family: "Consolas", monospace;
 }
@@ -32,7 +35,7 @@ td{
 <h1>Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX</h1>
 <p><a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg" alt="Core License"/></a>
 <a href="KittoLicensing"><img src="https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg" alt="Enterprise License"/></a></p>
-<p><strong>Latest Version 4.0.7 - 08 May 2026</strong></p>
+<p><strong>Latest Version 4.0.8 - 08 Jun 2026</strong></p>
 <p><img src="./images/kittoX_logo_200.png" alt="KittoX_logo.png"/></p>
 <p><strong>Kitto<sup>x</sup></strong> allows to create <strong>Rich Internet Applications</strong> based on a data model that can be mapped onto any database. The client-side part uses <strong>HTMX</strong> (through webbroker technology) to create a fully <strong>AJAX</strong> application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.</p>
 <p><strong>Kitto<sup>x</sup></strong> is aimed at <strong>Delphi</strong> developers that need to create web or mobile applications without delving into the intricacies of HTML, CSS or Javascript, yet it allows access to the bare metal if required.</p>
@@ -73,6 +76,24 @@ td{
 <p>Visit <a href="https://ethea.it/Kitto-Demo/">this site</a> for online demos.</p>
 <hr />
 <h1>Release Notes</h1>
+<h2>08 Jun 2026: ver. 4.0.8 Beta</h2>
+<h3>Theming</h3>
+<ul>
+<li><strong>User-selectable theme</strong>: set <code>Theme/UserSelection: True</code> and drop a <code>Controller: ThemeSwitcher</code> anywhere in the GUI — the end user picks Light / Auto / Dark live, persisted per-app in <code>localStorage</code>, FOUC-safe boot, no page reload</li>
+<li><strong><code>Theme</code> is now a structured config block</strong> discoverable by KIDE<sup>x</sup>: <code>Theme/Mode</code> (Auto/Light/Dark), shared font/icon settings, and per-mode <code>Light:</code>/<code>Dark:</code> palettes (each with its own <code>Primary-Color</code>) — replaces the old flat <code>Theme: &lt;mode&gt;</code> value (existing configs still load)</li>
+</ul>
+<h3>Login</h3>
+<ul>
+<li>Full-width footer and side-panel layout refinements; optional per-section theme switcher</li>
+</ul>
+<h3>KIDE<sup>x</sup></h3>
+<ul>
+<li>Boolean <code>[YamlNode]</code> defaults now carry the inverse of the runtime default, so the &ldquo;Add node&rdquo; menu writes the meaningful value instead of a no-op</li>
+</ul>
+<h3>MCP-KittoX</h3>
+<ul>
+<li>Many new tools added — full CRUD on Models / Views / Layouts, database introspection (connections, tables, columns), config read/update, locale (<code>.po</code>) reading, metadata validation, and grid/list view scaffolding (40+ tools total, up from 16)</li>
+</ul>
 <h2>08 May 2026: ver. 4.0.7 Beta</h2>
 <ul>
 <li><code>Controller/AutoOpen</code> and <code>Controller/PagingTools</code> based on model's <code>IsLarge</code> flag</li>
@@ -92,11 +113,16 @@ td{
 <li><strong>Three paths</strong> to scaffold a new app: KIDEX standalone, the new IDE gallery, and <code>MCP-KittoX project_create_app</code></li>
 <li>New project default: <code>Auth: TextFile</code> with a ready-to-use <code>Home/FileAuthenticator.txt</code> (admin/admin demo accounts) so the generated app authenticates out of the box, no users table required. JWT envelope kept as default. <code>AccessControl</code> default switched to <code>Null</code> to avoid deny-all post-login on a brand-new project. <code>DB.FD.yaml</code> template now sets <code>ODBCAdvanced: TrustServerCertificate=yes</code> so SQL Server ODBC Driver 17/18 connects on first try</li>
 <li>Model Wizard <code>Beautify names</code> option now also handles DB names with spaces (Northwind-style: <code>Quarterly Orders</code> → <code>QuarterlyOrders</code>, <code>Sales by Category</code> → <code>SalesByCategory</code>); the original name is preserved in <code>PhysicalName</code> for the SQL layer</li>
+<li>Model Wizard — new editable <strong><code>DisplayLabel</code></strong> and <strong><code>Hint</code></strong> fields on every Add/Update Field action: auto-populated from the database's native column comment when present (MSSQL <code>MS_Description</code>, PostgreSQL <code>pg_description</code>, Firebird <code>RDB$DESCRIPTION</code>, MySQL <code>COLUMN_COMMENT</code>, Oracle <code>USER_COL_COMMENTS</code>), fully editable before Apply</li>
+<li>Action &ldquo;New TreeView&hellip;&rdquo; on the Views folder is now <strong>idempotent</strong>: pointing it at an existing <code>MainMenu.yaml</code> merges the Models that aren't yet referenced under the <code>Folder: Menu</code> block, preserving every hand-edited entry, instead of raising a duplicate-object error</li>
 </ul>
 <h3>MCP-KittoX</h3>
 <ul>
-<li>New tool <strong><code>models_create_from_db</code></strong> — the headless equivalent of the Model Wizard. AI agents (Claude Desktop, Claude Code, Codex, …) can reverse-engineer Models from a database connection conversationally: defaults to <code>dry_run: true</code> (preview only); pass <code>dry_run: false</code> to commit. Output is byte-identical to what the visual wizard writes</li>
-<li>9 tools now implemented (was 8)</li>
+<li>New tool <strong><code>models_create_from_db</code></strong> — the headless equivalent of the Model Wizard. AI agents can reverse-engineer Models from a database connection conversationally: defaults to <code>dry_run: true</code> (preview only); pass <code>dry_run: false</code> to commit. Output is byte-identical to what the visual wizard writes. <code>DisplayLabel</code> auto-populated from the database's native column comments; optional <code>field_descriptions</code> array lets the agent inject labels from a non-DB source (CSV, glossary, prior YAML) with per-property override precedence</li>
+<li>New tools <strong><code>models_list</code> / <code>models_read</code> / <code>views_list</code> / <code>views_read</code> / <code>resources_list</code> / <code>resources_read</code></strong> — enumerate and read project metadata and static resources headlessly</li>
+<li>New tool <strong><code>menu_generate_main_menu</code></strong> — create or refresh <code>MainMenu.yaml</code> with one entry per Model under a top-level <code>Folder: Menu</code>; idempotent (existing entries preserved, only missing Models appended)</li>
+<li><strong>Database column comments</strong> are now auto-fetched for all 5 supported engines (MSSQL, PostgreSQL, Firebird, MySQL, Oracle) and flow into both the KIDEX wizard and the MCP tool</li>
+<li>16 tools now implemented (was 9)</li>
 <li>Better error reporting from MCP tools: errors are now propagated verbatim to the JSON-RPC client (class name + message) instead of being replaced by a generic fallback</li>
 </ul>
 <h3>Setup / tooling</h3>
@@ -122,13 +148,12 @@ td{
 <li><code>EF.Logger.TextFile</code> active out-of-the-box for the standalone Indy hosts</li>
 </ul>
 <h2>23 Apr 2026: ver. 4.0.5 Beta</h2>
-<h3>Architectural refactor: DB connection ownership unified in TKConfig</h3>
 <ul>
-<li>New public API <code>TKConfig.DatabaseFor(Name)</code></li>
+<li>Architectural refactor: DB connection ownership unified in <code>TKConfig</code></li>
+<li>New API <code>TKConfig.DatabaseFor(Name)</code> and <code>TKConfig.CreateStandaloneDBConnection(Name)</code></li>
 <li><code>CreateDBConnection</code> moved from <code>public</code> to <code>protected</code></li>
-<li>New public API <code>TKConfig.CreateStandaloneDBConnection(Name)</code></li>
-<li><code>ClearDatabase</code> and <code>DestroyInstance</code> now clear both** <code>FDatabase</code> and <code>FDatabases</code></li>
-<li><code>InDBConnection</code> / <code>InDBTransaction</code> helpers</li>
+<li><code>ClearDatabase</code> / <code>DestroyInstance</code> now clear both <code>FDatabase</code> and <code>FDatabases</code></li>
+<li>New <code>InDBConnection</code> / <code>InDBTransaction</code> helpers</li>
 </ul>
 <h2>22 Apr 2026: ver. 4.0.4 Beta</h2>
 <ul>
