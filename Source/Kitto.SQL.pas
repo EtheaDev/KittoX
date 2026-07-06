@@ -44,6 +44,14 @@ type
     FAddedFKColumns: TStringList;
     FViewTable: TKViewTable;
     FModel: TKModel;
+    // DB engine type of the connection the current statement is being built
+    // for; provides DelimitIdentifier. Set at the start of each build method,
+    // cleared by Clear. May be nil → DelimitId is then a no-op.
+    FDBEngineType: TEFDBEngineType;
+    // Wraps a bare identifier (or dotted multi-part identifier) in the
+    // dialect-specific delimiters when the connection has DelimitedIdent on;
+    // returns it unchanged otherwise. Never pass expressions/free SQL here.
+    function DelimitId(const AName: string): string;
     procedure Clear;
     procedure AddSelectTerm(const ATerm: string);
     procedure AddReferenceFieldTerms(const AViewField: TKViewField);
@@ -205,6 +213,7 @@ begin
 
   Clear;
   FViewTable := AViewTable;
+  FDBEngineType := ADBQuery.Connection.DBEngineType;
   for I := 0 to AViewTable.FieldCount - 1 do
   begin
     if AViewTable.Fields[I].IsReference then
@@ -252,6 +261,7 @@ begin
 
   Clear;
   FViewTable := AViewTable;
+  FDBEngineType := ADBQuery.Connection.DBEngineType;
   for I := 0 to AViewTable.FieldCount - 1 do
   begin
     if AViewTable.Fields[I].IsReference then
@@ -289,11 +299,16 @@ begin
 
   Clear;
   FModel := AModel;
+  FDBEngineType := ADBQuery.Connection.DBEngineType;
 
   FModel.EnumPhysicalFields(
     procedure (AField: TKModelField)
     begin
-      AddSelectTerm(AField.AliasedDBColumnNameOrExpression);
+      // Bare physical column (or expression, left untouched).
+      if AField.Expression <> '' then
+        AddSelectTerm(AField.AliasedDBColumnNameOrExpression)
+      else
+        AddSelectTerm(DelimitId(AField.DBColumnName));
     end);
 
   if ADBQuery.Prepared then
@@ -304,7 +319,7 @@ begin
     ExpandQualification(FSelectTerms, AModel.DBTableName);
     LWhereClause := GetModelKeyWhereClause(AModel, ADBQuery);
     ExpandQualification(LWhereClause, AModel.DBTableName);
-    LCommandText := 'select ' + FSelectTerms + ' from ' + AModel.DBTableName + ' where ' + LWhereClause;
+    LCommandText := 'select ' + FSelectTerms + ' from ' + DelimitId(AModel.DBTableName) + ' where ' + LWhereClause;
     TEFMacroExpansionEngine.Instance.Expand(LCommandText);
     ADBQuery.CommandText := LCommandText;
   finally
@@ -324,6 +339,7 @@ begin
 
   Clear;
   FViewTable := AViewTable;
+  FDBEngineType := ADBQuery.Connection.DBEngineType;
 { TODO :
 Process all fields to build the from clause. A future refactoring might
 build only those that affect the count (inner joins). }
@@ -399,8 +415,9 @@ var
   begin
     if LAddedColumns.IndexOf(ADBColumnName) < 0 then
     begin
+      // Dedup on the raw column name; emit the delimited name into the SQL.
       AddDBColumnName(LDBColumnNames, LValueNames, ADBCommand,
-        ADBColumnName, AParamName);
+        DelimitId(ADBColumnName), AParamName);
       LAddedColumns.Add(ADBColumnName);
     end;
   end;
@@ -409,12 +426,13 @@ begin
   Assert(Assigned(ADBCommand));
   Assert(Assigned(ARecord));
 
+  FDBEngineType := ADBCommand.Connection.DBEngineType;
   if ADBCommand.Prepared then
     ADBCommand.Prepared := False;
   ADBCommand.Params.BeginUpdate;
   try
     ADBCommand.Params.Clear;
-    LCommandText := 'insert into ' + ARecord.ViewTable.Model.DBTableName + ' (';
+    LCommandText := 'insert into ' + DelimitId(ARecord.ViewTable.Model.DBTableName) + ' (';
     LDBColumnNames := '';
     LValueNames := '';
 
@@ -464,7 +482,7 @@ begin
         LDefaultValue := AField.DefaultValue;
         if not VarIsNull(LDefaultValue) and (ARecord.ViewTable.FindFieldByModelField(AField) = nil) then
           AddDBColumnName(LDBColumnNames, LValueNames, ADBCommand,
-            AField.DBColumnName, AField.DBColumnName).Value := LDefaultValue;
+            DelimitId(AField.DBColumnName), AField.DBColumnName).Value := LDefaultValue;
       end
     );
 
@@ -499,9 +517,9 @@ var
       Exit;
     LAddedColumns.Add(ADBColumnName);
     if LDBColumnNames = '' then
-      LDBColumnNames := ADBColumnName + ' = :' + AParamName
+      LDBColumnNames := DelimitId(ADBColumnName) + ' = :' + AParamName
     else
-      LDBColumnNames := LDBColumnNames + ', ' + ADBColumnName + ' = :' + AParamName;
+      LDBColumnNames := LDBColumnNames + ', ' + DelimitId(ADBColumnName) + ' = :' + AParamName;
     ADBCommand.Params.CreateParam(ftUnknown, AParamName, ptInput);
   end;
 
@@ -525,12 +543,13 @@ begin
   Assert(Assigned(ADBCommand));
   Assert(Assigned(ARecord));
 
+  FDBEngineType := ADBCommand.Connection.DBEngineType;
   if ADBCommand.Prepared then
     ADBCommand.Prepared := False;
   ADBCommand.Params.BeginUpdate;
   try
     ADBCommand.Params.Clear;
-    LCommandText := 'update ' + ARecord.ViewTable.Model.DBTableName + ' set ';
+    LCommandText := 'update ' + DelimitId(ARecord.ViewTable.Model.DBTableName) + ' set ';
     LDBColumnNames := '';
 
     LProcessedRefFields := TList<TKViewField>.Create;
@@ -573,10 +592,13 @@ begin
       LKeyFields := ARecord.ViewTable.Model.GetKeyDBColumnNames;
       for I := 0 to Length(LKeyFields) - 1 do
       begin
-        LParamName := ARecord.ViewTable.FieldByDBColumnName(LKeyFields[I]).AliasedName;
+        // Resolve the key column against the record's scalar (sub-)field so that
+        // keys made of reference fields bind their physical FK columns. See
+        // TKViewTableRecord.FieldByDBColumnName.
+        LParamName := ARecord.FieldByDBColumnName(LKeyFields[I]).FieldName;
         if I > 0 then
           LCommandText := LCommandText + ' and ';
-        LCommandText := LCommandText + LKeyFields[I] + ' = :' + LParamName;
+        LCommandText := LCommandText + DelimitId(LKeyFields[I]) + ' = :' + LParamName;
         ADBCommand.Params.CreateParam(ftUnknown, LParamName, ptInput);
       end;
       ADBCommand.CommandText := LCommandText;
@@ -598,19 +620,23 @@ begin
   Assert(Assigned(ADBCommand));
   Assert(Assigned(ARecord));
 
+  FDBEngineType := ADBCommand.Connection.DBEngineType;
   if ADBCommand.Prepared then
     ADBCommand.Prepared := False;
   ADBCommand.Params.BeginUpdate;
   try
     ADBCommand.Params.Clear;
-    LCommandText := 'delete from ' + ARecord.ViewTable.Model.DBTableName + ' where ';
+    LCommandText := 'delete from ' + DelimitId(ARecord.ViewTable.Model.DBTableName) + ' where ';
     LKeyFields := ARecord.ViewTable.Model.GetKeyDBColumnNames;
     for I := 0 to Length(LKeyFields) - 1 do
     begin
-      LParamName := ARecord.ViewTable.FieldByDBColumnName(LKeyFields[I]).AliasedName;
+      // Resolve the key column against the record's scalar (sub-)field so that
+      // keys made of reference fields bind their physical FK columns. See
+      // TKViewTableRecord.FieldByDBColumnName.
+      LParamName := ARecord.FieldByDBColumnName(LKeyFields[I]).FieldName;
       if I > 0 then
         LCommandText := LCommandText + ' and ';
-      LCommandText := LCommandText + LKeyFields[I] + ' = :' + LParamName;
+      LCommandText := LCommandText + DelimitId(LKeyFields[I]) + ' = :' + LParamName;
       ADBCommand.Params.CreateParam(ftUnknown, LParamName, ptInput);
     end;
     ADBCommand.CommandText := LCommandText;
@@ -642,25 +668,30 @@ begin
 
   Result := False;
   LModel := AViewField.ModelField.ReferencedModel;
+  FDBEngineType := ADBQuery.Connection.DBEngineType;
 
   LCommandText := '';
   for LDerivedField in LDerivedFields do
   begin
     if SameText(LDerivedField.FieldName, AViewField.FieldName) then
     begin
-      LDBColumnName := LModel.CaptionField.DBColumnNameOrExpression;
+      // Caption may be a plain column (delimited) or an expression (left as-is).
+      if LModel.CaptionField.Expression <> '' then
+        LDBColumnName := LModel.CaptionField.Expression
+      else
+        LDBColumnName := DelimitId(LModel.CaptionField.DBColumnName);
       ExpandQualification(LDBColumnName, '');
-      Insert(' ' + LDerivedField.ModelField.DBColumnName, LDBColumnName, Length(LDBColumnName) + 1);
+      Insert(' ' + DelimitId(LDerivedField.ModelField.DBColumnName), LDBColumnName, Length(LDBColumnName) + 1);
     end
     else
-      LDBColumnName := LDerivedField.ModelField.DBColumnName;
+      LDBColumnName := DelimitId(LDerivedField.ModelField.DBColumnName);
 
     if LCommandText = '' then
       LCommandText := LDBColumnName
     else
       LCommandText := LCommandText + ', ' + LDBColumnName;
   end;
-  LCommandText := 'select ' + LCommandText + ' from ' + LModel.DBTableName;
+  LCommandText := 'select ' + LCommandText + ' from ' + DelimitId(LModel.DBTableName);
 
   if ADBQuery.Prepared then
     ADBQuery.Prepared := False;
@@ -684,10 +715,11 @@ begin
       for I := 0 to High(LKeyDBColumnNames) do
       begin
         LDBColumnName := LKeyDBColumnNames[I];
+        // Left side delimited; param name keeps the raw column name.
         if LClause = '' then
-          LClause := LDBColumnName + ' = :' + LDBColumnName
+          LClause := DelimitId(LDBColumnName) + ' = :' + LDBColumnName
         else
-          LClause := LClause + ' and ' + LDBColumnName + ' = :' + LDBColumnName;
+          LClause := LClause + ' and ' + DelimitId(LDBColumnName) + ' = :' + LDBColumnName;
         ADBQuery.Params.CreateParam(ftUnknown, LDBColumnName, ptInput);
       end;
       LCommandText := SetSQLWhereClause(LCommandText, LClause);
@@ -724,15 +756,26 @@ begin
   if AQualification = '' then
     ReplaceAllCaseSensitive(AString, '{Q}', '')
   else
-    ReplaceAllCaseSensitive(AString, '{Q}', AQualification + '.');
+    // The qualifier is a table name or correlation/alias: delimit it so the
+    // {Q}-prefixed references match the delimited table/alias emitted elsewhere.
+    ReplaceAllCaseSensitive(AString, '{Q}', DelimitId(AQualification) + '.');
 end;
 
 procedure TKSQLBuilder.Clear;
 begin
   FViewTable := nil;
+  FDBEngineType := nil;
   FSelectTerms := '';
   FUsedReferenceFields.Clear;
   FAddedFKColumns.Clear;
+end;
+
+function TKSQLBuilder.DelimitId(const AName: string): string;
+begin
+  if Assigned(FDBEngineType) then
+    Result := FDBEngineType.DelimitIdentifier(AName)
+  else
+    Result := AName;
 end;
 
 class procedure TKSQLBuilder.CreateAndExecute(const AProc: TProc<TKSQLBuilder>);
@@ -763,7 +806,7 @@ var
 begin
   Assert(Assigned(FViewTable));
 
-  Result := FViewTable.Model.DBTableName;
+  Result := DelimitId(FViewTable.Model.DBTableName);
   for I := 0 to FUsedReferenceFields.Count - 1 do
     Result := Result + sLineBreak + BuildJoin(FUsedReferenceFields[I]);
 end;
@@ -781,22 +824,29 @@ var
   LSearchTerm: string;
   LOrderBy: string;
   LLookupSearchModel, LSearchOperator, LSearchValue, LSearchClause: string;
+  I: Integer;
 begin
   Assert(Assigned(AViewField));
   Assert(Assigned(ADBQuery));
   Assert(AViewField.IsReference);
 
+  FDBEngineType := ADBQuery.Connection.DBEngineType;
   LLookupModel := AViewField.ModelField.ReferencedModel;
   LColumnNames := LLookupModel.GetKeyDBColumnNames(False, True);
+  for I := 0 to High(LColumnNames) do
+    LColumnNames[I] := DelimitId(LColumnNames[I]);
   LQueryText := 'select ' + Join(LColumnNames, ', ');
   // Ensure caption field is contained in select list.
   if not LLookupModel.CaptionField.IsKey then
   begin
-    LCaptionField := LLookupModel.CaptionField.AliasedDBColumnNameOrExpression;
+    if LLookupModel.CaptionField.Expression <> '' then
+      LCaptionField := LLookupModel.CaptionField.Expression
+    else
+      LCaptionField := DelimitId(LLookupModel.CaptionField.DBColumnName);
     ExpandQualification(LCaptionField, '');
     LQueryText := LQueryText + ', ' + LCaptionField;
   end;
-  LQueryText := LQueryText + ' from ' + LLookupModel.DBTableName;
+  LQueryText := LQueryText + ' from ' + DelimitId(LLookupModel.DBTableName);
 
   LLookupModelDefaultFilter := LLookupModel.DefaultFilter;
   if LLookupModelDefaultFilter <> '' then
@@ -824,7 +874,10 @@ begin
 
   if ASearchString <> '' then
   begin
-    LSearchTerm := LLookupModel.CaptionField.DBColumnNameOrExpression;
+    if LLookupModel.CaptionField.Expression <> '' then
+      LSearchTerm := LLookupModel.CaptionField.Expression
+    else
+      LSearchTerm := DelimitId(LLookupModel.CaptionField.DBColumnName);
     ExpandQualification(LSearchTerm, '');
     //At model level you can specify a model for the lookup search:
     //for example: LookupSearchModel: {Value}%
@@ -877,7 +930,10 @@ var
     Assert(LForeignField.FieldCount = AReferenceField.FieldCount);
     for I := 0 to AReferenceField.FieldCount - 1 do
     begin
-      LForeignFieldName := LForeignField.Fields[I].DBColumnNameOrExpression;
+      if LForeignField.Fields[I].Expression <> '' then
+        LForeignFieldName := LForeignField.Fields[I].Expression
+      else
+        LForeignFieldName := DelimitId(LForeignField.Fields[I].DBColumnName);
       LFieldName := AReferenceField.Fields[I].FieldName;
       LParamName := AReferenceField.Fields[I].DBColumnName;
       Result := LForeignFieldName + ' = :' + LParamName;
@@ -936,7 +992,12 @@ begin
 
   LCorrelationName := AReferenceField.DBColumnName;
 
-  Result := GetJoinKeyword + ' ' + AReferenceField.ReferencedModel.DBTableName + ' ' + LCorrelationName + ' on (';
+  // The correlation (table alias) is referenced both here and in
+  // AddReferenceFieldTerms / ExpandQualification, so it must be delimited
+  // consistently. ExpandQualification delimits it internally, so the raw
+  // LCorrelationName is passed there; here we delimit explicitly.
+  Result := GetJoinKeyword + ' ' + DelimitId(AReferenceField.ReferencedModel.DBTableName)
+    + ' ' + DelimitId(LCorrelationName) + ' on (';
   LLocalFields := AReferenceField.GetReferenceFields;
   Assert(Length(LLocalFields) > 0);
   LForeignDBColumnNames := AReferenceField.ReferencedModel.GetKeyDBColumnNames;
@@ -944,8 +1005,8 @@ begin
 
   for I := Low(LLocalFields) to High(LLocalFields) do
   begin
-    Result := Result + FViewTable.Model.DBTableName + '.' + LLocalFields[I].DBColumnName + ' = '
-      + LCorrelationName + '.' + LForeignDBColumnNames[I];
+    Result := Result + DelimitId(FViewTable.Model.DBTableName) + '.' + DelimitId(LLocalFields[I].DBColumnName) + ' = '
+      + DelimitId(LCorrelationName) + '.' + DelimitId(LForeignDBColumnNames[I]);
     if I < High(LLocalFields) then
       Result := Result + ' and ';
   end;
@@ -980,7 +1041,7 @@ var
       ExpandQualification(Result, AViewField.ModelField.DBColumnName);
     end
     else
-      Result := AViewField.ModelField.DBColumnName + '.' + AModelField.DBColumnName;
+      Result := DelimitId(AViewField.ModelField.DBColumnName) + '.' + DelimitId(AModelField.DBColumnName);
   end;
 
 begin
@@ -1004,7 +1065,7 @@ begin
     // ROW_NUMBER wrapper rejects duplicate output column names.
     if FAddedFKColumns.IndexOf(LFields[I].DBColumnName) < 0 then
     begin
-      AddSelectTerm(FViewTable.Model.DBTableName + '.' + LFields[I].DBColumnName);
+      AddSelectTerm(DelimitId(FViewTable.Model.DBTableName) + '.' + DelimitId(LFields[I].DBColumnName));
       FAddedFKColumns.Add(LFields[I].DBColumnName);
     end;
   end;
@@ -1048,7 +1109,7 @@ begin
       // ...and alias master field names. Don'alias detail field names used in the where clause.
       LParamName := LMasterFieldDBColumnNames[I];
       LParamName := FViewTable.MasterTable.ApplyFieldAliasedName(LParamName);
-      LClause := LClause + FViewTable.Model.DBTableName + '.' + LDetailFieldDBColumnNames[I] + ' = :' + LParamName;
+      LClause := LClause + DelimitId(FViewTable.Model.DBTableName) + '.' + DelimitId(LDetailFieldDBColumnNames[I]) + ' = :' + LParamName;
       ADBQuery.Params.CreateParam(ftUnknown, LParamName, ptInput);
       if I < High(LDetailFieldDBColumnNames) then
         LClause := LClause + ' and ';
@@ -1072,7 +1133,7 @@ begin
     else
       Result := AViewField.QualifiedDBNameOrExpression
   else begin
-    Result := '{Q}' +  AViewField.DBNameOrExpression;
+    Result := '{Q}' + DelimitId(AViewField.DBNameOrExpression);
     ExpandQualification(Result, AViewField.Table.Model.DBTableName);
   end;
   if AIsDescending then
@@ -1088,7 +1149,7 @@ begin
   Result := '';
   for I := Low(LKeyDBColumnNames) to High(LKeyDBColumnNames) do
   begin
-    Result := Result + '{Q}' + LKeyDBColumnNames[I] + ' = :' + LKeyDBColumnNames[I];
+    Result := Result + '{Q}' + DelimitId(LKeyDBColumnNames[I]) + ' = :' + LKeyDBColumnNames[I];
     ADBQuery.Params.CreateParam(ftUnknown, LKeyDBColumnNames[I], ptInput);
     if I < High(LKeyDBColumnNames) then
       Result := Result + ' and ';

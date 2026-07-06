@@ -77,6 +77,11 @@ type
     function GetIsRequired: Boolean;
     function GetIsReadOnly: Boolean;
     function GetQualifiedDBName: string;
+    // Wraps a bare/dotted identifier in the dialect-specific delimiters when the
+    // field's database has DelimitedIdent enabled. Best-effort: if no runtime
+    // connection is available (design-time/KIDE) the identifier is returned
+    // unchanged. Never pass expressions/free SQL here.
+    function DelimitDBId(const AId: string): string;
     function GetModelName: string;
     function GetFieldName: string;
     function GetDefaultValue: Variant;
@@ -589,6 +594,17 @@ type
     property Fields[I: Integer]: TKViewTableField read GetField; default;
     function FindField(const AFieldName: string): TKViewTableField;
     function FieldByName(const AFieldName: string): TKViewTableField;
+    /// <summary>
+    ///  Finds the scalar field that maps to the given physical DB column,
+    ///  looking through the scalar sub-fields expanded from reference fields.
+    ///  Returns the scalar (sub-)field, never the reference field itself, so
+    ///  its value can be bound as a parameter. Returns nil if not found.
+    /// </summary>
+    function FindFieldByDBColumnName(const ADBColumnName: string): TKViewTableField;
+    /// <summary>
+    ///  Like FindFieldByDBColumnName but raises if no field is found.
+    /// </summary>
+    function FieldByDBColumnName(const ADBColumnName: string): TKViewTableField;
 
     /// <summary>
     ///  Replaces all field name markers in AText with the current field values
@@ -841,6 +857,7 @@ type
     [YamlSubNode('MainTable', TKViewTable, 'Primary data table for this view')]
     property MainTable: TKViewTable read GetMainTable;
     property DatabaseName: string read GetDatabaseName;
+    function IsAccessGranted(const AMode: string): Boolean; override;
   end;
 
   TKFileReferenceDataType = class(TEFStringDataType)
@@ -918,6 +935,25 @@ end;
 function TKDataView.GetMainTable: TKViewTable;
 begin
   Result := GetNode('MainTable', True) as TKViewTable;
+end;
+
+function TKDataView.IsAccessGranted(const AMode: string): Boolean;
+var
+  LMainTable: TEFNode;
+begin
+  // The view's own resource URI gate (PersistentName/ResourceName based).
+  Result := inherited IsAccessGranted(AMode);
+  // Also honour the main table's model: a deny on metadata://Model/<Name>
+  // must hide the view (and its menu entry) even when the view has no
+  // resource URI of its own - e.g. AutoList views built on the fly from a
+  // Model. Mirrors TKViewTable.IsAccessGranted, which already ANDs the model.
+  // FindNode (not the MainTable property) avoids creating an empty node here.
+  if Result then
+  begin
+    LMainTable := FindNode('MainTable');
+    if LMainTable is TKViewTable then
+      Result := TKViewTable(LMainTable).IsAccessGranted(AMode);
+  end;
 end;
 
 { TKViewTable }
@@ -1995,9 +2031,19 @@ begin
 end;
 
 function TKViewField.GetQualifiedDBNameOrExpression: string;
+var
+  LCaptionField: TKModelField;
 begin
   if IsReference then
-    Result := DBName + '.' + ModelField.ReferencedModel.CaptionField.DBColumnNameOrExpression
+  begin
+    // Reference: qualify the referenced caption by the FK-column alias. Delimit
+    // the alias and the caption column (unless the caption is a free expression).
+    LCaptionField := ModelField.ReferencedModel.CaptionField;
+    if LCaptionField.Expression <> '' then
+      Result := DelimitDBId(DBName) + '.' + LCaptionField.Expression
+    else
+      Result := DelimitDBId(DBName) + '.' + DelimitDBId(LCaptionField.DBColumnName);
+  end
   else if Expression <> '' then
     Result := Expression
   else
@@ -2271,6 +2317,24 @@ begin
     Result := ModelField.LookupFilter;
 end;
 
+function TKViewField.DelimitDBId(const AId: string): string;
+var
+  LEngineType: TEFDBEngineType;
+begin
+  Result := AId;
+  // Best-effort delimiting via the field's database dialect. When DelimitedIdent
+  // is off (the default) DelimitIdentifier is a no-op, so this only changes the
+  // output for opted-in databases. If no runtime connection is available
+  // (design-time / KIDE) we fall back to the raw identifier.
+  try
+    LEngineType := TKConfig.Instance.DatabaseFor(Model.DatabaseName).DBEngineType;
+    if Assigned(LEngineType) then
+      Result := LEngineType.DelimitIdentifier(AId);
+  except
+    // leave Result as the raw identifier
+  end;
+end;
+
 function TKViewField.GetQualifiedDBName: string;
 var
   LReferencedModelName: string;
@@ -2283,12 +2347,13 @@ begin
     LReferencedModelName := LNameParts[0];
     LReferenceField := Table.FieldByName(LReferencedModelName);
     if LReferenceField.IsReference then
-      Result := LReferenceField.ModelField.DBColumnName + '.' + ModelField.DBColumnName
+      // DelimitDBId splits on '.' and delimits each part: [alias].[column].
+      Result := DelimitDBId(LReferenceField.ModelField.DBColumnName + '.' + ModelField.DBColumnName)
     else
       Result := Name;
   end
   else
-    Result := Model.DBTableName + '.' + ModelField.DBColumnName;
+    Result := DelimitDBId(Model.DBTableName + '.' + ModelField.DBColumnName);
 end;
 
 function TKViewField.GetSize: Integer;
@@ -2868,6 +2933,36 @@ end;
 function TKViewTableRecord.FieldByName(const AFieldName: string): TKViewTableField;
 begin
   Result := inherited FieldByName(AFieldName) as TKViewTableField;
+end;
+
+function TKViewTableRecord.FindFieldByDBColumnName(const ADBColumnName: string): TKViewTableField;
+var
+  I: Integer;
+  LField: TKViewTableField;
+begin
+  Result := nil;
+  for I := 0 to FieldCount - 1 do
+  begin
+    LField := Fields[I];
+    // Match the scalar (sub-)field that maps to the physical column. For a key
+    // made of reference fields, GetKeyDBColumnNames returns the sub-field
+    // columns (e.g. 'Codice_Mappa'): these are held by the scalar sub-fields
+    // expanded into the store header, not by the reference field itself (whose
+    // value can't be bound as a scalar parameter). Skip reference fields so the
+    // bindable scalar sub-field is returned even when the reference is forced to
+    // the same physical name.
+    if Assigned(LField.ModelField) and not LField.ModelField.IsReference and
+        SameText(LField.ModelField.DBColumnName, ADBColumnName) then
+      Exit(LField);
+  end;
+end;
+
+function TKViewTableRecord.FieldByDBColumnName(const ADBColumnName: string): TKViewTableField;
+begin
+  Result := FindFieldByDBColumnName(ADBColumnName);
+  if not Assigned(Result) then
+    raise EKError.CreateFmt('Couldn''t find a field with DB column name %s.',
+      [ADBColumnName]);
 end;
 
 procedure TKViewTableRecord.FieldChanged(const AField: TKField; const AOldValue, ANewValue: Variant);

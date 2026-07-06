@@ -2,7 +2,7 @@
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 
-**Latest Version 4.0.8 - 08 Jun 2026**
+**Latest Version 4.0.9 - 06 Jul 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -58,6 +58,18 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 
 # Release Notes
 
+## 06 Jul 2026: ver. 4.0.9 Beta
+
+### Bug fixes
+- **Double URL-decode of request values** — form/query values were URL-decoded twice (a second decode over already-decoded text), silently corrupting any value containing `%`, `+` or (on some RTL versions) `?`: passwords (login failing), saved form fields (e.g. `50%`, `C++`), search/filter terms and record keys. Values are now decoded exactly once
+
+### Routing
+- The authentication family (`kx/login`, `kx/logout`, `kx/resetpassword`, `kx/changepassword`) migrated to the **attribute-based router** — first core group to "bring its own routing" (the login page is still served by `Home()` at `/`, unchanged)
+- Attribute-routed requests now run inside the full per-request context (authenticator, macro engine, and — for `Auth: JWT` — a session hydrated from the verified token)
+
+### Tooling
+- `Examples/build_Examples.cmd` now accepts command-line arguments to build a single example / deploy mode / config, e.g. `build_Examples.cmd TasKitto Desktop Debug` (the interactive menu is kept when run with no arguments)
+
 ## 08 Jun 2026: ver. 4.0.8 Beta
 
 ### Theming
@@ -73,7 +85,7 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ### MCP-KittoX
 - Many new tools added — full CRUD on Models / Views / Layouts, database introspection (connections, tables, columns), config read/update, locale (`.po`) reading, metadata validation, and grid/list view scaffolding (40+ tools total, up from 16)
 
-## 08 May 2026: ver. 4.0.7 Beta
+## 18 May 2026: ver. 4.0.7 Beta
 
 - `Controller/AutoOpen` and `Controller/PagingTools` based on model's `IsLarge` flag
 - A Reference field whose target Model has `IsLarge: True` renders as a searchable lookup popup

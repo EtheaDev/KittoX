@@ -15,46 +15,21 @@ INSERT INTO taskitto.kitto_users (user_name, password_hash, is_active, first_nam
 INSERT INTO taskitto.kitto_users (user_name, password_hash, is_active, first_name, last_name, email_address, must_change_password) VALUES ('three', 'three',        TRUE, 'three', 'three',      'three@domain.com',        FALSE);
 
 -- kitto_user_roles + kitto_permissions — three-tier ACL demo for AccessControl: JWT
--- Roles:
---   admin  → full CRUD on every view, including the user-management views.
---   user   → full CRUD on every view EXCEPT Users (deny on Users at all modes).
---   viewer → read-only baseline (from the wildcard) with explicit denies on Users
---            and on ActivityInput/Modify-Add-Delete (the latter is left in to
---            demonstrate the FALSE-priority semantics for standard modes — an
---            explicit deny dominates a wildcard allow).
 INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('admin',     'admin');
 INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('user',      'user');
 INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('guest',     'viewer');
 INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('one',       'admin');
 INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('two',       'viewer');
 INSERT INTO taskitto.kitto_user_roles (user_name, role_name) VALUES ('three',     'viewer');
-
--- IMPORTANT: patterns must match the URIs the framework actually generates.
--- Views resolve to 'metadata://View/<PersistentName>' (capital V — built by
--- TKMetadata.BuildURI from TKView.GetClassNameForResourceURI). The mode codes
--- in ACCESS_MODES are the ACM_* constants (uppercase: VIEW, READ, MODIFY,
--- ADD, DELETE, RUN). Both pattern and mode comparisons in
--- TKUserPermissionStorage and TKJWTAccessController are case-sensitive.
---
--- Note: TKViewField.IsAccessGranted (Kitto.Metadata.DataView.pas) uses ACM_READ
--- to decide whether to ship the field value to the client. The wildcard
--- (*, *, VIEW,READ, 1) below is what makes data values show up in the grid for
--- everyone — without READ in the wildcard the columns render but cells are
--- blank (the framework treats individual fields as denied by default).
---
--- Layered design: the wildcard rule is the read-only baseline, role-specific
--- rules add CRUD modes on top, and explicit denies (GRANT_VALUE='0') on a
--- specific URI win over the wildcard for standard modes thanks to
--- TKUserPermissionStorage.GetAccessGrantValue's FALSE-priority break.
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('*',                            '*',      'VIEW,READ',                     '1');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('*',                            'admin',  'MODIFY,ADD,DELETE,RUN',         '1');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('*',                            'user',   'MODIFY,ADD,DELETE,RUN',         '1');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/Users',             'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/Users',             'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_USER_ROLES',  'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_USER_ROLES',  'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_PERMISSIONS', 'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
-INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/KITTO_PERMISSIONS', 'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://Model/KITTO_USER_ROLES',  'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://Model/KITTO_USER_ROLES',  'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://Model/KITTO_PERMISSIONS', 'user',   'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
+INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://Model/KITTO_PERMISSIONS', 'viewer', 'VIEW,READ,MODIFY,ADD,DELETE,RUN','0');
 INSERT INTO taskitto.kitto_permissions (resource_uri_pattern, grantee_name, access_modes, grant_value) VALUES ('metadata://View/ActivityInput',     'viewer', 'MODIFY,ADD,DELETE',             '0');
 
 -- customer

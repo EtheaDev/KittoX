@@ -82,13 +82,6 @@ type
     function GetAccessController: TKAccessController;
     procedure InitConfig;
     /// <summary>
-    ///  When the active authenticator is a TKJWTAuthenticator, validates
-    ///  the kx_token cookie present on the request, hydrates the session
-    ///  state from the verified claims, and slides the cookie expiration
-    ///  if it is approaching. No-op for any other authenticator class.
-    /// </summary>
-    procedure AuthorizeJWTRequest;
-    /// <summary>
     ///  Adds a .png extension to the resource name.
     ///  ASuffix, if specified, is added before the file extension.
     ///  If the image name ends with _ and a two-digit number among 16, 24, 32, and 48,
@@ -132,9 +125,6 @@ type
     function HandleKXDataRequest(const AViewName: string): Boolean;
     function HandleKXDeleteRequest(const AViewName: string): Boolean;
     function HandleKXToolRequest(const AViewName, AToolName: string): Boolean;
-    function HandleKXLoginRequest: Boolean;
-    function HandleKXResetPasswordRequest: Boolean;
-    function HandleKXChangePasswordRequest: Boolean;
     /// <summary>Populates AuthData.DatabaseName (raw config name) and
     ///  AuthData.Environment (Databases/Name/DisplayLabel if present, falling
     ///  back to the raw name) so the corresponding %Auth:* macros resolve.</summary>
@@ -288,6 +278,36 @@ type
     ///  are enabled for desktop browsers and disabled for mobile browsers.
     /// </summary>
     function TooltipsEnabled: Boolean;
+
+    /// <summary>
+    ///  When the active authenticator is a TKJWTAuthenticator, validates the
+    ///  kx_token cookie, hydrates the session from the verified claims, and
+    ///  slides the cookie expiration if approaching. No-op for other
+    ///  authenticators. Public so the attribute router (TKXRoutingRoute) can
+    ///  give attribute-routed requests the same JWT hydration as the legacy path.
+    /// </summary>
+    procedure AuthorizeJWTRequest;
+
+    /// <summary>
+    ///  Auth-family POST handlers, public so the attribute-based TKXAuthHandler
+    ///  (Kitto.Html.Login.pas) can delegate to them. They read their form fields
+    ///  from TKWebRequest.Current and write the response; return True when handled.
+    /// </summary>
+    function HandleKXLoginRequest: Boolean;
+    function HandleKXResetPasswordRequest: Boolean;
+    function HandleKXChangePasswordRequest: Boolean;
+
+    /// <summary>
+    ///  Renders AView through its controller and returns the full HTML body
+    ///  (create controller -> Display -> Render). When AView declares no
+    ///  controller type, ADefaultControllerType is used (e.g. 'Login').
+    /// </summary>
+    function RenderViewAsPage(const AView: TKView; const ADefaultControllerType: string = ''): string;
+    /// <summary>
+    ///  Renders AView and serves it wrapped in the _Page template (theme,
+    ///  scripts) via ServeHomePage. Reusable entry point for page handlers.
+    /// </summary>
+    procedure ServeViewAsPage(const AView: TKView; const ADefaultControllerType: string = '');
 
     procedure Logout;
 
@@ -680,6 +700,25 @@ begin
     begin
       if FCurrent <> nil then
         Result := FCurrent.Config
+      else
+        Result := nil;
+    end;
+  // Resolve the macro expansion engine from the per-thread current application
+  // (FCurrent is a threadvar). Registered ONCE here, exactly like
+  // TKConfig.OnGetInstance above, instead of being set/torn-down on every request
+  // in ActivateInstance/DeactivateInstance. That per-request churn mutated a
+  // process-global, reference-counted function reference and also triggered
+  // FreeAndNil(FInstance) inside SetOnGetInstance on every call: under Indy's
+  // worker-thread pool one request could free the closure / the engine while
+  // another was using it in TEFMacroExpansionEngine.GetInstance -> intermittent
+  // AV (surfaced e.g. while expanding %IMAGE% during the login region render).
+  // Reading the threadvar FCurrent at call time is thread-safe; FCurrent=nil
+  // falls back to the default engine.
+  TEFMacroExpansionEngine.OnGetInstance :=
+    function: TEFMacroExpansionEngine
+    begin
+      if FCurrent <> nil then
+        Result := FCurrent.Config.MacroExpansionEngine
       else
         Result := nil;
     end;
@@ -1338,18 +1377,11 @@ begin
           Home;
           Result := True;
         end
-        else if IsKXLoginRequest then
-        begin
-          Result := HandleKXLoginRequest;
-        end
-        else if IsKXResetPasswordRequest then
-        begin
-          Result := HandleKXResetPasswordRequest;
-        end
-        else if IsKXChangePasswordRequest then
-        begin
-          Result := HandleKXChangePasswordRequest;
-        end
+        // /kx/login, /kx/resetpassword and /kx/changepassword are now served by
+        // the attribute-based TKXAuthHandler (Kitto.Html.Login.pas), which runs
+        // BEFORE this legacy dispatch and intercepts them. The HandleKX* methods
+        // remain (the handler delegates to them) and the IsKX*Request probes are
+        // still used by the auth/session-lost gates above.
         else if IsKXToolRequest(LKXViewName, LKXToolName) then
         begin
           Result := HandleKXToolRequest(LKXViewName, LKXToolName);
@@ -4577,12 +4609,9 @@ end;
 
 procedure TKWebApplication.ActivateInstance;
 begin
+  // FCurrent is a threadvar; the macro-engine resolver (registered once in the
+  // class constructor) reads it, so there is no per-request global to set here.
   FCurrent := Self;
-  TEFMacroExpansionEngine.OnGetInstance :=
-    function: TEFMacroExpansionEngine
-    begin
-      Result := Config.MacroExpansionEngine
-    end;
   TKAuthenticator.Current := GetAuthenticator;
   TKAccessController.Current := GetAccessController;
 end;
@@ -4590,7 +4619,6 @@ end;
 procedure TKWebApplication.DeactivateInstance;
 begin
   FCurrent := nil;
-  TEFMacroExpansionEngine.OnGetInstance := nil;
   TKAuthenticator.Current := nil;
   TKAccessController.Current := nil;
 end;
@@ -4642,12 +4670,34 @@ end;
 class destructor TKWebApplication.Destroy;
 begin
   TKConfig.OnGetInstance := nil;
+  TEFMacroExpansionEngine.OnGetInstance := nil;
+end;
+
+function TKWebApplication.RenderViewAsPage(const AView: TKView;
+  const ADefaultControllerType: string): string;
+var
+  LController: IKXController;
+begin
+  // A login-style view may declare a Controller node with no type value (its
+  // properties are children); fall back to ADefaultControllerType in that case,
+  // same as the ExtJS version did.
+  if (AView.ControllerType = '') and (ADefaultControllerType <> '') then
+    LController := TKXControllerFactory.Instance.CreateController(AView, nil, nil, ADefaultControllerType)
+  else
+    LController := TKXControllerFactory.Instance.CreateController(AView);
+  LController.Display;
+  Result := LController.Render;
+end;
+
+procedure TKWebApplication.ServeViewAsPage(const AView: TKView;
+  const ADefaultControllerType: string);
+begin
+  ServeHomePage(RenderViewAsPage(AView, ADefaultControllerType));
 end;
 
 procedure TKWebApplication.DisplayHomeView;
 var
   LView: TKView;
-  LController: IKXController;
   LBodyContent: string;
 begin
   if TKAuthenticator.Current.MustChangePassword then
@@ -4658,9 +4708,7 @@ begin
   else
     LView := GetHomeView;
 
-  LController := TKXControllerFactory.Instance.CreateController(LView);
-  LController.Display;
-  LBodyContent := LController.Render;
+  LBodyContent := RenderViewAsPage(LView);
 
   if TKWebSession.Current.AutoOpenViewName <> '' then
   begin
@@ -4672,21 +4720,8 @@ begin
 end;
 
 procedure TKWebApplication.DisplayLoginView;
-var
-  LLoginView: TKView;
-  LController: IKXController;
-  LBodyContent: string;
 begin
-  LLoginView := GetLoginView;
-  // LoginView may have Controller: with no type value (properties are children).
-  // Default to 'Login' controller type, same as the ExtJS version did.
-  if LLoginView.ControllerType = '' then
-    LController := TKXControllerFactory.Instance.CreateController(LLoginView, nil, nil, 'Login')
-  else
-    LController := TKXControllerFactory.Instance.CreateController(LLoginView);
-  LController.Display;
-  LBodyContent := LController.Render;
-  ServeHomePage(LBodyContent);
+  ServeViewAsPage(GetLoginView, 'Login');
 end;
 
 procedure TKWebApplication.Home;
@@ -4694,7 +4729,6 @@ var
   LAuthenticator: TKAuthenticator;
   LBodyContent: string;
   LView: TKView;
-  LController: IKXController;
 begin
   if TKWebRequest.Current.IsAjax then
     raise Exception.Create('Cannot call Home page in an Ajax request.');
@@ -4723,14 +4757,9 @@ begin
   else
     LView := GetLoginView;
 
-  // LoginView may have Controller: with no type value (properties are children).
-  // Default to 'Login' controller type, same as the ExtJS version did.
-  if LView.ControllerType = '' then
-    LController := TKXControllerFactory.Instance.CreateController(LView, nil, nil, 'Login')
-  else
-    LController := TKXControllerFactory.Instance.CreateController(LView);
-  LController.Display;
-  LBodyContent := LController.Render;
+  // LoginView may have Controller: with no type value (properties are children);
+  // RenderViewAsPage falls back to the 'Login' controller type in that case.
+  LBodyContent := RenderViewAsPage(LView, 'Login');
 
   TKWebSession.Current.RefreshingLanguage := False;
   ServeHomePage(LBodyContent);

@@ -155,7 +155,6 @@ uses
   System.SysUtils,
   System.StrUtils,
   System.JSON,
-  System.NetEncoding,
   EF.JSON,
   EF.Logger;
 
@@ -244,11 +243,15 @@ end;
 
 function TKWebRequest.GetFormField(const AName: string): string;
 begin
-{$IFDEF D24+}
-  Result := TNetEncoding.URL.Decode(FRequest.ContentFields.Values[AName], [TURLEncoding.TDecodeOption.PlusAsSpaces]);
-{$ELSE}
-  Result := TNetEncoding.URL.Decode(FRequest.ContentFields.Values[AName]);
-{$ENDIF}
+  // The RTL (WebBroker ExtractContentFields, Decode=True) already URL-decodes
+  // the POST body once when filling ContentFields. Do NOT decode again: a
+  // second URL decode over already-decoded text corrupts any value that looks
+  // like an encoded sequence — '%XX', '+' (turned into a space), and, depending
+  // on the RTL version, reserved chars such as '?'. That silently alters
+  // passwords (login fails), saved field values, search/filter terms and record
+  // keys. Transport decoding must happen exactly once, and the RTL already does
+  // it. See BUG_Double_URL_Decode.md.
+  Result := FRequest.ContentFields.Values[AName];
 end;
 
 function TKWebRequest.GetField(const AName: string): string;
@@ -267,11 +270,12 @@ end;
 
 function TKWebRequest.GetQueryField(const AName: string): string;
 begin
-{$IFDEF D24+}
-  Result := TNetEncoding.URL.Decode(FRequest.QueryFields.Values[AName], [TURLEncoding.TDecodeOption.PlusAsSpaces]);
-{$ELSE}
-  Result := TNetEncoding.URL.Decode(FRequest.QueryFields.Values[AName]);
-{$ENDIF}
+  // The RTL already URL-decodes the query string once when filling QueryFields
+  // (WebBroker, Decode=True). Do NOT decode again — see the note in
+  // GetFormField and BUG_Double_URL_Decode.md. This also fixes GetQueryTree
+  // (which calls this) and the composite record keys, whose per-piece decode in
+  // Kitto.Web.Application.pas now receives a correctly single-decoded input.
+  Result := FRequest.QueryFields.Values[AName];
 end;
 
 function TKWebRequest.GetQueryTree: TEFTree;

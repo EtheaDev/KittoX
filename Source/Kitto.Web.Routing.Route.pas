@@ -90,6 +90,12 @@ begin
     // same as TKWebApplication.DoHandleRequest does before its handlers.
     TKWebApplication(FApplication).ActivateInstance;
     try
+      // Give attribute-routed requests the same JWT hydration the legacy
+      // DoHandleRequest performs before dispatch: no-op for non-JWT auth; for
+      // JWT it validates kx_token and hydrates the session from the claims
+      // (so e.g. the auth-family handlers and data endpoints see the right
+      // session/database). Pre-auth requests (login, no cookie) are a no-op.
+      TKWebApplication(FApplication).AuthorizeJWTRequest;
       LActivationObj.Invoke;
       Result := True;
     finally

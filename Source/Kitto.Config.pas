@@ -532,6 +532,9 @@ begin
     LConfig := Config.FindNode('Databases/' + ADatabaseName + '/Config');
     if Assigned(LConfig) then
       Result.Config.AddChild(TEFNode.Clone(LConfig));
+    // Per-database opt-in: wrap SQL identifiers in dialect-specific delimiters
+    // so that table/column names containing spaces are valid (see KITTOX docs).
+    Result.DelimitIdentifiers := Config.GetBoolean('Databases/' + ADatabaseName + '/DelimitedIdent', False);
   except
     FreeAndNil(Result);
     raise;

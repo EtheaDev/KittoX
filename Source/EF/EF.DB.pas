@@ -398,9 +398,15 @@ type
 
   TEFDBEngineType = class(TEFComponent)
   private
+    FDelimitIdentifiers: Boolean;
     function ExpandParamMacro(const AText, APattern: string;
       const AKind: TEFDBMacroKind): string;
   protected
+    ///	<summary>Wraps a single identifier part in the dialect-specific
+    ///	delimiters. Called once per dot-separated part by DelimitIdentifier.
+    ///	Default uses the ANSI/standard double-quote (PostgreSQL, Firebird,
+    ///	Oracle). Override for SQL Server ([ ]) and MySQL (` `).</summary>
+    function DelimitName(const AName: string): string; virtual;
     ///	<summary>Translates %DB.DATEDIFF(unit,expr1,expr2)% into the
     ///	database-specific expression that computes (expr2 - expr1) in the
     ///	given unit. Override in each dialect subclass.</summary>
@@ -470,10 +476,24 @@ type
     /// (eg.1997-12-17 07:37:16.123)</para>
     ///</summary>
     function FormatDateTime(const ADateTimeValue: TDateTime): string; virtual;
+
+    ///	<summary>When the connection has DelimitedIdent enabled, wraps each
+    ///	dot-separated part of the identifier (catalog.schema.table or
+    ///	table.column) in the dialect-specific delimiters, so that names
+    ///	containing spaces or special characters are valid in SQL. When
+    ///	delimiting is disabled, or the identifier is empty, it is returned
+    ///	unchanged. Free SQL (expressions, filters, macros) must NOT be passed
+    ///	to this method — only bare identifiers.</summary>
+    function DelimitIdentifier(const AIdentifier: string): string;
+
+    ///	<summary>Whether identifiers must be delimited (set from the per-database
+    ///	DelimitedIdent config flag). Propagated by the owning connection.</summary>
+    property DelimitIdentifiers: Boolean read FDelimitIdentifiers write FDelimitIdentifiers;
   end;
 
   TEFSQLServerDBEngineType = class(TEFDBEngineType)
   protected
+    function DelimitName(const AName: string): string; override;
     function ExpandDateDiff(const AUnit, AExpr1, AExpr2: string): string; override;
     function ExpandDateTimeFrom(const ADateExpr, ATimeExpr: string): string; override;
     function ExpandExtract(const AUnit, AExpr: string): string; override;
@@ -484,6 +504,11 @@ type
       const AFrom: Integer; const AFor: Integer): string; override;
     function ExpandCommandText(const ACommandText: string): string; override;
     function FormatDateTime(const ADateTimeValue: TDateTime): string; override;
+  end;
+
+  TEFMySQLDBEngineType = class(TEFDBEngineType)
+  protected
+    function DelimitName(const AName: string): string; override;
   end;
 
   TEFOracleDBEngineType = class(TEFDBEngineType)
@@ -521,6 +546,7 @@ type
     FTransactionCount: Integer;
     FDBEngineType: TEFDBEngineType;
     FStandardFormatSettings: TFormatSettings;
+    FDelimitIdentifiers: Boolean;
     function GetDBEngineType: TEFDBEngineType;
   protected
     function GetStandardFormatSettings: TFormatSettings;
@@ -541,6 +567,12 @@ type
     ///	(for adapters that support more than one database type, such as DBX or
     ///	ADO) each time the connection is opened.</summary>
     property DBEngineType: TEFDBEngineType read GetDBEngineType;
+
+    ///	<summary>When True, SQL identifiers (table/column names) are wrapped in
+    ///	the dialect-specific delimiters by the SQL builder, so that names
+    ///	containing spaces are valid. Set from the per-database DelimitedIdent
+    ///	config flag and propagated to the DBEngineType.</summary>
+    property DelimitIdentifiers: Boolean read FDelimitIdentifiers write FDelimitIdentifiers;
 
     ///	<summary>Creates and returns a database info object suitable to read
     ///	database metadata.</summary>
@@ -819,6 +851,9 @@ begin
     Open;
   if not Assigned(FDBEngineType) then
     FDBEngineType := CreateDBEngineType;
+  // Propagate the per-database delimiting flag (the engine type is recreated
+  // on each Open, so this is re-applied every time).
+  FDBEngineType.DelimitIdentifiers := FDelimitIdentifiers;
   Result := FDBEngineType;
 end;
 
@@ -1459,7 +1494,35 @@ begin
     Result := System.SysUtils.FormatDateTime('yyyy''-''mm''-''dd hh'':''mm'':''ss''.''zzz', ADateTimeValue);
 end;
 
+function TEFDBEngineType.DelimitName(const AName: string): string;
+begin
+  // ANSI / standard SQL delimited identifier (PostgreSQL, Firebird, Oracle).
+  // An embedded double quote is doubled per the standard.
+  Result := '"' + StringReplace(AName, '"', '""', [rfReplaceAll]) + '"';
+end;
+
+function TEFDBEngineType.DelimitIdentifier(const AIdentifier: string): string;
+var
+  LParts: TArray<string>;
+  I: Integer;
+begin
+  if (not FDelimitIdentifiers) or (AIdentifier = '') then
+    Exit(AIdentifier);
+  // Multi-part names (catalog.schema.table or table.column) are split on '.'
+  // and each part is delimited separately: [schema].[table], not [schema.table].
+  LParts := AIdentifier.Split(['.']);
+  for I := 0 to High(LParts) do
+    LParts[I] := DelimitName(LParts[I]);
+  Result := string.Join('.', LParts);
+end;
+
 { TEFSQLServerDBEngineType }
+
+function TEFSQLServerDBEngineType.DelimitName(const AName: string): string;
+begin
+  // SQL Server / T-SQL bracketed identifier. An embedded ] is doubled.
+  Result := '[' + StringReplace(AName, ']', ']]', [rfReplaceAll]) + ']';
+end;
 
 function TEFSQLServerDBEngineType.AddLimitClause(
   const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
@@ -1604,6 +1667,15 @@ begin
     Result := Result + ' ' + AOrderByClause;
   if (AFrom <> 0) or (AFor <> 0) then
     Result := Result + Format(' LIMIT %d OFFSET %d', [AFor, AFrom]);
+end;
+
+{ TEFMySQLDBEngineType }
+
+function TEFMySQLDBEngineType.DelimitName(const AName: string): string;
+begin
+  // MySQL / MariaDB backtick identifier (default sql_mode, i.e. not ANSI_QUOTES).
+  // An embedded backtick is doubled.
+  Result := '`' + StringReplace(AName, '`', '``', [rfReplaceAll]) + '`';
 end;
 
 { TEFOracleDBEngineType }

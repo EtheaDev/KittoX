@@ -29,6 +29,7 @@ uses
   System.SysUtils,
   EF.Tree,
   EF.YAML.Attributes,
+  Kitto.Web.Routing.Attributes,
   Kitto.Html.Base,
   Kitto.Html.Controller,
   Kitto.Html.Tools;
@@ -82,6 +83,39 @@ type
     function Render: string; override;
   end;
 
+  /// <summary>
+  ///  Attribute-routed handler for the authentication family
+  ///  (login / reset password / change password / logout). This is how the
+  ///  Login controller "brings its own routing": the handler self-registers in
+  ///  this unit's initialization, so the attribute router (which runs before the
+  ///  legacy DoHandleRequest) dispatches these POSTs to it.
+  ///
+  ///  Step 1 of the routing refactor: each method delegates to the existing
+  ///  TKWebApplication handlers, which read their own form fields from the
+  ///  current request — so behaviour is byte-identical to the legacy dispatch.
+  ///  The expected form fields are documented per method; extracting
+  ///  parameterised methods is a later cleanup. The login PAGE (GET) is still
+  ///  served by Home() at '/', unchanged.
+  /// </summary>
+  {$RTTI EXPLICIT METHODS([vcPublic, vcPublished]) PROPERTIES([vcPublic, vcPublished])}
+  [TKXPath('/kx')]
+  TKXAuthHandler = class
+  public
+    /// POST form fields: UserName, Password, Language, DatabaseName.
+    [TKXPath('/login')] [TKXPOST]
+    procedure HandleLogin;
+    /// POST: fields read by TKWebApplication.HandleKXResetPasswordRequest.
+    [TKXPath('/resetpassword')] [TKXPOST]
+    procedure HandleResetPassword;
+    /// POST: fields read by TKWebApplication.HandleKXChangePasswordRequest.
+    [TKXPath('/changepassword')] [TKXPOST]
+    procedure HandleChangePassword;
+    /// Ends the current session. Canonical endpoint; menus still emit
+    /// GET kx/view/Logout via TKXLogoutController for now.
+    [TKXPath('/logout')] [TKXANY]
+    procedure HandleLogout;
+  end;
+
 implementation
 
 uses
@@ -95,6 +129,7 @@ uses
   Kitto.Config,
   Kitto.Web.Application,
   Kitto.Web.Session,
+  Kitto.Web.Routing.Registry,
   Kitto.Html.TemplateEngine,
   Kitto.Html.Utils;
 
@@ -612,11 +647,35 @@ begin
   Result := 'logout';
 end;
 
+{ TKXAuthHandler }
+
+procedure TKXAuthHandler.HandleLogin;
+begin
+  TKWebApplication.Current.HandleKXLoginRequest;
+end;
+
+procedure TKXAuthHandler.HandleResetPassword;
+begin
+  TKWebApplication.Current.HandleKXResetPasswordRequest;
+end;
+
+procedure TKXAuthHandler.HandleChangePassword;
+begin
+  TKWebApplication.Current.HandleKXChangePasswordRequest;
+end;
+
+procedure TKXAuthHandler.HandleLogout;
+begin
+  TKWebApplication.Current.Logout;
+end;
+
 initialization
   TKXControllerRegistry.Instance.RegisterClass('Login', TKXLoginPanelController);
   TKXControllerRegistry.Instance.RegisterClass('Logout', TKXLogoutController);
+  TKXResourceRegistry.Instance.RegisterResource(TKXAuthHandler);
 
 finalization
+  TKXResourceRegistry.Instance.UnregisterResource(TKXAuthHandler);
   TKXControllerRegistry.Instance.UnregisterClass('Login');
   TKXControllerRegistry.Instance.UnregisterClass('Logout');
 

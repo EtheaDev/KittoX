@@ -516,6 +516,10 @@ begin
     Result := TEFFirebirdDBEngineType.Create
   else if SameText(LDriverId, 'PG') then
     Result := TEFPostgreSQLDBEngineType.Create
+  else if SameText(LDriverId, 'Ora') then
+    Result := TEFOracleDBEngineType.Create
+  else if SameText(LDriverId, 'MySQL') then
+    Result := TEFMySQLDBEngineType.Create
   else
     Result := inherited CreateDBEngineType;
 end;
