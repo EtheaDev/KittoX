@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,11 @@ uses
   Kitto.Store;
 
 type
+  /// <summary>
+  ///  ReportBuilder data pipeline that feeds a KittoX in-memory store (TKStore)
+  ///  to a ppReport. Adapts TKRecord/TKField to the ppReport pipeline contract,
+  ///  so reports can be run directly against Kitto stores without a dataset.
+  /// </summary>
   TppKStorePipeline = class(TppCustomDataPipeline)
     strict private
       FKStore: TKStore;
@@ -57,23 +62,41 @@ type
       procedure OpenDataSet; override;
       function TraverseBy(aIncrement: Integer): Integer; override;
     public
+      /// <summary>
+      ///  Creates the pipeline bound to the given store and (optional) single
+      ///  record, with the specified ppReport pipeline name.
+      /// </summary>
       constructor CreatePipeline(aOwner: TComponent; AKStore: TKStore;
         AKRecord: TKRecord; const LPipeLineName: string);
       constructor Create(aOwner: TComponent); override;
       destructor Destroy; override;
+      /// <summary>Releases a bookmark previously obtained via GetBookmark.</summary>
       procedure FreeBookmark(aBookmark: NativeInt); override;
+      /// <summary>Returns a bookmark for the current record position.</summary>
       function GetBookmark: NativeInt; override;
+      /// <summary>Returns the pipeline's data set name.</summary>
       function GetDataSetName: String; override;
+      /// <summary>Returns True if the named field is a calculated field.</summary>
       function GetFieldIsCalculated(aFieldName: String): Boolean; override;
+      /// <summary>Fills the list with the names of the store's fields.</summary>
       function GetFieldNames(aFieldNameList: TStrings): Boolean; override;
+      /// <summary>Returns the named field of the current record as a Double.</summary>
       function GetFieldAsDouble(aFieldName: String): Double; override;
+      /// <summary>Returns the named field of the current record as a TGUID.</summary>
       function GetFieldAsGuid(aFieldName: String): TGUID; override;
+      /// <summary>Writes the named field of the current record into the given stream.</summary>
       procedure GetFieldAsStream(aFieldName: String; aStream: TStream); override;
+      /// <summary>Returns the named field of the current record as a TPicture.</summary>
       function GetFieldAsPicture(aFieldName: String): TPicture; override;
+      /// <summary>Returns the named field of the current record as a string.</summary>
       function GetFieldAsString(aFieldName: String): String; override;
+      /// <summary>Returns the ppReport data type of the named field.</summary>
       function GetFieldDataType(aFieldName: String): TppDataType; override;
+      /// <summary>Returns True if the named field of the current record is null.</summary>
       function GetFieldIsNull(aFieldName: String): Boolean; override;
+      /// <summary>Returns the named field of the current record as a Variant.</summary>
       function GetFieldValue(aFieldName: string): Variant; override;
+      /// <summary>Moves the current record position to the given bookmark.</summary>
       procedure GotoBookmark(aBookmark: NativeInt); override;
     published
       property MoveBy;
@@ -99,14 +122,23 @@ type
   end;
 
   {TraTppKStorePipelineRTTI}
+  /// <summary>
+  ///  ppReport RTTI helper that exposes TppKStorePipeline properties to the
+  ///  ReportBuilder RAP scripting engine at design/run time.
+  /// </summary>
   TraTppKStorePipelineRTTI = class(TraTppDataPipelineRTTI)
     public
+      /// <summary>Returns the RAP property descriptor for the named property.</summary>
       class function  GetPropRec(aClass: TClass; const aPropName: String; var aPropRec: TraPropRec): Boolean; override;
+      /// <summary>Reads the named property value from the object for the RAP engine.</summary>
       class function  GetPropValue(aObject: TObject; const aPropName: String; var aValue): Boolean; override;
+      /// <summary>Returns the class (TppKStorePipeline) this RTTI helper describes.</summary>
       class function  RefClass: TClass; override;
+      /// <summary>Writes the named property value on the object from the RAP engine.</summary>
       class function  SetPropValue(aObject: TObject; const aPropName: String; var aValue): Boolean; override;
   end;
 
+  /// <summary>Maps an EF data type to the corresponding ppReport field data type.</summary>
   function ppConvertFieldType(aFieldType: TEFDataType): TppDataType;
 
 implementation

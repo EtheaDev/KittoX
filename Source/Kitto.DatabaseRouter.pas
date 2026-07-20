@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -77,6 +77,7 @@ type
     class function GetInstance: TKDatabaseRouterRegistry; static;
   public
     class destructor Destroy;
+    ///	<summary>The singleton registry of database-router classes.</summary>
     class property Instance: TKDatabaseRouterRegistry read GetInstance;
 
     ///	<summary>Adds a database router class to the registry.</summary>
@@ -90,6 +91,7 @@ type
     class function GetInstance: TKDatabaseRouterFactory; static;
   public
     class destructor Destroy;
+    ///	<summary>The singleton factory that creates database routers by id.</summary>
     class property Instance: TKDatabaseRouterFactory read GetInstance;
 
     ///	<summary>Creates and returns an instance of the database router class

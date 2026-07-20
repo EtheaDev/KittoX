@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,6 +47,7 @@ type
   {$RTTI EXPLICIT PROPERTIES([vcPublic])}
   TKXThemeSwitcherController = class(TKXComponent, IKXController)
   public
+    /// <summary>Renders the Light/Auto/Dark theme switcher control.</summary>
     function Render: string; override;
   end;
 
@@ -92,7 +93,10 @@ begin
         'title="' + TNetEncoding.HTML.Encode(_('Light')) + '" ' +
         'onclick="kxTheme.set(''' + LJsEscApp + ''',''light'')">' +
         '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">' +
-          '<path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 18a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM5.64 4.22l1.42 1.42a1 1 0 11-1.42 1.42L4.22 5.64a1 1 0 011.42-1.42zm12.72 12.72l1.42 1.42a1 1 0 11-1.42 1.42l-1.42-1.42a1 1 0 011.42-1.42zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm18 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM5.64 19.78a1 1 0 11-1.42-1.42l1.42-1.42a1 1 0 011.42 1.42l-1.42 1.42zm12.72-12.72a1 1 0 11-1.42-1.42l1.42-1.42a1 1 0 011.42 1.42l-1.42 1.42z"/>' +
+          '<path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0' +
+          ' 18a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM5.64 4.22l1.42 1.42a1 1 0 11-1.42 1.42L4.22' +
+          ' 5.64a1 1 0 011.42-1.42zm12.72 12.72l1.42 1.42a1 1 0 11-1.42 1.42l-1.42-1.42a1 1 0 011.42-1.42zM2' +
+          ' 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm18 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM5.64 19.78a1 1 0 11-1.42-1.42l1.42-1.42a1 1 0 011.42 1.42l-1.42 1.42zm12.72-12.72a1 1 0 11-1.42-1.42l1.42-1.42a1 1 0 011.42 1.42l-1.42 1.42z"/>' +
         '</svg>' +
       '</button>' +
       '<button type="button" class="kx-theme-btn" data-theme-value="auto" ' +

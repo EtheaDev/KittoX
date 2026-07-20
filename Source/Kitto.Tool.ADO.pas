@@ -53,7 +53,9 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
+    /// <summary>The engine that performs the Excel export.</summary>
     property ExportEngine: TKExcelExportEngine read FExportExcelEngine;
   //published
     [YamlNode('ExcelRangeName', 'Named range in the Excel workbook')]
@@ -77,14 +79,18 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
+    /// <summary>The engine that performs the Excel import.</summary>
     property ImportEngine: TKExcelImportEngine read FImportExcelEngine;
   //published
     [YamlNode('ExcelRangeName', 'Named range in the Excel workbook')]
     property ExcelRangeName: string read GetExcelRangeName;
+    /// <summary>Optional source-field to destination-field name mappings for the import.</summary>
     property FieldMappings: TStringList read GetFieldMappings;
   end;
 
+/// <summary>Returns the default file-mask wildcards accepted for Excel uploads (e.g. *.xls;*.xlsx).</summary>
 function DefaultExcelWildcards: string;
 
 implementation

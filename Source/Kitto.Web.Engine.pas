@@ -66,9 +66,12 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>Activates/deactivates the engine (starts/stops the session cleanup thread).</summary>
     property Active: Boolean read FActive write SetActive;
 
+    /// <summary>The response charset used by the engine (from Config, default utf-8).</summary>
     property Charset: string read FCharset;
+    /// <summary>Returns a snapshot of the active sessions (for diagnostics/monitoring).</summary>
     function GetSessions: TArray<TKWebSession>;
 
     /// <summary>

@@ -13,7 +13,7 @@ Controller: TemplateDataPanel
       DynaList: Activity Type
         Width: 20
         CommandText: |
-          select TOP 1 '%' TYPE_ID, '(All)' TYPE_NAME from kitto_users
+          select '%' TYPE_ID, '(All)' TYPE_NAME %DB.FROM_DUAL%
             union all
           select TYPE_ID, TYPE_NAME from ACTIVITY_TYPE
             order by 2
@@ -42,7 +42,7 @@ Controller: TemplateDataPanel
             Expression: 1=1
             IsDefault: True
       FreeSearch: Last N Days
-        ExpressionTemplate: ACTIVITY_DATE >= (getDate() - {value})
+        ExpressionTemplate: ACTIVITY_DATE >= (%DB.CURRENT_DATE% - {value})
 
 MainTable:
   Model: ACTIVITY

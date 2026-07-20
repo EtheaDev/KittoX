@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,6 +39,7 @@ type
   /// </summary>
   IKXActivationContext = interface
     ['{F3A2B7C4-8D1E-4F5A-9C6B-2E7D8A3F1B5C}']
+    /// <summary>Returns the captured value of the named path parameter ('' if absent).</summary>
     function GetPathParam(const AName: string): string;
   end;
 
@@ -62,9 +63,13 @@ type
     class var FInstance: TKXInjectionRegistry;
     class function GetInstance: TKXInjectionRegistry; static;
   public
+    /// <summary>Creates the registry with an empty provider map.</summary>
     constructor Create;
+    /// <summary>Frees the provider map.</summary>
     destructor Destroy; override;
+    /// <summary>Frees the singleton instance at unit finalization.</summary>
     class destructor DestroyClass;
+    /// <summary>The lazily-created singleton registry instance.</summary>
     class property Instance: TKXInjectionRegistry read GetInstance;
 
     /// <summary>

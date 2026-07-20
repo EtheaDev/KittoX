@@ -1,3 +1,34 @@
+{{#
+  _Page.html — KittoX HTML page skeleton (structural template). Wraps every full page:
+  <head> (title, icon, theme, CSS/JS), loading overlay, HTMX error/timeout
+  handlers, then the page body in the homeContent variable.
+
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Default system template. Override by copying to (first match wins):
+    <App>/Home/Templates/_Page.html   (per app)
+    <Kitto>/Home/Templates/_Page.html (system default)
+  Notation: ":name" = escaped value, ":name$" = raw HTML (see README.md).
+
+  Variables (injected by TKWebApplication.ServeHomePage):
+    lang            document language code (e.g. "en")
+    charset         response charset (e.g. "utf-8")
+    appTitle        application title (also reused as a JS string)
+    bodyClass       CSS class(es) for <body>
+    ajaxTimeout     HTMX request timeout in ms (from Config AjaxTimeout)
+    resPath         base URL of the /res static resources
+    themeAttr$      extra <html> attributes for the active theme (raw)
+    themeBoot$      theme bootstrap markup in <head> (raw)
+    themeStyle$     theme <link>/<style> tags (raw)
+    iconLink$       favicon/app-icon <link> tags (raw)
+    dynamicStyles$  per-page extra <link>/<style> tags (raw)
+    dynamicScripts$ per-page extra <script> tags (raw)
+    homeContent$    the rendered page body (raw)
+    msgErrorTitle, msgTimeout, msgServerError, msgNotFound, msgInternalError,
+    msgDataSaved, msgDataDeleted, btnRetry, btnReset
+                    localized strings exposed to client JS (window.KX_STRINGS)
+#}}
 <!DOCTYPE html>
 <html lang="{{:lang}}"{{:themeAttr$}}>
 <head>

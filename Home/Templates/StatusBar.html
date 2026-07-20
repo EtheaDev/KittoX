@@ -1,3 +1,20 @@
+{{#
+  StatusBar.html — KittoX structural template for the page footer status bar
+  (optional icon + status text).
+
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Default system template. Override by copying to (first match wins):
+    <App>/Home/Templates/StatusBar.html   (per app)
+    <Kitto>/Home/Templates/StatusBar.html (system default)
+  Notation: ":name" = escaped value, ":name$" = raw HTML (see README.md).
+
+  Variables (injected by TKXStatusBarController):
+    htmlId     DOM id of the footer element
+    iconHtml$  leading icon markup (raw; empty if none)
+    text$      status text (raw; may already contain markup)
+#}}
 <footer id="{{:htmlId}}" class="kx-status-bar">
   {{:iconHtml$}}<span class="kx-status-text">{{:text$}}</span>
 </footer>

@@ -164,7 +164,9 @@ type
 
     function GetResourceURI: string; override;
 
+    /// <summary>The model this field belongs to.</summary>
     property Model: TKModel read GetModel;
+    /// <summary>The field's logical name.</summary>
     property FieldName: string read GetFieldName;
 
     [YamlNode('PhysicalName', 'Physical DB column name (defaults to FieldName)')]
@@ -175,6 +177,7 @@ type
     ///   FieldName.
     /// </summary>
     property DBColumnName: string read GetDBColumnName;
+    /// <summary>The DB column name, or the SQL expression for a computed field.</summary>
     property DBColumnNameOrExpression: string read GetDBColumnNameOrExpression;
     /// <summary>
     ///  Returns the physical column name (DBColumnName) plus, if the
@@ -182,17 +185,23 @@ type
     ///  (FieldName).
     /// </summary>
     property AliasedDBColumnName: string read GetAliasedDBColumnName;
+    /// <summary>AliasedDBColumnName, or the SQL expression for a computed field.</summary>
     property AliasedDBColumnNameOrExpression: string read GetAliasedDBColumnNameOrExpression;
+    /// <summary>The field name, or the SQL expression for a computed field.</summary>
     property FieldNameOrExpression: string read GetFieldNameOrExpression;
+    /// <summary>The DB column name prefixed with the table name (table.column).</summary>
     property QualifiedDBColumnName: string read GetQualifiedDBColumnName;
+    /// <summary>QualifiedDBColumnName, or the SQL expression for a computed field.</summary>
     property QualifiedDBColumnNameOrExpression: string read GetQualifiedDBColumnNameOrExpression;
 
+    /// <summary>The field's data type.</summary>
     property DataType: TEFDataType read GetDataType;
     /// <summary>
     ///  Returns the DataType. For reference fields, returns the referenced
     ///  field's actual data type (recursively).
     /// </summary>
     function GetActualDataType: TEFDataType;
+    /// <summary>The field size (e.g. string length); 0 when not applicable.</summary>
     property Size: Integer read GetSize;
 
     [YamlNode('DecimalPrecision', 'Number of decimal digits')]
@@ -244,9 +253,13 @@ type
     /// </summary>
     property Fields[I: Integer]: TKModelField read GetField;
 
+    /// <summary>Returns the sub-field with the given name; raises if absent.</summary>
     function FieldByName(const AName: string): TKModelField;
+    /// <summary>Returns the sub-field with the given name, or nil.</summary>
     function FindField(const AName: string): TKModelField;
+    /// <summary>Returns the sub-field with the given physical (DB) name, or nil.</summary>
     function FindFieldByPhysicalName(const APhysicalName: string): TKModelField;
+    /// <summary>Returns the first sub-field satisfying APredicate, or nil.</summary>
     function FindFieldByPredicate(const APredicate: TKModelFieldPredicate): TKModelField;
 
     /// <summary>Returns the names of the sub-fields, if any.</summary>
@@ -461,6 +474,8 @@ type
     [YamlSubNode('PreviewWindow', TKPreviewWindowConfig, 'File preview popup dimensions')]
     property PreviewWindow: TKPreviewWindowConfig read GetPreviewWindow;
 
+    /// <summary>For a reference field with FilterBy nodes, returns the (field, foreign-field)
+    /// pairs that constrain the lookup by the value of another field in the same model.</summary>
     function GetFilterByFields: TArray<TKFilterByField>;
   end;
 
@@ -487,13 +502,21 @@ type
   protected
     function GetChildClass(const AName: string): TEFNodeClass; override;
   public
+    /// <summary>Returns the field with the given name; raises if absent.</summary>
     function FieldByName(const AName: string): TKModelField;
+    /// <summary>Returns the field with the given name, or nil.</summary>
     function FindField(const AName: string): TKModelField;
+    /// <summary>Returns the field with the given physical (DB) name, or nil.</summary>
     function FindFieldByPhysicalName(const APhysicalName: string): TKModelField;
+    /// <summary>Returns the first field satisfying APredicate, or nil.</summary>
     function FindFieldByPredicate(const APredicate: TKModelFieldPredicate): TKModelField;
+    /// <summary>Number of fields.</summary>
     property FieldCount: Integer read GetFieldCount;
+    /// <summary>The fields, by index (default property).</summary>
     property Fields[I: Integer]: TKModelField read GetField; default;
+    /// <summary>Returns all field names, in order.</summary>
     function GetFieldNames: TStringDynArray;
+    /// <summary>Returns all fields' DB column names, in order.</summary>
     function GetDBColumnNames: TStringDynArray;
 
     /// <summary>If the fields are contained inside a parent field, this
@@ -505,6 +528,7 @@ type
   private
     function GetModel: TKModel;
   public
+    /// <summary>The model this sub-object belongs to.</summary>
     property Model: TKModel read GetModel;
   end;
 
@@ -521,12 +545,17 @@ type
   strict protected
     class function BeautifyDetailName(const ADetailName: string): string; virtual;
   public
+    /// <summary>The detail reference's physical (DB foreign-key) name.</summary>
     property PhysicalName: string read GetPhysicalName;
     /// <summary>Returns PhysicalName.</summary>
     property DBForeignKeyName: string read GetDBForeignKeyName;
+    /// <summary>Label shown for the detail table (defaults to a beautified name).</summary>
     property DisplayLabel: string read GetDisplayLabel;
+    /// <summary>The detail reference's logical name.</summary>
     property DetailReferenceName: string read GetDetailReferenceName;
+    /// <summary>The detail (child) model.</summary>
     property DetailModel: TKModel read GetDetailModel;
+    /// <summary>Name of the detail (child) model.</summary>
     property DetailModelName: string read GetDetailModelName;
 
     /// <summary>Returns the counterpart reference field in the detail model.
@@ -535,6 +564,7 @@ type
     /// otherwise its name is fetched from the ReferenceField parameter of the
     /// DetailReference.</summary>
     property ReferenceField: TKModelField read GetReferenceField;
+    /// <summary>Name of the counterpart reference field in the detail model.</summary>
     property ReferenceFieldName: string read GetReferenceFieldName;
   end;
 
@@ -547,13 +577,21 @@ type
   protected
     function GetChildClass(const AName: string): TEFNodeClass; override;
   public
+    /// <summary>The detail references, by index (default property).</summary>
     property DetailReferences[I: Integer]: TKModelDetailReference read GetDetailReference; default;
+    /// <summary>Number of detail references.</summary>
     property DetailReferenceCount: Integer read GetDetailReferenceCount;
+    /// <summary>Returns the detail reference with the given name; raises if absent.</summary>
     function DetailReferenceByName(const AName: string): TKModelDetailReference;
+    /// <summary>Returns the detail reference with the given name, or nil.</summary>
     function FindDetailReference(const AName: string): TKModelDetailReference;
+    /// <summary>Returns the detail reference pointing to the given model, or nil.</summary>
     function FindDetailReferenceToModel(const AModel: TKModel): TKModelDetailReference; overload;
+    /// <summary>Returns the detail reference pointing to the named model, or nil.</summary>
     function FindDetailReferenceToModel(const AModelName: string): TKModelDetailReference; overload;
+    /// <summary>Returns the detail reference whose FK is the given field, or nil.</summary>
     function FindDetailReferenceToField(const AField: TKModelField): TKModelDetailReference;
+    /// <summary>Returns the detail reference with the given physical (FK) name, or nil.</summary>
     function FindDetailReferenceByPhysicalName(const APhysicalName: string): TKModelDetailReference;
   end;
 
@@ -602,6 +640,7 @@ type
   public
     procedure BeforeSave; override;
   public
+    /// <summary>The models catalog this model belongs to.</summary>
     property Catalog: TKModels read GetCatalog;
 
     [YamlRequiredNode('ModelName', 'Unique model identifier')]
@@ -636,10 +675,15 @@ type
     [YamlNode('ImageName', 'Icon name for this model')]
     property ImageName: string read GetImageName;
 
+    /// <summary>Number of first-level fields in the model.</summary>
     property FieldCount: Integer read GetFieldCount;
+    /// <summary>The first-level fields, by index.</summary>
     property Fields[I: Integer]: TKModelField read GetField;
+    /// <summary>Returns the field with the given name; raises if absent.</summary>
     function FieldByName(const AName: string): TKModelField;
+    /// <summary>Returns the field with the given name, or nil.</summary>
     function FindField(const AName: string): TKModelField;
+    /// <summary>Returns the field with the given physical (DB) name, or nil.</summary>
     function FindFieldByPhysicalName(const APhysicalName: string): TKModelField;
     /// <summary>
     ///  Calls AProc for all first-level fields in the model.
@@ -665,15 +709,24 @@ type
     /// output, followed by a space and the FieldName).</param>
     function GetKeyDBColumnNames(const AQualify: Boolean = False;
       const AAlias: Boolean = False): TStringDynArray;
+    /// <summary>Number of fields that make up the primary key.</summary>
     property KeyFieldCount: Integer read GetKeyFieldCount;
+    /// <summary>The primary-key fields, by index.</summary>
     property KeyFields[I: Integer]: TKModelField read GetKeyField;
 
+    /// <summary>Number of detail (master-detail) references.</summary>
     property DetailReferenceCount: Integer read GetDetailReferenceCount;
+    /// <summary>The detail references, by index.</summary>
     property DetailReferences[I: Integer]: TKModelDetailReference read GetDetailReference;
+    /// <summary>Returns the detail reference with the given name; raises if absent.</summary>
     function DetailReferenceByName(const AName: string): TKModelDetailReference;
+    /// <summary>Returns the default caption field (heuristic), or nil.</summary>
     function FindDefaultCaptionField: TKModelField;
+    /// <summary>Returns the caption field (CaptionField node, else default), or nil.</summary>
     function FindCaptionField: TKModelField;
+    /// <summary>Returns the detail reference with the given name, or nil.</summary>
     function FindDetailReference(const AName: string): TKModelDetailReference;
+    /// <summary>Returns the detail reference with the given physical (FK) name, or nil.</summary>
     function FindDetailReferenceByPhysicalName(const APhysicalName: string): TKModelDetailReference;
 
     /// <summary>If there's exactly one detail reference to the specified
@@ -746,7 +799,9 @@ type
 
     [YamlNode('CaptionField', 'Field used as display caption for this model')]
     property CaptionFieldName: string read GetCaptionFieldName;
+    /// <summary>The heuristic default caption field (first string key/field).</summary>
     property DefaultCaptionField: TKModelField read GetDefaultCaptionField;
+    /// <summary>The field used as the model's display caption.</summary>
     property CaptionField: TKModelField read GetCaptionField;
 
     [YamlContainer('Rules', TKRule, 'Business rules applied to this model')]
@@ -786,6 +841,8 @@ type
       const ASortExpression: string; const AStart: Integer = 0;
       const ALimit: Integer = 0; const AForEachRecord: TProc<TEFNode> = nil): Integer; virtual;
 
+    /// <summary>Persists all records in AStore (insert/update/delete per record state),
+    /// optionally in a single transaction; calls AAfterPersist on success.</summary>
     procedure SaveRecords(const AStore: TEFTree; const APersist: Boolean;
       const AAfterPersist: TProc; const AUseTransaction: Boolean = True); virtual;
 
@@ -841,6 +898,7 @@ type
 
   TKModelList = class(TList<TKModel>)
   public
+    /// <summary>Adds the name of each model in the list to AStrings.</summary>
     procedure AddModelNamesToStrings(const AStrings: TStrings);
   end;
 
@@ -858,15 +916,23 @@ type
   public
     class constructor Create;
   public
+    /// <summary>The class used to instantiate models (override to use a descendant).</summary>
     class property DefaultModelClassType: TKModelClass read FDefaultModelClassType write FDefaultModelClassType;
+    /// <summary>Resets DefaultModelClassType to the framework default (TKModel).</summary>
     class procedure ResetDefaultModelClassType;
 
+    /// <summary>Number of models in the catalog.</summary>
     property ModelCount: Integer read GetModelCount;
+    /// <summary>The models, by index (default property).</summary>
     property Models[I: Integer]: TKModel read GetModel; default;
+    /// <summary>Returns the model with the given name; raises if absent.</summary>
     function ModelByName(const AName: string): TKModel;
+    /// <summary>Returns the model with the given name, or nil.</summary>
     function FindModel(const AName: string): TKModel;
 
+    /// <summary>Returns the model referenced by the given node; raises if absent.</summary>
     function ModelByNode(const ANode: TEFNode): TKModel;
+    /// <summary>Returns the model referenced by the given node, or nil.</summary>
     function FindModelByNode(const ANode: TEFNode): TKModel;
 
     /// <summary>
@@ -894,7 +960,9 @@ type
     procedure BeforeRegisterClass(const AId: string; const AClass: TClass); override;
     class destructor Destroy;
   public
+    /// <summary>The singleton model-class registry.</summary>
     class property Instance: TKModelRegistry read GetInstance;
+    /// <summary>Returns the registered model class for the given id(s).</summary>
     function GetClass(const AId1, AId2: string): TKModelClass;
   end;
 
@@ -903,6 +971,7 @@ type
 /// compute default values.</summary>
 function EvalExpression(const AExpression: Variant): Variant;
 
+/// <summary>Returns the English plural of AName (used to derive PluralModelName).</summary>
 function Pluralize(const AName: string): string;
 
 implementation

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,8 +49,11 @@ type
     procedure BeforeRegisterClass(const AId: string; const AClass: TClass); override;
   public
     class destructor Destroy;
+    /// <summary>The singleton controller-class registry.</summary>
     class property Instance: TKXControllerRegistry read GetInstance;
+    /// <summary>Registers a controller class under the given id.</summary>
     procedure RegisterClass(const AId: string; const AClass: TKXComponentClass);
+    /// <summary>Returns the controller class registered for the given id.</summary>
     function GetClass(const AId: string): TKXComponentClass;
   end;
 
@@ -63,6 +66,7 @@ type
     class function GetInstance: TKXControllerFactory; static;
   public
     class destructor Destroy;
+    /// <summary>The singleton controller factory.</summary>
     class property Instance: TKXControllerFactory read GetInstance;
 
     /// <summary>

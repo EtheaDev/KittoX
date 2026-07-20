@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,6 +52,7 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
     [YamlNode('LayoutFileName', 'Path to the PDF layout template file')]
     property LayoutFileName: string read GetLayoutFileName;

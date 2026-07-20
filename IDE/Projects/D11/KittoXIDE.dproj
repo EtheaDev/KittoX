@@ -45,7 +45,7 @@
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX IDE Tools Package;FileVersion=4.0.9.0;InternalName=KittoXIDE;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoXIDE;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX IDE Tools Package;FileVersion=4.0.10.0;InternalName=KittoXIDE;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoXIDE;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_Description>KittoX IDE Tools Package</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DesignOnlyPackage>true</DesignOnlyPackage>
@@ -57,7 +57,7 @@
         <DCC_UsePackage>VclSmp;KittoXCore;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>9</VerInfo_Release>
+        <VerInfo_Release>10</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_UsePackage>rtl;$(DCC_UsePackage)</DCC_UsePackage>

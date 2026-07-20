@@ -50,10 +50,12 @@ type
     function GetDefaultImageName: string; virtual;
     class function GetClassNameForResourceURI: string; override;
   public
+    /// <summary>The views catalog this view belongs to.</summary>
     property Catalog: TKViews read GetCatalog;
 
     [YamlNode('DisplayLabel', '', 'Label shown in navigation and titles', True)]
     property DisplayLabel: string read GetDisplayLabel;
+    /// <summary>The default icon name when ImageName is not set.</summary>
     property DefaultImageName: string read GetDefaultImageName;
     [YamlNode('ImageName', 'Icon name for navigation and titles')]
     property ImageName: string read GetImageName;
@@ -66,6 +68,7 @@ type
 
   TKViewList = class(TList<TKView>)
   public
+    /// <summary>Adds the name of each view in the list to AStrings.</summary>
     procedure AddViewNamesToStrings(const AStrings: TStrings);
   end;
 
@@ -89,7 +92,9 @@ type
     function GetRequiredLabelTemplate: string;
     function GetLabelSeparator: string;
   public
+    /// <summary>True if the layout is a grid layout (its name ends with '_Grid').</summary>
     function IsGridLayout: Boolean;
+    /// <summary>True if the layout is a form layout (its name ends with '_Form').</summary>
     function IsFormLayout: Boolean;
 
     [YamlNode('LabelAlign', 'Top', 'Label position relative to form fields (Top/Left/Right)')]
@@ -131,16 +136,24 @@ type
     procedure SetPath(const AValue: string); override;
     function GetMetadataRegistry: TKMetadataRegistry; override;
   public
+    /// <summary>Creates the views catalog bound to the given models catalog.</summary>
     constructor Create(const AModels: TKModels);
     destructor Destroy; override;
   public
+    /// <summary>Number of views in the catalog.</summary>
     property ViewCount: Integer read GetViewCount;
+    /// <summary>The views, by index (default property).</summary>
     property Views[I: Integer]: TKView read GetView; default;
+    /// <summary>Returns the view with the given name; raises if absent.</summary>
     function ViewByName(const AName: string): TKView; overload;
+    /// <summary>Returns the first existing view among the given names; raises if none.</summary>
     function ViewByName(const ANames: TStringDynArray): TKView; overload;
+    /// <summary>Returns the view with the given name, or nil.</summary>
     function FindView(const AName: string): TKView;
 
+    /// <summary>Returns the view referenced/built from the given node; raises if absent.</summary>
     function ViewByNode(const ANode: TEFNode): TKView;
+    /// <summary>Returns the view referenced/built from the given node, or nil.</summary>
     function FindViewByNode(const ANode: TEFNode): TKView;
 
     /// <summary>
@@ -151,10 +164,15 @@ type
     /// </summary>
     procedure GetViewList(const AList: TKViewList);
 
+    /// <summary>The models catalog the views refer to.</summary>
     property Models: TKModels read FModels;
+    /// <summary>The layouts catalog associated with these views.</summary>
     property Layouts: TKLayouts read GetLayouts;
+    /// <summary>Opens the catalog (loads views from the Views/ directory).</summary>
     procedure Open; override;
+    /// <summary>Re-reads the catalog from disk.</summary>
     procedure Refresh; override;
+    /// <summary>Closes the catalog and releases loaded views.</summary>
     procedure Close; override;
   end;
 
@@ -173,12 +191,18 @@ type
     function GetObjectClassType: TKMetadataClass; override;
     function GetMetadataRegistry: TKMetadataRegistry; override;
   public
+    /// <summary>Number of layouts in the catalog.</summary>
     property LayoutCount: Integer read GetLayoutCount;
+    /// <summary>The layouts, by index (default property).</summary>
     property Layouts[I: Integer]: TKLayout read GetLayout; default;
+    /// <summary>Returns the layout with the given name; raises if absent.</summary>
     function LayoutByName(const AName: string): TKLayout;
+    /// <summary>Returns the layout with the given name, or nil.</summary>
     function FindLayout(const AName: string): TKLayout;
 
+    /// <summary>Returns the layout referenced by the given node; raises if absent.</summary>
     function LayoutByNode(const ANode: TEFNode): TKLayout;
+    /// <summary>Returns the layout referenced by the given node, or nil.</summary>
     function FindLayoutByNode(const ANode: TEFNode): TKLayout;
 
     /// <summary>
@@ -204,7 +228,9 @@ type
     function GetTreeViewNodeCount: Integer;
     function GetTreeViewNode(I: Integer): TKTreeViewNode;
 
+    /// <summary>Number of child tree nodes.</summary>
     property TreeViewNodeCount: Integer read GetTreeViewNodeCount;
+    /// <summary>The child tree nodes, by index.</summary>
     property TreeViewNodes[I: Integer]: TKTreeViewNode read GetTreeViewNode;
   end;
 
@@ -221,11 +247,15 @@ type
   protected
     function GetChildClass(const AName: string): TEFNodeClass; override;
   public
+    /// <summary>Number of child tree nodes.</summary>
     property TreeViewNodeCount: Integer read GetTreeViewNodeCount;
+    /// <summary>The child tree nodes, by index.</summary>
     property TreeViewNodes[I: Integer]: TKTreeViewNode read GetTreeViewNode;
 
+    /// <summary>Resolves the view this node points to within AViews, or nil.</summary>
     function FindView(const AViews: TKViews): TKView; virtual;
 
+    /// <summary>Returns the access-control URI for the given view (for ACL checks).</summary>
     function GetACURI(const AView: TKView): string;
   end;
 
@@ -242,6 +272,7 @@ type
   public
     [YamlNode('IsInitiallyCollapsed', 'True', 'Folder starts collapsed in tree view')]
     property IsInitiallyCollapsed: Boolean read GetIsInitiallyCollapsed;
+    /// <summary>A folder has no own view; returns nil.</summary>
     function FindView(const AViews: TKViews): TKView; override;
   end;
 
@@ -259,7 +290,9 @@ type
   protected
     function GetChildClass(const AName: string): TEFNodeClass; override;
   public
+    /// <summary>Number of child tree nodes.</summary>
     property TreeViewNodeCount: Integer read GetTreeViewNodeCount;
+    /// <summary>The child tree nodes, by index.</summary>
     property TreeViewNodes[I: Integer]: TKTreeViewNode read GetTreeViewNode;
   end;
 
@@ -271,8 +304,11 @@ type
     procedure BeforeRegisterClass(const AId: string; const AClass: TClass); override;
     class destructor Destroy;
   public
+    /// <summary>The singleton view-class registry (created on first access).</summary>
     class property Instance: TKViewRegistry read GetInstance;
+    /// <summary>True if the singleton instance already exists.</summary>
     class function HasInstance: Boolean;
+    /// <summary>Returns the registered view class for the given id(s).</summary>
     function GetClass(const AId1, AId2: string): TKViewClass;
   end;
 
@@ -286,6 +322,8 @@ type
     property Views: TKViews read FViews;
     property PersistentName: string read FPersistentName;
   public
+    /// <summary>Builds a view into AViews (optionally persistent/named), returning it.
+    /// Override in a descendant to auto-generate a view from configuration.</summary>
     function BuildView(const AViews: TKViews;
       const APersistentName: string = '';
       const ANode: TEFNode = nil): TKView; virtual;
@@ -300,7 +338,9 @@ type
   protected
     class destructor Destroy;
   public
+    /// <summary>The singleton view-builder registry.</summary>
     class property Instance: TKViewBuilderRegistry read GetInstance;
+    /// <summary>Returns the registered view-builder class for the given id.</summary>
     function GetClass(const AId: string): TKViewBuilderClass;
   end;
 
@@ -313,8 +353,10 @@ type
   public
     class destructor Destroy;
   public
+    /// <summary>The singleton view-builder factory.</summary>
     class property Instance: TKViewBuilderFactory read GetInstance;
 
+    /// <summary>Creates a view-builder instance for the given registered id.</summary>
     function CreateObject(const AId: string): TKViewBuilder; reintroduce;
   end;
 
@@ -326,7 +368,9 @@ type
     procedure BeforeRegisterClass(const AId: string; const AClass: TClass); override;
     class destructor Destroy;
   public
+    /// <summary>The singleton layout-class registry.</summary>
     class property Instance: TKLayoutRegistry read GetInstance;
+    /// <summary>Returns the registered layout class for the given id(s).</summary>
     function GetClass(const AId1, AId2: string): TKLayoutClass;
   end;
 

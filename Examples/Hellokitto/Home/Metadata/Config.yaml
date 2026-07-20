@@ -11,6 +11,8 @@ BlobPath: %HOME_PATH%UploadedFiles\
 DefaultDatabaseName: FireDAC_MSSQL
 #DefaultDatabaseName: FireDAC_Firebird
 #DefaultDatabaseName: FireDAC_PostgreSQL
+#DefaultDatabaseName: FireDAC_Oracle
+#DefaultDatabaseName: ODAC_Oracle
 #DefaultDatabaseName: ADO_MSSQL
 
 Databases:
@@ -68,6 +70,46 @@ Databases:
       Schema: hellokitto
       ApplicationName: %APPTITLE%
       POOL_MaximumItems: 50
+
+  FireDAC_Oracle: FD
+    Connection:
+      DriverID: Ora
+      # EZ Connect string: host:port/service_name. Oracle XE 21c PDB = xepdb1.
+      # The XE listener is configured (listener.ora HOST=0.0.0.0) to listen on
+      # all interfaces, so localhost/127.0.0.1 works too.
+      Database: localhost:1521/xepdb1
+      User_Name: HELLOKITTO
+      Password: 12345
+      # Full Unicode client charset.
+      CharacterSet: AL32UTF8
+      # Oracle has no native boolean: map booleans to NUMBER(1) (0/1).
+      BooleanFormat: Integer
+      # Default schema for FireDAC metadata lookups (matches the connecting user).
+      MetaDefSchema: HELLOKITTO
+      ApplicationName: %APPTITLE%
+      POOL_MaximumItems: 50
+
+  # Oracle via Devart ODAC (alternative to FireDAC_Oracle, for sites that own
+  # an ODAC license). Kept commented out because ODAC is a third-party
+  # commercial library: to enable it, uncomment this block AND uncomment
+  # EF.DB.ODAC in Source\UseKitto.pas (plus add the ODAC library path to the
+  # project). FireDAC_Oracle above stays available for everyone without ODAC.
+  # ODAC: https://www.devart.com/odac/
+  ODAC_Oracle: ODAC
+    Connection:
+      # EZ Connect string: host:port/service_name. Oracle XE 21c PDB = xepdb1.
+      Server: localhost:1521/xepdb1
+      User_Name: HELLOKITTO
+      Password: 12345
+      # Direct Oracle Net mode: no locally installed Oracle client needed
+      # (requires ODAC Professional). Set to False to connect through OCI.
+      Direct: True
+      # Full Unicode client charset.
+      Charset: AL32UTF8
+      # ConnectMode: Normal (default), SysDBA or SysOper.
+      ConnectMode: Normal
+      # Optional ALTER SESSION SET CURRENT_SCHEMA on connect.
+      Schema: HELLOKITTO
 
   ADO_MSSQL: ADO
     Connection:

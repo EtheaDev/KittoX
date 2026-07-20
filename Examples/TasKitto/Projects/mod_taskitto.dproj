@@ -40,7 +40,7 @@
         <SanitizedProjectName>mod_taskitto</SanitizedProjectName>
         <DCC_DUPLICATE_CTOR_DTOR>false</DCC_DUPLICATE_CTOR_DTOR>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=TasKitto;FileVersion=4.0.9.0;InternalName=TasKitto;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=TasKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=TasKitto;FileVersion=4.0.10.0;InternalName=TasKitto;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=TasKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>Taskitto_Icon.ico</Icon_MainIcon>
         <DCC_ExeOutput>D:\Apache24\htdocs\KittoX\App\Taskitto\Home</DCC_ExeOutput>
         <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
@@ -54,7 +54,7 @@
         <GenDll>true</GenDll>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>9</VerInfo_Release>
+        <VerInfo_Release>10</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,6 +46,11 @@ uses
 
 type
 
+  /// <summary>
+  ///  Runs a ReportBuilder (.rtm) template against a KittoX view-table store /
+  ///  record and produces a PDF, optionally feeding data through pipelines and
+  ///  opening the RAP designer.
+  /// </summary>
   TKReportBuilderEngine = class(TComponent)
   strict private
     FServerRecord: TKViewTableRecord;
@@ -58,6 +63,11 @@ type
       ASQLConnection: TCustomConnection);
     {$ENDIF}
   public
+    /// <summary>
+    ///  Loads the template, binds it to the given store/record (via pipelines
+    ///  when AUsePipeLine is True) and renders APDFFileName. When ADesign is
+    ///  True the RAP designer is shown instead of producing the PDF.
+    /// </summary>
     procedure BuildReport(const ATemplateFileName, APDFFileName: string;
       const AServerStore: TKViewTableStore; const AServerRecord: TKViewTableRecord;
       const AUsePipeLine: Boolean; const ADatabaseName: string = '';

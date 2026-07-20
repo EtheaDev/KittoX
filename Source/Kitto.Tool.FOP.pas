@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,6 +44,7 @@ type
     function GetRecordAsXML: string; virtual;
     function GetStoreAsXML: string; virtual;
   public
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('TransformFileName', 'Path to the XSL-FO transform file')]

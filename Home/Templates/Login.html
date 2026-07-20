@@ -1,3 +1,32 @@
+{{#
+  Login.html — KittoX structural template for the login dialog (overlay + form with
+  West/Center/East regions, status/indicator footer and submit button). The form
+  POSTs to kx/login via HTMX, targeting #kx-login-status.
+
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Default system template. Override by copying to (first match wins):
+    <App>/Home/Templates/Login.html   (per app)
+    <Kitto>/Home/Templates/Login.html (system default)
+  Notation: ":name" = escaped value, ":name$" = raw HTML (see README.md).
+
+  Variables (injected by TKXLoginController):
+    htmlId            DOM id of the overlay container
+    title             dialog title (escaped)
+    dialogStyle$      inline style for the dialog box (raw)
+    northContent$     region above the fields (raw)
+    westContent$      left region markup (raw)
+    eastContent$      right region markup (raw)
+    southContent$     region below the fields (raw)
+    fieldsContent$    the user/password (and DB choice) fields markup (raw)
+    linksContent$     extra links (reset/change password) markup (raw)
+    loginIconHtml$    icon markup inside the submit button (raw)
+    buttonStyleAttr$  extra style attribute for the submit button (raw)
+    loginLabel        submit button caption (escaped)
+    loggingInLabel    "logging in..." indicator caption (escaped)
+    scriptContent$    page-specific <script> block for the login form (raw)
+#}}
 <div id="{{:htmlId}}" class="kx-login-overlay">
   <div class="kx-login-dialog" style="{{:dialogStyle$}}">
     <div class="kx-login-header">

@@ -59,23 +59,39 @@ type
     function GetPanelCssClass: string; override;
     function RenderContent: string; override;
   public
+    /// <summary>Builds the grid data rows (&lt;tr&gt;…) for the given store/layout — the
+    /// tbody content swapped by HTMX on filter/sort/paging.</summary>
     class function BuildDataRows(AStore: TKViewTableStore;
       AViewTable: TKViewTable; const AViewName: string;
       const AUrlViewName: string = '';
       ALayout: TKLayout = nil): string;
 
+    /// <summary>Builds the grid column headers (with sort links reflecting the current sort/dir).</summary>
     class function BuildColumnHeaders(AViewTable: TKViewTable;
       const AViewName, ACurrentSort, ACurrentDir: string;
       const AUrlViewName: string = '';
       ALayout: TKLayout = nil): string;
 
+    /// <summary>Builds the pager (page buttons / record range) for the given totals.</summary>
     class function BuildPager(const AViewName: string;
       ATotal, AStart, ALimit: Integer;
       const AUrlViewName: string = ''): string;
 
+    /// <summary>Builds the hidden state &lt;div&gt; carrying sort/dir/limit (and master key)
+    /// so it survives HTMX search/paging via hx-include.</summary>
     class function BuildHiddenState(const AViewName: string;
       ALimit: Integer; const ASort, ADir: string;
       const AUrlViewName: string = ''): string;
+
+    /// <summary>
+    ///  In lookup mode (mode=lookup with cv/cf query/state fields), returns the
+    ///  expanded LookupFilter of the calling reference field, so a dedicated
+    ///  IsLookup grid honors the same restriction the inline data-options combo
+    ///  would apply (e.g. {MasterRecord.PaganteId}). {MasterRecord.*}/{Field}
+    ///  macros are resolved against the calling form's session record. Returns
+    ///  '' when not in lookup mode or the calling field has no LookupFilter.
+    /// </summary>
+    class function GetLookupContextFilter: string;
   end;
 
 implementation
@@ -98,8 +114,14 @@ uses
   Kitto.Html.Tools,
   Kitto.Metadata.Models,
   Kitto.Web.Request,
+  Kitto.Web.Session,
   Kitto.Html.TemplateDataPanel,
+  EF.Macros,
   EF.JSON;
+
+// Combines two SQL WHERE expressions with AND, tolerating empty operands.
+// Forward-declared: used by RenderContent before its definition below.
+function CombineWhere(const A, B: string): string; forward;
 
 /// <summary>
 ///  Returns the hx-include CSS selector for a given view name.
@@ -210,7 +232,7 @@ begin
       // AutoOpen=False (default when IsLarge=True) skips the initial load —
       // user populates the grid by applying a filter or clicking Refresh.
       if LAutoOpen then
-        LTotal := LStore.Load(LDefaultFilterExpr, LSortExpr, 0, LPageSize)
+        LTotal := LStore.Load(CombineWhere(LDefaultFilterExpr, GetLookupContextFilter), LSortExpr, 0, LPageSize)
       else
         LTotal := 0;
 
@@ -281,7 +303,7 @@ begin
   LStore := LViewTable.CreateStore;
   try
     if LAutoOpen then
-      LTotal := LStore.Load(LDefaultFilterExpr, LSortExpr, 0, LPageSize)
+      LTotal := LStore.Load(CombineWhere(LDefaultFilterExpr, GetLookupContextFilter), LSortExpr, 0, LPageSize)
     else
       LTotal := 0;
 
@@ -1576,6 +1598,63 @@ begin
   end;
 end;
 
+// Combines two SQL WHERE expressions with AND, tolerating empty operands.
+function CombineWhere(const A, B: string): string;
+begin
+  if A = '' then
+    Result := B
+  else if B = '' then
+    Result := A
+  else
+    Result := '(' + A + ') and (' + B + ')';
+end;
+
+class function TKXListPanelController.GetLookupContextFilter: string;
+var
+  LMode, LCV, LCF, LFilter: string;
+  LCallingView: TKView;
+  LCallingTable: TKViewTable;
+  LCallingField: TKViewField;
+  LCallingStore: TKViewTableStore;
+
+  function ReqVal(const AName: string): string;
+  begin
+    Result := TKWebRequest.Current.GetQueryField(AName);
+    if Result = '' then
+      Result := TKWebRequest.Current.GetField(AName);
+  end;
+
+begin
+  Result := '';
+  LMode := ReqVal('mode');
+  if not SameText(LMode, 'lookup') then
+    Exit;
+  LCV := ReqVal('cv');
+  LCF := ReqVal('cf');
+  if (LCV = '') or (LCF = '') then
+    Exit;
+  LCallingView := TKConfig.Instance.Views.FindView(LCV);
+  if not (LCallingView is TKDataView) then
+    Exit;
+  LCallingTable := TKDataView(LCallingView).MainTable;
+  if not Assigned(LCallingTable) then
+    Exit;
+  LCallingField := LCallingTable.FindField(LCF);
+  if not Assigned(LCallingField) or not LCallingField.IsReference then
+    Exit;
+  LFilter := LCallingField.LookupFilter;
+  if LFilter = '' then
+    Exit;
+  // Resolve {MasterRecord.*}/{Field} macros against the calling form's session
+  // record (registered under the calling view name by the form/detail handlers).
+  LCallingStore := TKWebSession.Current.FindStore(LCV);
+  if Assigned(LCallingStore) and (LCallingStore.RecordCount > 0) then
+    LCallingStore.Records[0].ExpandExpression(LFilter);
+  // Resolve generic %macros% (e.g. %Auth:PROFILEID%).
+  TEFMacroExpansionEngine.Instance.Expand(LFilter);
+  Result := LFilter;
+end;
+
 class function TKXListPanelController.BuildHiddenState(const AViewName: string;
   ALimit: Integer; const ASort, ADir: string; const AUrlViewName: string): string;
 begin
@@ -1589,6 +1668,22 @@ begin
     Result := Result +
       '<input type="hidden" name="viewAlias" value="' +
         TNetEncoding.HTML.Encode(AViewName) + '" />';
+  // In lookup mode, persist mode/cv/cf so subsequent search/paging /data
+  // requests can re-apply the calling reference field's LookupFilter
+  // (GetLookupContextFilter). Read from the current request (query on the
+  // initial /lookup render, or state fields on later /data calls).
+  if SameText(TKWebRequest.Current.GetQueryField('mode'), 'lookup') or
+     SameText(TKWebRequest.Current.GetField('mode'), 'lookup') then
+  begin
+    var LCV := TKWebRequest.Current.GetQueryField('cv');
+    if LCV = '' then LCV := TKWebRequest.Current.GetField('cv');
+    var LCF := TKWebRequest.Current.GetQueryField('cf');
+    if LCF = '' then LCF := TKWebRequest.Current.GetField('cf');
+    Result := Result +
+      '<input type="hidden" name="mode" value="lookup" />' +
+      '<input type="hidden" name="cv" value="' + TNetEncoding.HTML.Encode(LCV) + '" />' +
+      '<input type="hidden" name="cf" value="' + TNetEncoding.HTML.Encode(LCF) + '" />';
+  end;
   Result := Result + '</div>';
 end;
 

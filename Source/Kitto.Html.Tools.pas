@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,11 +54,15 @@ type
     procedure DoAfterExecuteTool; virtual;
     procedure AfterExecuteTool; virtual;
   public
+    /// <summary>The default icon name for the tool button.</summary>
     class function GetDefaultImageName: string; virtual;
+    /// <summary>Tools run synchronously (execute server-side, no async round-trip).</summary>
     function IsSynchronous: Boolean; override;
     [YamlNode('DisplayLabel', 'Tool display label (defaults to View DisplayLabel)')]
     property DisplayLabel: string read GetDisplayLabel;
+    /// <summary>Executes the tool (a tool produces no HTML; it acts server-side).</summary>
     procedure Display; override;
+    /// <summary>Tools produce no HTML output; returns an empty string.</summary>
     function Render: string; override;
   end;
 
@@ -100,6 +104,7 @@ type
     procedure ExecuteTool; override;
     procedure AfterExecuteTool; override;
   public
+    /// <summary>The default icon name for the command tool button.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('BatchFileName', 'Path to the batch file or executable to run')]

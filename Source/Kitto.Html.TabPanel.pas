@@ -46,8 +46,11 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
     // IKXContainer
+    /// <summary>Adds a child controller, rendered as a tab.</summary>
     procedure AddController(const AController: IKXController);
+    /// <summary>Renders the child controllers as the tab bodies.</summary>
     function RenderChildren: string;
+    /// <summary>Renders the tab panel (tab headers + bodies).</summary>
     function Render: string; override;
 
     [YamlNode('TabIconsVisible', 'False', 'Show icons on tab buttons')]

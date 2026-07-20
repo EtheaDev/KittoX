@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,16 +43,22 @@ type
   /// </summary>
   IKXController = interface(IEFInterface)
     ['{A1D2E3F4-5678-9ABC-DEF0-112233445566}']
+    /// <summary>Prepares the controller for rendering (create sub-objects, read config).</summary>
     procedure Display;
     function GetView: TKView;
     procedure SetView(const AValue: TKView);
+    /// <summary>The view this controller renders.</summary>
     property View: TKView read GetView write SetView;
     function GetConfig: TEFComponentConfig;
+    /// <summary>The controller's configuration node.</summary>
     property Config: TEFComponentConfig read GetConfig;
     function GetContainer: IKXContainer;
     procedure SetContainer(const AValue: IKXContainer);
+    /// <summary>The container hosting this controller, if any.</summary>
     property Container: IKXContainer read GetContainer write SetContainer;
+    /// <summary>True if the controller renders synchronously (no async round-trip).</summary>
     function IsSynchronous: Boolean;
+    /// <summary>Renders the controller to an HTML string.</summary>
     function Render: string;
   end;
 
@@ -61,7 +67,9 @@ type
   /// </summary>
   IKXContainer = interface(IEFInterface)
     ['{B2C3D4E5-6789-ABCD-EF01-223344556677}']
+    /// <summary>Adds a child controller to be rendered by RenderChildren.</summary>
     procedure AddController(const AController: IKXController);
+    /// <summary>Renders all child controllers and returns the concatenated HTML.</summary>
     function RenderChildren: string;
   end;
 
@@ -86,13 +94,20 @@ type
     procedure SetContainer(const AValue: IKXContainer);
   public
     // IInterface
+    /// <summary>IInterface: queries a supported interface.</summary>
     function QueryInterface(const IID: TGUID; out Obj): HRESULT; stdcall;
+    /// <summary>IInterface: increments the reference count.</summary>
     function _AddRef: Integer; stdcall;
+    /// <summary>IInterface: decrements the reference count (frees at zero).</summary>
     function _Release: Integer; stdcall;
   public
+    /// <summary>Prepares the component for rendering (no-op by default).</summary>
     procedure Display; virtual;
+    /// <summary>The view this component renders.</summary>
     property View: TKView read GetView write SetView;
+    /// <summary>The container hosting this component, if any.</summary>
     property Container: IKXContainer read GetContainer write SetContainer;
+    /// <summary>True if the component renders synchronously.</summary>
     function IsSynchronous: Boolean; virtual;
 
     /// <summary>

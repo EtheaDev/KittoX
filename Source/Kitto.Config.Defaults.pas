@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,9 @@ interface
 type
   TKDefaults = class
   public
+    /// <summary>Default single spacing (in pixels) used for UI layout gaps.</summary>
     class function GetSingleSpacing: Integer;
+    /// <summary>Default double spacing (in pixels) used for UI layout gaps.</summary>
     class function GetDoubleSpacing: Integer;
   end;
 

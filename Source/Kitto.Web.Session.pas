@@ -82,21 +82,28 @@ type
     function GetViewportContent: string; virtual;
     function GetManifestFileName: string; virtual;
   public
+    /// <summary>Sets the session language from the request query, else from config.</summary>
     procedure SetLanguageFromQueriesOrConfig(const AConfig: TKConfig);
+    /// <summary>True while the language is being (re)applied; guards re-entrancy.</summary>
     property RefreshingLanguage: Boolean read FRefreshingLanguage write FRefreshingLanguage;
 
+    /// <summary>The default viewport width (in inches-derived pixels) for mobile layout.</summary>
     function GetDefaultViewportWidth: Integer;
   public
+    /// <summary>Creates a session for the given client address, id and timeout (minutes).</summary>
     constructor Create(const AClientAddress, ASessionId: string; const ATimeout: Double);
     procedure AfterConstruction; override;
     destructor Destroy; override;
 
+    /// <summary>When the session was created (used for timeout/expiry).</summary>
     property CreationDateTime: TDateTime read FCreationDateTime;
     /// <summary>
     ///  The current session's UUID.
     /// </summary>
     property SessionId: string read FSessionId;
+    /// <summary>The session timeout in minutes.</summary>
     property Timeout: Double read FTimeout;
+    /// <summary>The active language id; setting it re-applies localization.</summary>
     property Language: string read FLanguage write SetLanguage;
 
     /// <summary>
@@ -131,12 +138,19 @@ type
     ///  A reference to the main container of controllers.
     /// </summary>
     property ControllerContainer: IKXContainer read FControllerContainer write FControllerContainer;
+    /// <summary>The controllers currently open in this session.</summary>
     property OpenControllers: TList<IKXController> read FOpenControllers;
+    /// <summary>The home (main) controller instance.</summary>
     property HomeController: IKXController read FHomeController write FHomeController;
+    /// <summary>The login controller instance.</summary>
     property LoginController: IKXController read FLoginController write FLoginController;
+    /// <summary>Viewport width in inches (mobile scaling hint).</summary>
     property ViewportWidthInInches: Integer read FViewportWidthInInches write FViewportWidthInInches;
+    /// <summary>Name of a view to open automatically after login, if any.</summary>
     property AutoOpenViewName: string read FAutoOpenViewName write FAutoOpenViewName;
+    /// <summary>Node name of the home view for this session.</summary>
     property HomeViewNodeName: string read FHomeViewNodeName write FHomeViewNodeName;
+    /// <summary>The HTML meta viewport content emitted in the page.</summary>
     property ViewportContent: string read FViewportContent write FViewportContent;
     /// <summary>
     ///  Viewport width in mobile applications.
@@ -183,6 +197,7 @@ type
     ///  e.g. after a server restart).
     /// </summary>
     property IsSessionLost: Boolean read FIsSessionLost write FIsSessionLost;
+    /// <summary>Sets the default language without triggering a full language refresh.</summary>
     procedure SetDefaultLanguage(const AValue: string);
 
     /// <summary>
@@ -256,6 +271,7 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>Creates the session list with the given per-session timeout (minutes).</summary>
     constructor Create(const ATimeout: Double);
 
     /// <summary>
@@ -288,11 +304,15 @@ type
     /// </summary>
     procedure RemoveSession(const ASession: TKWebSession);
 
+    /// <summary>Removes and frees all sessions.</summary>
     procedure ClearSessions;
 
+    /// <summary>Removes and frees the sessions that have expired (per their timeout).</summary>
     procedure CleanupExpiredSessions;
 
+    /// <summary>Fired when a new session is created.</summary>
     property OnSessionStart: TKWebSessionProc read FOnSessionStart write FOnSessionStart;
+    /// <summary>Fired when a session is removed/ended.</summary>
     property OnSessionEnd: TKWebSessionProc read FOnSessionEnd write FOnSessionEnd;
   end;
 
@@ -309,6 +329,7 @@ type
     procedure Execute; override;
   public
     const DEFAULT_INTERVAL = 30 * OneSecond;
+    /// <summary>Creates the cleanup thread for the given session list, waking every AInterval.</summary>
     constructor Create(const ASessions: TKWebSessions; const AInterval: Double);
   end;
 

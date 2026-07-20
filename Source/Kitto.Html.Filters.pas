@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,6 +50,7 @@ type
     class var FInstance: TKXFilterRegistry;
     class function GetInstance: TKXFilterRegistry; static;
   public
+    /// <summary>The singleton filter-class registry (used by KIDE at design time).</summary>
     class property Instance: TKXFilterRegistry read GetInstance;
     class destructor Destroy;
   end;

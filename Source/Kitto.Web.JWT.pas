@@ -90,7 +90,9 @@ type
     /// configured access controller). Empty otherwise.
     Acl: TKJWTAclArray;
     HasAcl: Boolean;
+    /// <summary>Resets all fields to empty/invalid.</summary>
     procedure Clear;
+    /// <summary>True if the Roles list contains ARole (case-insensitive).</summary>
     function HasRole(const ARole: string): Boolean;
   end;
 
@@ -103,9 +105,13 @@ type
     Algorithm: TJOSEAlgorithmId;
     PrivateKey: TBytes;
     PublicKey: TBytes;
+    /// <summary>True if a private (or symmetric) key is present.</summary>
     function HasPrivateKey: Boolean;
+    /// <summary>True if a public key is present (asymmetric verifier).</summary>
     function HasPublicKey: Boolean;
+    /// <summary>True for symmetric (HS*) algorithms.</summary>
     function IsSymmetric: Boolean;
+    /// <summary>Zeroes and clears the key material.</summary>
     procedure Clear;
   end;
 
@@ -129,11 +135,15 @@ type
     destructor Destroy; override;
     class destructor ClassDestroy;
 
+    /// <summary>Registers a signing-key provider for the given app name (replaces any existing).</summary>
     procedure RegisterProvider(const AAppName: string;
       const AProvider: TKJWTSigningKeyProvider);
+    /// <summary>Removes the signing-key provider registered for the given app name.</summary>
     procedure UnregisterProvider(const AAppName: string);
+    /// <summary>Returns the provider registered for the app name, or nil.</summary>
     function FindProvider(const AAppName: string): TKJWTSigningKeyProvider;
 
+    /// <summary>The process-wide singleton registry.</summary>
     class property Instance: TKJWTSigningKeyRegistry read GetInstance;
   end;
 
@@ -167,27 +177,46 @@ type
     procedure Parse;
     procedure ResolveKey;
   public
+    /// <summary>Parses the Auth/JWT config node for the given app.</summary>
     constructor Create(const AAppName: string; const AAuthNode: TEFTree);
     destructor Destroy; override;
 
+    /// <summary>The application name this config belongs to.</summary>
     property AppName: string read FAppName;
+    /// <summary>The JOSE signing algorithm (HS256, RS256, …).</summary>
     property Algorithm: TJOSEAlgorithmId read FAlgorithm;
+    /// <summary>Expected/emitted 'iss' (issuer) claim.</summary>
     property Issuer: string read FIssuer;
+    /// <summary>Expected/emitted 'aud' (audience) claim.</summary>
     property Audience: string read FAudience;
+    /// <summary>Token lifetime in seconds (exp = iat + this).</summary>
     property TokenLifetimeSeconds: Integer read FTokenLifetimeSeconds;
+    /// <summary>Remaining-lifetime threshold (seconds) below which the cookie is slid/refreshed.</summary>
     property SlidingThresholdSeconds: Integer read FSlidingThresholdSeconds;
+    /// <summary>Allowed clock skew (seconds) when validating exp/nbf.</summary>
     property ClockSkewSeconds: Integer read FClockSkewSeconds;
+    /// <summary>Name of the cookie carrying the token (default 'kx_token').</summary>
     property CookieName: string read FCookieName;
+    /// <summary>Cookie Path attribute.</summary>
     property CookiePath: string read FCookiePath write FCookiePath;
+    /// <summary>Cookie Secure attribute.</summary>
     property CookieSecure: Boolean read FCookieSecure;
+    /// <summary>Cookie HttpOnly attribute.</summary>
     property CookieHttpOnly: Boolean read FCookieHttpOnly;
+    /// <summary>Cookie SameSite attribute ('Strict'/'Lax'/'None'/'').</summary>
     property CookieSameSite: string read FCookieSameSite;
+    /// <summary>Include the user's roles as a claim.</summary>
     property IncludeRoles: Boolean read FIncludeRoles;
+    /// <summary>Include the active database name as a claim ('db').</summary>
     property IncludeDB: Boolean read FIncludeDB;
+    /// <summary>Include the user's display name as a claim.</summary>
     property IncludeDisplayName: Boolean read FIncludeDisplayName;
+    /// <summary>Include the language as a claim.</summary>
     property IncludeLanguage: Boolean read FIncludeLanguage;
+    /// <summary>Include the ACL grant rows as a claim (when AccessControl: JWT).</summary>
     property IncludeACL: Boolean read FIncludeACL;
 
+    /// <summary>Returns the resolved signing key (from config spec or a registered provider).</summary>
     function GetSigningKey: TKJWTSigningKey;
   end;
 
@@ -196,6 +225,7 @@ type
   /// </summary>
   TKJWTBuilder = class
   public
+    /// <summary>Builds and signs a compact JWT from the context + config (plus any extra claims).</summary>
     class function Build(const AContext: TKJWTContext;
       const AConfig: TKJWTConfig;
       const AExtraClaims: TArray<TPair<string, string>> = nil): string;
@@ -206,6 +236,8 @@ type
   /// </summary>
   TKJWTValidator = class
   public
+    /// <summary>Verifies the token's signature and claims against AConfig; on success fills
+    /// AContext and returns True, else returns False with AErrorMessage set.</summary>
     class function Validate(const ACompactToken: string;
       const AConfig: TKJWTConfig; out AContext: TKJWTContext;
       out AErrorMessage: string): Boolean;
@@ -216,14 +248,20 @@ type
   /// </summary>
   TKJWTCookieHelper = class
   public
+    /// <summary>Writes the token to the response as the configured secure cookie.</summary>
     class procedure Issue(const ACompactToken: string; const AConfig: TKJWTConfig);
+    /// <summary>Clears (expires) the token cookie on the response.</summary>
     class procedure Clear(const AConfig: TKJWTConfig);
+    /// <summary>Reads the token from the request's configured cookie ('' if absent).</summary>
     class function ReadFromRequest(const AConfig: TKJWTConfig): string;
+    /// <summary>True if the token is close enough to expiry that the cookie should be re-issued (slid).</summary>
     class function ShouldSlide(const AContext: TKJWTContext;
       const AConfig: TKJWTConfig): Boolean;
   end;
 
+/// <summary>Maps an algorithm name (e.g. 'HS256') to its TJOSEAlgorithmId.</summary>
 function StringToAlgorithmId(const S: string): TJOSEAlgorithmId;
+/// <summary>Resolves a key spec (inline value, file: or env: reference) to raw key bytes.</summary>
 function ResolveKeySpec(const ASpec: string): TBytes;
 
 /// <summary>

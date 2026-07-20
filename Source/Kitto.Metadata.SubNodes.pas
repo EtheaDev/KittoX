@@ -739,7 +739,7 @@ type
     [YamlNode('Mode', 'Auto', 'Theme mode: Auto (follow OS) | Light | Dark')]
     property Mode: TKTheme read GetMode;
 
-    [YamlNode('UserSelection', 'True', 'Let the end user pick the theme via the ThemeSwitcher controller (only honoured when Mode=Auto). Runtime default when the node is absent is False; the attribute carries the inverse (True) so adding the node in KIDE writes the meaningful, behaviour-changing value.')]
+    [YamlNode('UserSelection', 'True', 'Let the end user pick the theme via the ThemeSwitcher controller (only honoured when Mode=Auto). The attribute carries the inverse (True) so adding the node in KIDE writes the meaningful, behaviour-changing value.')]
     property UserSelection: Boolean read GetUserSelection;
 
     [YamlNode('Font-Family', 'UI font family, shared across modes')]

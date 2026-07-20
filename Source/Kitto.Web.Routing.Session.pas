@@ -72,6 +72,7 @@ type
   private
     FCookieName: string;
   public
+    /// <summary>Creates the provider using the given cookie name (default 'kx_session').</summary>
     constructor Create(const ACookieName: string = 'kx_session');
     function GetSessionId(const ARequest: TKWebRequest): string;
     procedure SetSessionId(const AResponse: TKWebResponse;

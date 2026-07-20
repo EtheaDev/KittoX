@@ -41,6 +41,8 @@ type
     function DoHandleRequest(const ARequest: TKWebRequest;
       const AResponse: TKWebResponse; const AURL: TKWebURL): Boolean; override;
   public
+    /// <summary>Creates the route for the given application base path; AApplication
+    /// is the owning TKWebApplication (held as TObject to avoid a circular unit use).</summary>
     constructor Create(const AAppPath: string; AApplication: TObject);
   end;
 
@@ -56,7 +58,8 @@ uses
   Kitto.Web.Application,
   Kitto.Web.Routing.Injection,
   Kitto.Web.Routing.Registry,
-  Kitto.Web.Routing.Activation;
+  Kitto.Web.Routing.Activation,
+  Kitto.Web.Routing.Filters;
 
 { TKXRoutingRoute }
 
@@ -87,17 +90,27 @@ begin
   if LActivationObj.TryMatch then
   begin
     // Activate thread-local context (Authenticator, AccessController, Macros)
-    // same as TKWebApplication.DoHandleRequest does before its handlers.
+    // then run the dispatch through the shared request-filter chain (JWT
+    // hydration + authorization gate + error handling), exactly like the legacy
+    // TKWebApplication.DoHandleRequest. Gate exemptions come from the matched
+    // method's [TKXAnonymous] and, for a target view, IsPublicView.
     TKWebApplication(FApplication).ActivateInstance;
     try
-      // Give attribute-routed requests the same JWT hydration the legacy
-      // DoHandleRequest performs before dispatch: no-op for non-JWT auth; for
-      // JWT it validates kx_token and hydrates the session from the claims
-      // (so e.g. the auth-family handlers and data endpoints see the right
-      // session/database). Pre-auth requests (login, no cookie) are a no-op.
-      TKWebApplication(FApplication).AuthorizeJWTRequest;
-      LActivationObj.Invoke;
-      Result := True;
+      var LViewName: string := LActivationObj.GetPathParam('ViewName');
+      var LAnon: Boolean := LActivationObj.MatchedIsAnonymous;
+      var LContext: IKXRequestContext := TKXRequestContext.Create(
+        AURL.Path, ARequest.Method,
+        {AllowUnauthenticated} LAnon or TKWebApplication(FApplication).IsPublicView(LViewName),
+        {AllowSessionLost} LAnon,
+        // A fragment endpoint is not directly navigable; anonymous (login/logout/
+        // reset/change) and [TKXNavigable] (blob downloads) endpoints are.
+        {AllowDirectNavigation} LAnon or LActivationObj.MatchedIsNavigable);
+      Result := TKXFilterChain.Run(LContext,
+        function: Boolean
+        begin
+          LActivationObj.Invoke;
+          Result := True;
+        end);
     finally
       TKWebApplication(FApplication).DeactivateInstance;
     end;

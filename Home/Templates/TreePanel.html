@@ -1,3 +1,21 @@
+{{#
+  TreePanel.html — KittoX structural template for the tree/menu navigation panel
+  (optional title + tree body).
+
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Default system template. Override by copying to (first match wins):
+    <App>/Home/Templates/TreePanel.html   (per app)
+    <Kitto>/Home/Templates/TreePanel.html (system default)
+  Notation: ":name" = escaped value, ":name$" = raw HTML (see README.md).
+  Control flow: the title is rendered only when set (an if/endif block).
+
+  Variables (injected by TKXTreePanelController):
+    htmlId        DOM id of the nav element
+    title         panel title (escaped; omitted when empty)
+    treeContent$  rendered tree/menu markup (raw)
+#}}
 <nav id="{{:htmlId}}" class="kx-tree-panel">
   {{if title}}
   <div class="kx-tree-panel-title">{{:title}}</div>

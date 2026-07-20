@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,6 +46,7 @@ type
     procedure ExecuteTool; override;
     procedure AssignParamValue(const AParam: TParam; var AValue: Variant);
   public
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('SQLCommandText', 'SQL command text to execute')]

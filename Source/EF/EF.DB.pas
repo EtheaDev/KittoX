@@ -113,6 +113,7 @@ type
   private
     FName: string;
   public
+    /// <summary>The metadata item's name (table/column/constraint name).</summary>
     property Name: string read FName write FName;
   end;
 
@@ -129,7 +130,9 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>The table this primary key belongs to.</summary>
     property TableInfo: TEFDBTableInfo read FTableInfo;
+    /// <summary>The names of the columns that make up the primary key.</summary>
     property ColumnNames: TStrings read FColumnNames;
   end;
 
@@ -151,6 +154,7 @@ type
     function GetIsKey: Boolean;
     function GetIsForeignKey: Boolean;
   public
+    /// <summary>The column's EF data type.</summary>
     property DataType: TEFDataType read FDataType write FDataType;
 
     ///	<summary>
@@ -201,10 +205,15 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>The table this foreign key belongs to.</summary>
     property TableInfo: TEFDBTableInfo read FTableInfo;
+    /// <summary>The local column names that make up the foreign key.</summary>
     property ColumnNames: TStrings read FColumnNames;
+    /// <summary>The name of the referenced (foreign) table.</summary>
     property ForeignTableName: string read FForeignTableName write FForeignTableName;
+    /// <summary>The referenced columns in the foreign table.</summary>
     property ForeignColumnNames: TStrings read FForeignColumnNames;
+    /// <summary>Number of columns in the foreign key.</summary>
     property ColumnCount: Integer read GetColumnCount;
 
     ///	<summary>Returns True if at least one of the fields is
@@ -228,15 +237,25 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>The schema this table belongs to.</summary>
     property SchemaInfo: TEFDBSchemaInfo read FSchemaInfo;
+    /// <summary>The table's columns, by index.</summary>
     property Columns[const AIndex: Integer]: TEFDBColumnInfo read GetColumns;
+    /// <summary>Number of columns.</summary>
     property ColumnCount: Integer read GetColumnCount;
+    /// <summary>Returns the column with the given name, or nil.</summary>
     function FindColumn(const AColumnName: string): TEFDBColumnInfo;
+    /// <summary>Adds a column and returns its index; the table owns it.</summary>
     function AddColumn(const AColumn: TEFDBColumnInfo): Integer;
+    /// <summary>The table's primary key info.</summary>
     property PrimaryKey: TEFDBPrimaryKeyInfo read FPrimaryKey;
+    /// <summary>The table's foreign keys, by index.</summary>
     property ForeignKeys[const AIndex: Integer]: TEFDBForeignKeyInfo read GetForeignKeys;
+    /// <summary>Number of foreign keys.</summary>
     property ForeignKeyCount: Integer read GetForeignKeyCount;
+    /// <summary>Returns the foreign key with the given name, or nil.</summary>
     function FindForeignKey(const AForeignKeyName: string): TEFDBForeignKeyInfo;
+    /// <summary>Adds a foreign key and returns its index; the table owns it.</summary>
     function AddForeignKey(const AForeignKey: TEFDBForeignKeyInfo): Integer;
 
     ///	<summary>Returns a list of all foreign keys referencing the
@@ -261,7 +280,9 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>The schema's tables, by index.</summary>
     property Tables[const AIndex: Integer]: TEFDBTableInfo read GetTables;
+    /// <summary>Number of tables in the schema.</summary>
     property TableCount: Integer read GetTableCount;
 
     ///	<summary>
@@ -664,6 +685,7 @@ type
   protected
     function InternalCreateDBConnection: TEFDBConnection; virtual; abstract;
   public
+    /// <summary>Creates and returns a new database connection for this adapter's library.</summary>
     function CreateDBConnection: TEFDBConnection;
   end;
   TEFDBAdapterClass = class of TEFDBAdapter;
@@ -687,7 +709,9 @@ type
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
 
+    /// <summary>Registers a DB adapter under the given id.</summary>
     procedure RegisterDBAdapter(const AId: string; const ADBAdapter: TEFDBAdapter);
+    /// <summary>Removes the DB adapter registered under the given id.</summary>
     procedure UnregisterDBAdapter(const AId: string);
 
     ///	<summary>
@@ -697,9 +721,12 @@ type
     ///	</summary>
     property DBAdapters[const AId: string]: TEFDBAdapter read GetDBAdapter; default;
 
+    /// <summary>Number of registered DB adapters.</summary>
     property DBAdapterCount: Integer read GetDBAdapterCount;
+    /// <summary>The registered DB adapters, by index.</summary>
     property DBAdaptersByIndex[const AIndex: Integer]: TEFDBAdapter read GetDBAdapterByIndex;
 
+    /// <summary>The singleton adapter registry.</summary>
     class property Instance: TEFDBAdapterRegistry read GetInstance;
   end;
 
@@ -1480,6 +1507,11 @@ begin
   Result := ReplaceText(Result, '%DB.FROM_DUAL%', 'FROM DUAL');
   Result := ReplaceText(Result, '%DB.TRUE%', GetBoolTrueLiteral);
   Result := ReplaceText(Result, '%DB.FALSE%', GetBoolFalseLiteral);
+  // String concatenation operator: ANSI / Oracle / PostgreSQL / Firebird use
+  // '||' (SQL Server overrides to '+'). Lets the same expression concatenate
+  // strings across dialects, e.g. A %DB.CONCAT% ' - ' %DB.CONCAT% B — needed
+  // because Oracle CONCAT() takes only 2 args and Firebird has no CONCAT().
+  Result := ReplaceText(Result, '%DB.CONCAT%', '||');
   Result := ExpandParamMacro(Result, DATEDIFF_PATTERN, mkDateDiff);
   Result := ExpandParamMacro(Result, DATETIME_FROM_PATTERN, mkDateTimeFrom);
   Result := ExpandParamMacro(Result, EXTRACT_PATTERN, mkExtract);
@@ -1576,6 +1608,9 @@ function TEFSQLServerDBEngineType.ExpandCommandText(const ACommandText: string):
 begin
   Result := ReplaceText(ACommandText, '%DB.CURRENT_DATE%', 'getdate()');
   Result := ReplaceText(Result, '%DB.FROM_DUAL%', '');
+  // SQL Server concatenates with '+' (must run before inherited, which would
+  // otherwise expand %DB.CONCAT% to the default '||').
+  Result := ReplaceText(Result, '%DB.CONCAT%', '+');
   Result := inherited ExpandCommandText(Result);
 end;
 
@@ -1719,9 +1754,14 @@ begin
   Result := ASelectClause + ' ' + AFromClause + ' ' + AWhereClause + AOrderByClause;
   if (AFrom <> 0) or (AFor <> 0) then
   begin
+    // Standard Oracle top-N pagination. ROWNUM starts at 1, so the upper bound
+    // must be inclusive (<=) and the offset exclusive (>). The previous form
+    // (ROWNUM < AFrom+AFor / rnum >= AFrom) was off by one: for a single-record
+    // load (AFrom=0, AFor=1) it produced "ROWNUM < 1", which is never true, so
+    // every single-row fetch (e.g. opening a record's edit form) returned 0 rows.
     Result := Format(
       'select * from (select /*+ FIRST_ROWS(n) */ LIMITED_QUERY.*, ROWNUM rnum from (%s) LIMITED_QUERY'+
-      ' where ROWNUM < %d ) where rnum >= %d', [Result, AFrom+AFor, AFrom]);
+      ' where ROWNUM <= %d ) where rnum > %d', [Result, AFrom+AFor, AFrom]);
   end;
 end;
 

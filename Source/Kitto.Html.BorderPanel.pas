@@ -59,8 +59,11 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
     // IKXContainer
+    /// <summary>Adds a child controller, placed in a region (North/South/West/East/Center).</summary>
     procedure AddController(const AController: IKXController);
+    /// <summary>Renders the child controllers into their border regions.</summary>
     function RenderChildren: string;
+    /// <summary>Renders the border-layout panel with its regions.</summary>
     function Render: string; override;
   end;
 

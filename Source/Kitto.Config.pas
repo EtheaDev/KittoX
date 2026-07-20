@@ -118,6 +118,7 @@ type
     /// <summary>Returns the directory of the current module (DLL) or executable.
     /// For ISAPI/Apache DLLs returns the DLL path; for EXEs same as ParamStr(0) path.</summary>
     class function GetModulePath: string; static;
+    /// <summary>Frees the singleton config instance.</summary>
     class procedure DestroyInstance;
     procedure AfterConstruction; override;
     destructor Destroy; override;
@@ -136,9 +137,12 @@ type
     /// </param>
     function FindResourcePathName(const AResourceFileName: string): string;
   public
+    /// <summary>Sets the class used to instantiate the config singleton (override hook).</summary>
     class procedure SetConfigClass(const AValue: TKConfigClass);
 
+    /// <summary>The application name (derived from the home directory, or via OnGetAppName).</summary>
     class property AppName: string read GetAppName;
+    /// <summary>Optional callback to override how the application name is resolved.</summary>
     class property OnGetAppName: TKConfigGetAppNameEvent read FOnGetAppName write FOnGetAppName;
 
     /// <summary>
@@ -338,8 +342,10 @@ type
     procedure GetHelpSupport(out AShowLink: Boolean;
       out AHRef, AHRefStyle, AShortText, ALongText: string);
 
+    /// <summary>The macro-expansion engine for this config (expands %...% macros in config values).</summary>
     property MacroExpansionEngine: TEFMacroExpansionEngine read GetMacroExpansionEngine;
 
+    /// <summary>Format settings for the current user/session (dates, numbers, currency).</summary>
     property UserFormatSettings: TFormatSettings read FUserFormatSettings;
 
     [YamlNode('MultiFieldSeparator', '~', 'Separator for multi-field composite keys')]
@@ -413,6 +419,7 @@ type
     property Config: TKConfig read FConfig;
     procedure InternalExpand(var AString: string); override;
   public
+    /// <summary>Creates the macro expander bound to the given config instance.</summary>
     constructor Create(const AConfig: TKConfig); reintroduce;
   end;
 

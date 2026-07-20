@@ -4,7 +4,7 @@ PluralDisplayLabel: Activities
 PhysicalName: ACTIVITY
 Fields:
   Title:
-    Expression: CONCAT(Employee.EMPLOYEE_NAME, ' - ', Phase.PHASE_NAME)
+    Expression: Employee.EMPLOYEE_NAME %DB.CONCAT% ' - ' %DB.CONCAT% Phase.PHASE_NAME
   EventId: String(32) primary key
     PhysicalName: ACTIVITY_ID
     DefaultValue: %COMPACT_GUID%

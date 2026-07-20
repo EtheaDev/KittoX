@@ -32,7 +32,7 @@ const
   ///  script and the README banner. Do not edit manually unless you know
   ///  what you are doing — use the release script.
   /// </summary>
-  KITTOX_VERSION = '4.0.9';
+  KITTOX_VERSION = '4.0.10';
 
 type
   TKOperation = (emViewCurrentRecord, emNewRecord, emEditCurrentRecord, emDupCurrentRecord);

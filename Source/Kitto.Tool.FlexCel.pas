@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2019-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,7 @@ uses
   Kitto.Html.Files;
 
 type
+  /// <summary>Download-file tool controller that exports the view table to Excel using FlexCel.</summary>
   TExportFlexCelToolController = class(TKXDownloadFileController)
   strict private
     FExportExcelEngine: TKFlexCelExportEngine;
@@ -50,14 +51,20 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
+    /// <summary>The FlexCel engine that performs the Excel export.</summary>
     property ExportEngine: TKFlexCelExportEngine read FExportExcelEngine;
   //published
+    /// <summary>Named range in the Excel workbook to fill.</summary>
     property ExcelRangeName: string read GetExcelRangeName;
+    /// <summary>Path to the Excel template workbook, if any.</summary>
     property TemplateFileName: string read GetTemplateFileName;
+    /// <summary>Use display labels instead of field names for column headers.</summary>
     property UseDisplayLabels: boolean read GetUseDisplayLabels;
   end;
 
+/// <summary>Returns the default file-mask wildcards accepted for Excel files (e.g. *.xls;*.xlsx).</summary>
 function DefaultExcelWildcards: string;
 
 implementation

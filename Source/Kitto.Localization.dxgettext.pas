@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 ///	<summary>
 ///	  This unit defines a Kitto-specific localization interface to the open
 ///	  source translation tool dxgettext (GNU gettext for Delphi). It plugs into
-///	  Ethea Foundation's localization architecture to allow�Kitto applications
+///	  Ethea Foundation's localization architecture to allow Kitto applications
 ///	  to be localized by means of dxgettext.
 ///	</summary>
 unit Kitto.Localization.dxgettext;
@@ -43,11 +43,16 @@ type
     FTextDomainBound: Boolean;
     procedure EnsureTextDomainBound;
   public
+    /// <summary>Returns the tool as a TObject (IEFInterface support).</summary>
     function AsObject: TObject;
+    /// <summary>Translates AString via dxgettext; AIdString optionally disambiguates identical texts.</summary>
     function TranslateString(const AString: string;
       const AIdString: string = ''): string;
+    /// <summary>Translates all localizable properties of the given component and its children.</summary>
     procedure TranslateComponent(const AComponent: TComponent);
+    /// <summary>Forces the active translation language to the given language id.</summary>
     procedure ForceLanguage(const ALanguageId: string);
+    /// <summary>Returns the id of the language currently in use.</summary>
     function GetCurrentLanguageId: string;
     procedure AfterConstruction; override;
   end;

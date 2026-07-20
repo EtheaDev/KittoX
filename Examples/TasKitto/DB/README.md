@@ -1,6 +1,6 @@
 # TasKitto — Database scripts
 
-SQL scripts to create and populate the TasKitto demo database on the three
+SQL scripts to create and populate the TasKitto demo database on the four
 supported engines, plus a helper to keep the **Activity Dashboard** showing
 fresh data over time.
 
@@ -14,9 +14,14 @@ PostgreSQL/Firebird):
 | **SQL Server** | `Taskitto_SQLServer_DDL.sql` → `Taskitto_SQLServer_DDL_Views.sql` → `Taskitto_SQLServer_Data.sql` |
 | **PostgreSQL** | `KittoX_PostgreSQL_CreateDB.sql` → `TasKitto_PostgreSQL_DDL.sql` → `TasKitto_PostgreSQL_Data.sql` |
 | **Firebird** | `TasKitto_Firebird_DDL.sql` → `TasKitto_Firebird_Data.sql` |
+| **Oracle** (19c) | `TasKitto_Oracle_DDL.sql` → `TasKitto_Oracle_Data.sql` |
 
 (On SQL Server the DDL is split because the views must be created in a
-separate batch from the tables, per T-SQL batch rules.)
+separate batch from the tables, per T-SQL batch rules. The Oracle DDL keeps
+tables + views in one file, like PostgreSQL/Firebird. On Oracle, booleans are
+`NUMBER(1)` 1/0 and the `time` columns `START_TIME`/`END_TIME` are stored in
+`DATE` — see the header of `TasKitto_Oracle_DDL.sql`. Run as the schema owner;
+the scripts use unqualified, upper-case identifiers.)
 
 ## Refreshing demo dates (`*_ShiftDates.sql`)
 
@@ -31,6 +36,7 @@ meaningful numbers:
 - `Taskitto_SQLServer_ShiftDates.sql`
 - `TasKitto_PostgreSQL_ShiftDates.sql`
 - `TasKitto_Firebird_ShiftDates.sql`
+- `TasKitto_Oracle_ShiftDates.sql`
 
 **Default = auto re-center**: each script finds the month holding the most
 activities and shifts everything so that month lands on the *current* month —
@@ -52,6 +58,11 @@ set the in-script flag (`@AutoReCenter = 0` / `v_auto_recenter := FALSE` /
   block (one auto-committed transaction).
 - **Firebird** — run as-is in `isql` (it relies on the `SET TERM ^` directive
   and `EXECUTE BLOCK`).
+- **Oracle** — run as-is in `SQL*Plus` / `SQLcl` (the trailing `/` executes the
+  anonymous PL/SQL block; `SET SERVEROUTPUT ON` shows the messages). Through a
+  client that rejects anonymous PL/SQL, follow the header of
+  `TasKitto_Oracle_ShiftDates.sql`: run the `MONTHS_BETWEEN` query to get the
+  shift, then issue the three `UPDATE … ADD_MONTHS(…)` statements.
 
 > **Note — running via an MCP / generic SQL client:** the Firebird
 > `EXECUTE BLOCK` form may be rejected by clients with a SQL safety filter

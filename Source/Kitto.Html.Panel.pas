@@ -97,7 +97,9 @@ type
     /// </summary>
     function RenderWithRegions(const ACenterHtml: string): string; virtual;
   public
+    /// <summary>Prepares the panel for rendering (reads config, applies context).</summary>
     procedure Display; override;
+    /// <summary>Renders the panel chrome (header/border/regions) around RenderContent.</summary>
     function Render: string; override;
     [YamlNode('Title', 'Panel title text')]
     property Title: string read FTitle write FTitle;

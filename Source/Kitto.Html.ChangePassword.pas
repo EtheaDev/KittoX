@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,9 @@ type
     function GetFormTarget: string; override;
     function RenderFormScript: string; override;
   public
+    /// <summary>The default display label for the change-password action.</summary>
     class function GetDefaultDisplayLabel: string;
+    /// <summary>The default icon name for the change-password action.</summary>
     class function GetDefaultImageName: string;
     [YamlNode('LabelWidth', '100', 'Label width in pixels for form fields')]
     property LabelWidth: Integer read GetLabelWidth;

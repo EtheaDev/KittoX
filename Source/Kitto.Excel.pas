@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,6 +55,10 @@ type
   TAcceptExportRecordEvent = procedure(ARecord: TKViewTableRecord; var AAccept: Boolean) of object;
   TAcceptExportDataRecordEvent = procedure(ADataSet: TDataSet; var AAccept: Boolean) of object;
 
+  /// <summary>
+  ///  Exports a KittoX view-table store (or a plain dataset) to an Excel file
+  ///  via ADOX/ADO, optionally filling a named range in a template workbook.
+  /// </summary>
   TKExcelExportEngine = class(TKExcelEngine)
   strict private
     procedure CreateExcelSheet(const AViewTableStore: TKViewTableStore;
@@ -75,21 +79,25 @@ type
     procedure GetADOXFieldType(const Field : TField;
       out AADOXDataType : DataTypeEnum);
   public
+    /// <summary>Creates a new Excel file from a view-table store, building the sheet structure from its fields.</summary>
     procedure CreateFileByTable(const AFileName: string;
       const ATableStore: TKViewTableStore;
       const AExcelRangeName: string = '';
       const AAcceptFieldEvent: TAcceptViewFieldEvent = nil;
       const AUseDisplayLabels: Boolean = False);
+    /// <summary>Creates a new Excel file from a plain dataset, building the sheet structure from its fields.</summary>
     procedure CreateFileByDataSet(const AFileName: string;
       const ADataSet: TDataSet;
       const AExcelRangeName: string = '';
       const AAcceptFieldEvent: TAcceptDataFieldEvent = nil;
       const AUseDisplayLabels: Boolean = False);
+    /// <summary>Fills the named range of an existing Excel file with the rows of a view-table store.</summary>
     procedure FillAdoTable(const AExcelFileName, AExcelRangeName: string;
       const ATableStore: TKViewTableStore;
       AAcceptRecordEvent: TAcceptExportRecordEvent = nil;
       AAcceptFieldEvent: TAcceptViewFieldEvent = nil;
       AUseDisplayLabels: Boolean = false);
+    /// <summary>Fills the named range of an existing Excel file with the rows of a dataset.</summary>
     procedure FillAdoTableByDataSet(const AExcelFileName, AExcelRangeName: string;
       const ADataSet: TDataSet;
       AAcceptRecordEvent: TAcceptExportDataRecordEvent = nil;
@@ -106,13 +114,19 @@ type
   TImportDatabaseErrorEvent = procedure(E : Exception; RecordNumber : integer;
     var IgnoreError : Boolean) of object;
 
+  /// <summary>
+  ///  Imports rows from an Excel file into a KittoX view table, with optional
+  ///  field-name mapping and accept/set-value/before-post callbacks.
+  /// </summary>
   TKExcelImportEngine = class(TKExcelEngine)
   strict private
     FOnDatabaseError: TImportDatabaseErrorEvent;
   protected
   public
+    /// <summary>Resolves the destination field name for a source Excel field using the given mappings.</summary>
     function GetFieldMappingName(const ASourceField: TField;
       const AFieldMappings: TStringList): string;
+    /// <summary>Imports all accepted records from the Excel file into the given view table.</summary>
     procedure ImportFileIntoViewTable(
       const AFileName: string;
       const AViewTable: TKViewTable;
@@ -122,6 +136,7 @@ type
       const AOnAcceptField: TAcceptDataFieldEvent = nil;
       const AOnSetFieldValue: TImportSetFieldValue = nil;
       const AOnBeforePostRecord: TImportBeforePostRecordEvent = nil);
+    /// <summary>Fired when a database error occurs during import; the handler may choose to ignore it.</summary>
     property OnDatabaseError : TImportDatabaseErrorEvent read FOnDatabaseError write FOnDatabaseError;
   end;
 

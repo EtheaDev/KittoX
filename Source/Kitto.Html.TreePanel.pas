@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,7 @@ type
     function RenderTreeNodes(const ANodes: IKTreeViewNodes; const AViews: TKViews): string;
     function GetTreeView: string;
   public
+    /// <summary>Renders the navigation tree from the referenced TreeView.</summary>
     function Render: string; override;
     [YamlNode('TreeView', 'MainMenu', 'Name of the TreeView to render as tree panel')]
     property TreeView: string read GetTreeView;

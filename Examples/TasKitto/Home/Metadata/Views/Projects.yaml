@@ -15,7 +15,7 @@ Controller: List
         Width: 40
         # CommandText must select the value field and the display field as the first two fields.
         CommandText: |
-          select '' CUSTOMER_ID, '(All)' CUSTOMER_NAME
+          select '' CUSTOMER_ID, '(All)' CUSTOMER_NAME %DB.FROM_DUAL%
           union all
           select distinct CUSTOMER_ID, CUSTOMER_NAME from CUSTOMER order by 2
         # ExpressionTemplate should contain a {value} placeholder for the value field selected by the CommandText.

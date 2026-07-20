@@ -92,6 +92,11 @@ type
       const AOrderBy: string; const ADBQuery: TEFDBQuery; const AMasterValues: TEFNode = nil;
       const AFrom: Integer = 0; const AFor: Integer = 0);
 
+    /// <summary>
+    ///  Builds in the specified query a SELECT COUNT(*) statement for the given
+    ///  view table, applying the same filter and master-detail linking as
+    ///  BuildSelectQuery. Used to compute the total record count for paging.
+    /// </summary>
     procedure BuildCountQuery(const AViewTable: TKViewTable;
       const AFilter: string; const ADBQuery: TEFDBQuery;
       const AMasterValues: TEFNode);
@@ -180,6 +185,11 @@ type
     /// </summary>
     function GetSortClause(const AViewField: TKViewField; const AIsDescending: Boolean): string;
 
+    /// <summary>
+    ///  Creates a temporary builder instance, passes it to AProc, and frees it
+    ///  afterwards. Convenience for one-off SQL building without managing the
+    ///  builder's lifetime.
+    /// </summary>
     class procedure CreateAndExecute(const AProc: TProc<TKSQLBuilder>);
   end;
 

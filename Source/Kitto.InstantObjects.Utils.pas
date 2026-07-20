@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2019-2025 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,16 +41,24 @@ type
   public
     destructor Destroy; override;
 
+    /// <summary>The InstantObjects connector wrapping the request's shared TKConfig.Database connection.</summary>
     property Connector: TInstantFireDACConnector read GetInstantFireDACConnector;
   End;
 
+/// <summary>
+///  Retrieves the InstantObject of the given class and id, creating a new one
+///  if it does not exist. Uses AConnector, or the current one if nil.
+/// </summary>
 function RetrieveOrCreateInstantObject(const AClassName, AId: string;
       const AConnector: TInstantConnector = nil) : TCBInstantObject;
 
+/// <summary>Creates/loads and populates an InstantObject from the values of a Kitto store record.</summary>
 function TKRecordToInstantObject(ARecord : TKRecord ) : TCBInstantObject;
 
+/// <summary>Copies the persistent property values of an InstantObject into a Kitto store record.</summary>
 procedure InstantObjectToTKRecord(AInstantObject : TCBInstantObject; const ARecord: TKRecord) ;
 
+/// <summary>Hook run before storing an InstantObject (e.g. to assign the id / apply defaults).</summary>
 procedure InstantObjectBeforeStore(AInstantObject : TCBInstantObject) ;
 
 const

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@ uses
 type
   TKWebURL = class(TIdURI)
   public
+    /// <summary>Returns the full reconstructed URI string.</summary>
     function GetURI: string;
 
     /// <summary>

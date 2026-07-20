@@ -322,6 +322,25 @@ begin
             LDestinationParameter.DataType := ftWideString;
             LDestinationParameter.Value := LSourceParam.AsWideString;
           end;
+        ftUnknown:
+          begin
+            // Untyped param (DirectExecute: FireDAC cannot infer the type and
+            // would reject it as "data type is unknown").
+            if LSourceParam.IsNull then
+            begin
+              // Truly unassigned (e.g. optional SQL columns left unset): bind
+              // NULL with a benign type — a NULL binds regardless of the
+              // declared type for a nullable column.
+              LDestinationParameter.DataType := ftWideString;
+              LDestinationParameter.Clear;
+              LDestinationParameter.Bound := True;
+            end
+            else
+              // Has a value but no explicit type (e.g. set via AsString on a
+              // freshly parsed param): bind it as a (wide) string so the value
+              // is NOT lost. Must not be cleared to NULL.
+              LDestinationParameter.AsWideString := LSourceParam.AsString;
+          end;
         else
           LDestinationParameter.Assign(Items[LParamIndex]);
       end;

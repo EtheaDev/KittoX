@@ -49,7 +49,9 @@ type
     function GetDefaultDelimiter: char; virtual;
     function GetDefaultQuoteChar: char; virtual;
   public
+    /// <summary>Returns whether column headers are included by default (overridable per subclass).</summary>
     class function GetDefaultIncludeHeader: boolean; virtual;
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('IncludeHeader', 'True', 'Include column headers in output')]
@@ -70,6 +72,7 @@ type
     function GetDefaultFileExtension: string; override;
     function GetDefaultFixedLength: boolean; override;
   public
+    /// <summary>Returns the default include-header setting for CSV export.</summary>
     class function GetDefaultIncludeHeader: boolean; override;
   end;
 
@@ -81,7 +84,9 @@ type
     function GetDefaultFileExtension: string; override;
     function CreateStream: TStream; override;
   public
+    /// <summary>Returns whether the XML header declaration is included by default.</summary>
     class function GetDefaultIncludeHeader: boolean; virtual;
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('IncludeHeader', 'False', 'Include XML header declaration')]

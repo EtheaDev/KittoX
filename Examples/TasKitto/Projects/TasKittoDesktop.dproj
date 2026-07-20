@@ -29,7 +29,7 @@
         <DCC_DUPLICATE_CTOR_DTOR>false</DCC_DUPLICATE_CTOR_DTOR>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=TasKitto Desktop;FileVersion=4.0.9.0;InternalName=TasKittoDesktop;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=TasKitto Desktop;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=TasKitto Desktop;FileVersion=4.0.10.0;InternalName=TasKittoDesktop;LegalCopyright=Copyright Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=TasKitto Desktop;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_ExeOutput>..\Home</DCC_ExeOutput>
         <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
         <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
@@ -40,7 +40,7 @@
         <DCC_K>false</DCC_K>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>9</VerInfo_Release>
+        <VerInfo_Release>10</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>

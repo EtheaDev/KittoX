@@ -61,6 +61,7 @@ type
       const AViews: TKViews): Boolean;
     class function EnsurePxSuffix(const AValue: string): string; static;
   public
+    /// <summary>Renders the Metro-style colored tile menu from the referenced TreeView.</summary>
     function Render: string; override;
 
     [YamlNode('TileWidth', '100', 'Tile width in pixels or CSS units')]

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ uses
 
 type
   /// <summary>How the parameter value is sourced.</summary>
-  TKXParamKind = (pkPathParam, pkQueryParam, pkFormParam, pkContext);
+  TKXParamKind = (pkPathParam, pkQueryParam, pkFormParam, pkFormBody, pkContext);
 
   /// <summary>Cached descriptor for a single method parameter.</summary>
   TKXParamInfo = record
@@ -52,13 +52,25 @@ type
     FParams: TArray<TKXParamInfo>;
     FFullPathTokens: TArray<string>;  // merged base+sub path, split by '/'
     FLiteralCount: Integer;    // number of non-{param} tokens (for specificity sort)
+    FIsAnonymous: Boolean;     // [TKXAnonymous] — skip the auth gate for this method
+    FIsNavigable: Boolean;     // [TKXNavigable] — reachable by top-level navigation
   public
+    /// <summary>The RTTI method this descriptor was built from (used to invoke it).</summary>
     property RttiMethod: TRttiMethod read FRttiMethod;
+    /// <summary>The method-level [TKXPath] sub-path (e.g. '/data'); '' if none.</summary>
     property SubPath: string read FSubPath;
+    /// <summary>Accepted HTTP method ('GET'/'POST'/…); '' means any ([TKXANY]).</summary>
     property HttpMethod: string read FHttpMethod;
+    /// <summary>Cached descriptors of the method's parameters, in declaration order.</summary>
     property Params: TArray<TKXParamInfo> read FParams;
+    /// <summary>Full path (base + sub) split into tokens, used for URL matching.</summary>
     property FullPathTokens: TArray<string> read FFullPathTokens;
+    /// <summary>Count of literal (non-{param}) tokens; higher = more specific route.</summary>
     property LiteralCount: Integer read FLiteralCount;
+    /// <summary>True if decorated with [TKXAnonymous] (skips the authentication gate).</summary>
+    property IsAnonymous: Boolean read FIsAnonymous;
+    /// <summary>True if decorated with [TKXNavigable] (reachable by direct navigation).</summary>
+    property IsNavigable: Boolean read FIsNavigable;
   end;
 
   /// <summary>Cached descriptor for a resource class.</summary>
@@ -68,10 +80,15 @@ type
     FBasePath: string;         // class-level [TKXPath] value (e.g., '/kx/view/{ViewName}')
     FMethods: TObjectList<TKXMethodInfo>;
   public
+    /// <summary>Creates the descriptor with an empty (owned) method list.</summary>
     constructor Create;
+    /// <summary>Frees the owned method descriptors.</summary>
     destructor Destroy; override;
+    /// <summary>The resource (handler) class this descriptor represents.</summary>
     property ResourceClass: TClass read FResourceClass;
+    /// <summary>The class-level [TKXPath] base path (e.g. '/kx/view/{ViewName}').</summary>
     property BasePath: string read FBasePath;
+    /// <summary>The handler methods discovered on the class (owned).</summary>
     property Methods: TObjectList<TKXMethodInfo> read FMethods;
   end;
 
@@ -93,13 +110,33 @@ type
     function CountLiterals(const ATokens: TArray<string>): Integer;
     procedure SortBySpecificity;
   public
+    /// <summary>Creates the registry with an empty (owned) resource list.</summary>
     constructor Create;
+    /// <summary>Frees the owned resource descriptors and the RTTI context.</summary>
     destructor Destroy; override;
+    /// <summary>Frees the singleton instance at unit finalization.</summary>
     class destructor DestroyClass;
+    /// <summary>The lazily-created singleton registry instance.</summary>
     class property Instance: TKXResourceRegistry read GetInstance;
 
+    /// <summary>Scans AClass via RTTI and registers its [TKXPath] handler methods,
+    /// then re-sorts by specificity. No-op if the class exposes no handler method.</summary>
     procedure RegisterResource(AClass: TClass);
+    /// <summary>
+    ///   Registers AClass in place of the framework handler(s) sharing its base
+    ///   [TKXPath], letting an application replace an endpoint by subclassing —
+    ///   without forking the framework. Typical use from UseKitto.pas:
+    ///     type TMyView = class(TKXViewHandlerBase) ... end;
+    ///     TKXResourceRegistry.Instance.RegisterOverride(TMyView);
+    ///   The base path is inherited from the ancestor, and RTTI GetMethods
+    ///   surfaces every inherited route, so only the endpoint(s) actually
+    ///   overridden must re-declare their routing attributes; overrides that
+    ///   only customize virtual hooks (OnBeforeSave, …) need nothing extra.
+    /// </summary>
+    procedure RegisterOverride(AClass: TClass);
+    /// <summary>Removes the resource registered for AClass, if present.</summary>
     procedure UnregisterResource(AClass: TClass);
+    /// <summary>All registered resource descriptors, sorted by descending specificity.</summary>
     property Resources: TObjectList<TKXResourceInfo> read FResources;
   end;
 
@@ -199,7 +236,7 @@ procedure TKXResourceRegistry.ScanMethod(AMethod: TRttiMethod;
 var
   LAttr: TCustomAttribute;
   LSubPath, LHttpMethod, LFullPath: string;
-  LHasPath, LHasHttpMethod: Boolean;
+  LHasPath, LHasHttpMethod, LIsAnonymous, LIsNavigable: Boolean;
   LMethodInfo: TKXMethodInfo;
   LParams: TArray<TRttiParameter>;
   I: Integer;
@@ -210,6 +247,8 @@ begin
   LHttpMethod := '';
   LHasPath := False;
   LHasHttpMethod := False;
+  LIsAnonymous := False;
+  LIsNavigable := False;
 
   for LAttr in AMethod.GetAttributes do
   begin
@@ -232,7 +271,11 @@ begin
     begin
       LHttpMethod := '';
       LHasHttpMethod := True;
-    end;
+    end
+    else if LAttr is TKXAnonymousAttribute then
+      LIsAnonymous := True
+    else if LAttr is TKXNavigableAttribute then
+      LIsNavigable := True;
   end;
 
   // A method must have at least a path or HTTP method attribute to be a handler
@@ -243,6 +286,8 @@ begin
   LMethodInfo.FRttiMethod := AMethod;
   LMethodInfo.FSubPath := LSubPath;
   LMethodInfo.FHttpMethod := LHttpMethod;
+  LMethodInfo.FIsAnonymous := LIsAnonymous;
+  LMethodInfo.FIsNavigable := LIsNavigable;
 
   // Build full path tokens
   LFullPath := ABasePath;
@@ -284,6 +329,11 @@ begin
           LParamInfo.Kind := pkFormParam;
           LParamInfo.Name := TKXFormParamAttribute(LAttr).Name;
         end
+        else if LAttr is TKXFormBodyAttribute then
+        begin
+          LParamInfo.Kind := pkFormBody;
+          LParamInfo.Name := '';
+        end
         else if LAttr is TKXContextAttribute then
         begin
           LParamInfo.Kind := pkContext;
@@ -303,23 +353,38 @@ end;
 procedure TKXResourceRegistry.ScanClass(AClass: TClass; AInfo: TKXResourceInfo);
 var
   LType: TRttiType;
+  LWalkType: TRttiType;
+  LWalkClass: TClass;
   LAttr: TCustomAttribute;
   LMethod: TRttiMethod;
+  LFound: Boolean;
 begin
   LType := FRttiCtx.GetType(AClass);
   if not Assigned(LType) then
     Exit;
 
-  // Read class-level [TKXPath]
+  // Read class-level [TKXPath], walking up the hierarchy so a subclass that
+  // does NOT redeclare [TKXPath] inherits its ancestor's base path. Delphi RTTI
+  // does not inherit class attributes, so this makes RegisterOverride ergonomic:
+  // an override class need only re-declare the endpoint(s) it changes.
   AInfo.FResourceClass := AClass;
   AInfo.FBasePath := '';
-  for LAttr in LType.GetAttributes do
+  LWalkClass := AClass;
+  while Assigned(LWalkClass) do
   begin
-    if LAttr is TKXPathAttribute then
-    begin
-      AInfo.FBasePath := TKXPathAttribute(LAttr).Value;
+    LFound := False;
+    LWalkType := FRttiCtx.GetType(LWalkClass);
+    if Assigned(LWalkType) then
+      for LAttr in LWalkType.GetAttributes do
+        if LAttr is TKXPathAttribute then
+        begin
+          AInfo.FBasePath := TKXPathAttribute(LAttr).Value;
+          LFound := True;
+          Break;
+        end;
+    if LFound then
       Break;
-    end;
+    LWalkClass := LWalkClass.ClassParent;
   end;
 
   // Scan public methods
@@ -373,6 +438,32 @@ begin
     FreeAndNil(LInfo);
     raise;
   end;
+end;
+
+procedure TKXResourceRegistry.RegisterOverride(AClass: TClass);
+var
+  LTempInfo: TKXResourceInfo;
+  LBasePath: string;
+  I: Integer;
+begin
+  // Scan AClass into a throwaway info to learn its (possibly inherited) base
+  // path, then drop every currently-registered resource that shares that base
+  // path (the framework handler being replaced) before registering AClass.
+  LTempInfo := TKXResourceInfo.Create;
+  try
+    ScanClass(AClass, LTempInfo);
+    LBasePath := LTempInfo.BasePath;
+  finally
+    FreeAndNil(LTempInfo);
+  end;
+
+  if LBasePath <> '' then
+    for I := FResources.Count - 1 downto 0 do
+      if SameText(FResources[I].BasePath, LBasePath) and
+         (FResources[I].ResourceClass <> AClass) then
+        FResources.Delete(I);
+
+  RegisterResource(AClass);
 end;
 
 procedure TKXResourceRegistry.UnregisterResource(AClass: TClass);

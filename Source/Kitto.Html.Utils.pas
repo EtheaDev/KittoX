@@ -47,6 +47,7 @@ function GetIconHTML(const AIconName: string;
   ASize: TKXIconSize = isDefault;
   const AExtraCssClass: string = ''): string;
 
+/// <summary>Returns the icon/image name for a tree-view node (its own, or its view's).</summary>
 function GetTreeViewNodeImageName(const ANode: TKTreeViewNode; const AView: TKView): string;
 
 /// <summary>
@@ -61,6 +62,7 @@ function GetDisplayLabelFromNode(const ANode: TKTreeViewNode; const AViews: TKVi
 function CallViewControllerStringMethod(const AView: TKView;
   const AMethodName: string; const ADefaultValue: string): string;
 
+/// <summary>Serves an image stream as a download, first scaling it to the given thumbnail size.</summary>
 procedure DownloadThumbnailedStream(const AStream: TStream; const AFileName: string;
   const AThumbnailWidth, AThumbnailHeight: Integer);
 

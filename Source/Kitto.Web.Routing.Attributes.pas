@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,9 @@ type
   private
     FValue: string;
   public
+    /// <summary>Creates the attribute with the given URL path template.</summary>
     constructor Create(const AValue: string);
+    /// <summary>The URL path template (e.g. '/kx/view/{ViewName}' or '/data').</summary>
     property Value: string read FValue;
   end;
 
@@ -63,7 +65,9 @@ type
   private
     FName: string;
   public
+    /// <summary>Creates the attribute bound to the given {placeholder} name.</summary>
     constructor Create(const AName: string);
+    /// <summary>Name of the {placeholder} in the path this parameter captures.</summary>
     property Name: string read FName;
   end;
 
@@ -75,7 +79,9 @@ type
   private
     FName: string;
   public
+    /// <summary>Creates the attribute bound to the given query-string field name.</summary>
     constructor Create(const AName: string);
+    /// <summary>Name of the query-string field (?Name=value) this parameter reads.</summary>
     property Name: string read FName;
   end;
 
@@ -88,9 +94,20 @@ type
   private
     FName: string;
   public
+    /// <summary>Creates the attribute bound to the given POST-body field name.</summary>
     constructor Create(const AName: string);
+    /// <summary>Name of the POST-body field this parameter reads (query-string fallback).</summary>
     property Name: string read FName;
   end;
+
+  /// <summary>
+  ///   Binds the whole POST body to a TStrings parameter (all name=value pairs,
+  ///   the RTL ContentFields, by reference — do not free). Convenience for
+  ///   handlers that want the raw form. The record-level binding for /save stays
+  ///   in the handler, which needs the store / op / key lifecycle.
+  ///   Example: [TKXFormBody] const AFields: TStrings
+  /// </summary>
+  TKXFormBodyAttribute = class(TCustomAttribute);
 
   /// <summary>
   ///   Marker attribute for dependency injection. The parameter type determines
@@ -100,6 +117,25 @@ type
   ///   Example: [TKXContext] ASession: TKWebSession
   /// </summary>
   TKXContextAttribute = class(TCustomAttribute);
+
+  /// <summary>
+  ///   Marks a handler method as reachable WITHOUT authentication. The
+  ///   authorization filter (TKXAuthorizationFilter) skips the auth gate for
+  ///   such methods, so endpoints like login / reset-password / change-password
+  ///   can be served to an unauthenticated session.
+  /// </summary>
+  TKXAnonymousAttribute = class(TCustomAttribute);
+
+  /// <summary>
+  ///   Marks a handler method as reachable by a top-level browser navigation
+  ///   (address bar, opened link, window.open) — e.g. a blob/file download
+  ///   opened in a new tab. By default every /kx/* endpoint returns an HTML
+  ///   FRAGMENT meant to be loaded by the SPA (which always sends the
+  ///   X-KittoX: true header); the navigation guard (TKXNavigationGuardFilter)
+  ///   bounces any non-SPA top-level navigation to such a fragment endpoint back
+  ///   to the app root. This attribute opts an endpoint OUT of that guard.
+  /// </summary>
+  TKXNavigableAttribute = class(TCustomAttribute);
 
 implementation
 

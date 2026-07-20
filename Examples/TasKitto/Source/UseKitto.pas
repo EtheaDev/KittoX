@@ -3,12 +3,35 @@
 interface
 
 uses
+  // ---------------------------------------------------------------------------
+  // DELPHI ENTERPRISE (or ARCHITECT) REQUIRED for the client/server database
+  // drivers listed below: the DBExpress Data.DBX* drivers and the FireDAC
+  // FireDAC.Phys.* drivers for remote DBMS (MS SQL Server, Oracle, PostgreSQL,
+  // MySQL, Firebird...). Access to client/server databases is a feature of the
+  // Enterprise and Architect editions only. Delphi PROFESSIONAL ships FireDAC/
+  // DBExpress with local/embedded drivers only (SQLite, InterBase ToGo), so on
+  // a Professional license these uses do NOT compile (e.g. "unit
+  // FireDAC.Phys.MSSQL not found"). A KittoX web app normally connects to a
+  // client/server DB, so building this example needs a license upgrade from
+  // Professional to Enterprise (or Architect). With Professional you can only
+  // target a local DB (SQLite/InterBase) — remove the client/server driver uses
+  // accordingly. (ADO/dbGo and the SQLite/InterBase drivers are in Professional.)
+  // ---------------------------------------------------------------------------
   EF.DB.ADO //ADO support
   , EF.DB.DBX //DbExpress support
   , Data.DBXMSSQL, Data.DBXFirebird, EF.DB.FD //FireDac support
   , FireDAC.Phys.MSSQL, FireDAC.Phys.MSSQLMeta //FireDac support for MS-SQL
   , FireDAC.Phys.IBBase, FireDAC.Phys.FB //FireDac support for Firebird
   , FireDAC.Phys.PG, FireDAC.Phys.PGWrapper //FireDac support for PostgreSQL
+  , FireDAC.Phys.Oracle, FireDAC.Phys.OracleMeta //FireDac support for Oracle
+  // Oracle via Devart ODAC (optional) — alternative to FireDAC.Phys.Oracle above.
+  // Left commented out because ODAC is a third-party commercial library that
+  // requires ODAC installed + its library path in the project. Uncomment the
+  // single EF.DB.ODAC line below to enable the 'ODAC' adapter (see the
+  // ODAC_Oracle block in Config.yaml). Unit order in this uses clause does not
+  // matter: each EF.DB.* adapter self-registers by ClassId in its own
+  // initialization, independently of FireDAC. ODAC: https://www.devart.com/odac/
+  // , EF.DB.ODAC //ODAC support for Oracle (Devart)
   //Global Kittox uses
   , Kitto.Html.All
   , Kitto.Web.Enterprise

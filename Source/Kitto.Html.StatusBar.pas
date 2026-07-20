@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ type
   strict private
     function GetText: string;
   public
+    /// <summary>Renders the status bar with its text.</summary>
     function Render: string; override;
     [YamlNode('Text', 'Ready', 'Status bar text')]
     property Text: string read GetText;

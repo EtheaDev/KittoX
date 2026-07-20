@@ -48,10 +48,12 @@ type
     procedure DoCommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo); override;
     procedure DoCommandOther(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo); override;
   public
+    /// <summary>Configures the Indy server from Config.yaml (port, bind address, thread pool).</summary>
     procedure Setup(AConfig: TKConfig);
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>The web engine that handles requests for this server.</summary>
     // Internal object; we might add ability to provide it externally at some point if needed.
     property Engine: TKWebEngine read FEngine;
   end;

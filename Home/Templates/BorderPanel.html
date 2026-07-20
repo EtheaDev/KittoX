@@ -1,3 +1,23 @@
+{{#
+  BorderPanel.html — KittoX structural template for the 5-region border layout
+  (North / West / Center / East / South), used as the main page shell.
+
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Default system template. Override by copying to (first match wins):
+    <App>/Home/Templates/BorderPanel.html   (per app)
+    <Kitto>/Home/Templates/BorderPanel.html (system default)
+  Notation: ":name" = escaped value, ":name$" = raw HTML (see README.md).
+
+  Variables (injected by TKXBorderPanelController):
+    htmlId          DOM id of the panel container
+    northContent$   rendered North region markup (raw; empty if no region)
+    westContent$    rendered West region markup (raw)
+    centerContent$  rendered Center region markup (raw)
+    eastContent$    rendered East region markup (raw)
+    southContent$   rendered South region markup (raw)
+#}}
 <div id="{{:htmlId}}" class="kx-border-panel">
   {{:northContent$}}
   {{:westContent$}}

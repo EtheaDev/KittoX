@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,7 +58,10 @@ type
     function ConvertStringToValue(const AStr: string;
       AParamType: TRttiType): TValue;
   public
+    /// <summary>Creates a per-request activation for the given URL, app base path
+    /// and HTTP method.</summary>
     constructor Create(const AURL: TKWebURL; const AAppPath, AHttpMethod: string);
+    /// <summary>Frees the captured path parameters.</summary>
     destructor Destroy; override;
 
     /// <summary>Extracted path parameter values (e.g., 'ViewName' -> 'Parties').</summary>
@@ -78,6 +81,19 @@ type
     ///   Creates the resource instance, fills parameters, invokes, and frees.
     /// </summary>
     procedure Invoke;
+
+    /// <summary>
+    ///   True if the matched handler method is decorated with [TKXAnonymous]
+    ///   (i.e. reachable without authentication). Call after TryMatch.
+    /// </summary>
+    function MatchedIsAnonymous: Boolean;
+
+    /// <summary>
+    ///   True if the matched handler method is decorated with [TKXNavigable]
+    ///   (i.e. may be reached by a top-level browser navigation, e.g. a blob
+    ///   download opened in a new tab). Call after TryMatch.
+    /// </summary>
+    function MatchedIsNavigable: Boolean;
   end;
 
 implementation
@@ -85,6 +101,7 @@ implementation
 uses
   System.StrUtils,
   System.TypInfo,
+  System.Classes,
   Kitto.Web.Request;
 
 { TKXActivation }
@@ -266,6 +283,9 @@ begin
       LStrValue := TKWebRequest.Current.GetField(AParamInfo.Name);
       Result := ConvertStringToValue(LStrValue, AParamInfo.RttiParam.ParamType);
     end;
+    pkFormBody:
+      // Whole POST body as TStrings, by reference (owned by the request).
+      Result := TValue.From<TStrings>(TKWebRequest.Current.GetContentFields);
     pkContext:
     begin
       Result := TKXInjectionRegistry.Instance.Resolve(
@@ -299,6 +319,16 @@ begin
   finally
     FreeAndNil(FResourceInstance);
   end;
+end;
+
+function TKXActivation.MatchedIsAnonymous: Boolean;
+begin
+  Result := Assigned(FMatchedMethod) and FMatchedMethod.IsAnonymous;
+end;
+
+function TKXActivation.MatchedIsNavigable: Boolean;
+begin
+  Result := Assigned(FMatchedMethod) and FMatchedMethod.IsNavigable;
 end;
 
 end.

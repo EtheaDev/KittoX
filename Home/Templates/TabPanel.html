@@ -1,3 +1,20 @@
+{{#
+  TabPanel.html — KittoX structural template for the tabbed container (tab header
+  bar + the stacked tab bodies).
+
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Default system template. Override by copying to (first match wins):
+    <App>/Home/Templates/TabPanel.html   (per app)
+    <Kitto>/Home/Templates/TabPanel.html (system default)
+  Notation: ":name" = escaped value, ":name$" = raw HTML (see README.md).
+
+  Variables (injected by TKXTabPanelController):
+    htmlId          DOM id of the tab-panel container
+    tabHeaderHtml$  rendered tab header/bar markup (raw)
+    tabBodies$      rendered tab body panes markup (raw)
+#}}
 <div id="{{:htmlId}}" class="kx-tab-panel">
   {{:tabHeaderHtml$}}
   <div class="kx-tab-content" id="kx-center-tabs">

@@ -43,7 +43,9 @@ type
     function GetKey: TKKey;
     function GetFieldName: string;
   public
+    /// <summary>The key this field belongs to.</summary>
     property Key: TKKey read GetKey;
+    /// <summary>The name of the field.</summary>
     property FieldName: string read GetFieldName;
   end;
 
@@ -54,10 +56,14 @@ type
   protected
     function GetChildClass(const AName: string): TEFNodeClass; override;
   public
+    /// <summary>The key fields, by index (default property).</summary>
     property Fields[I: Integer]: TKKeyField read GetField; default;
+    /// <summary>Number of fields that make up the key.</summary>
     property FieldCount: Integer read GetFieldCount;
 
+    /// <summary>Defines the key by the given field names (rebuilds the child fields).</summary>
     procedure SetFieldNames(const AFieldNames: TStringDynArray);
+    /// <summary>Returns the key's field names, in order.</summary>
     function GetFieldNames: TStringDynArray;
   end;
 
@@ -85,22 +91,36 @@ type
     function GetDataType: TEFDataType; override;
     function GetDecimalPrecision: Integer; virtual;
   public
+    /// <summary>Copies value and header from ASource (another TKField).</summary>
     procedure Assign(const ASource: TEFTree; const AProc: TEFTree.TAssignNodeProc = nil); override;
+    /// <summary>The header field describing this field's metadata (name, datatype).</summary>
     property HeaderField: TKHeaderField read FHeaderField write FHeaderField;
+    /// <summary>Clears the modified flag (IsModified := False).</summary>
     procedure MarkAsUnmodified;
+    /// <summary>Sets the value to Null; AForceChangeNotification fires the change event even if already null.</summary>
     procedure SetToNull(const AForceChangeNotification: Boolean = False); override;
+    /// <summary>True if the value changed since load / MarkAsUnmodified.</summary>
     property IsModified: Boolean read FIsModified;
+    /// <summary>The record that owns this field.</summary>
     property ParentRecord: TKRecord read GetParentRecord;
+    /// <summary>The field as a JSON "name":value pair ('' if the datatype has no JSON form).</summary>
     function GetAsJSON(const AForDisplay: Boolean): string;
+    /// <summary>The field value as a JSON literal (optionally quoted; nulls as '' or null).</summary>
     function GetAsJSONValue(const AForDisplay: Boolean; const AQuote: Boolean = True;
       const AEmptyNulls: Boolean = False): string; virtual;
+    /// <summary>The field as an XML element.</summary>
     function GetAsXML(const AForDisplay: Boolean): string;
+    /// <summary>The field value formatted for XML.</summary>
     function GetAsXMLValue(const AForDisplay: Boolean;
       const AEmptyNulls: Boolean = False): string; virtual;
+    /// <summary>The field's name.</summary>
     property FieldName: string read GetFieldName;
+    /// <summary>True if this field aggregates several physical sub-fields.</summary>
     function IsCompositeField: Boolean;
+    /// <summary>True if this field is a sub-field of a composite field.</summary>
     function IsPartOfCompositeField: Boolean;
 
+    /// <summary>Sets a transient (non-persisted) property on the field, e.g. a UI hint.</summary>
     procedure SetTransientProperty(const APropertyName: string; const AValue: Variant);
   end;
 
@@ -151,21 +171,35 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>Fires before a field value changes; a handler may alter ANewValue or veto via ADoIt.</summary>
     procedure FieldChanging(const AField: TKField; const AOldValue: Variant;
       var ANewValue: Variant; var ADoIt: Boolean); virtual;
+    /// <summary>Fires after a field value changed; drives reference cascade and OnFieldChange.</summary>
     procedure FieldChanged(const AField: TKField; const AOldValue, ANewValue: Variant); virtual;
   public
+    /// <summary>Persistence state (New/Clean/Dirty/Deleted) driving the SaveRecord instruction.</summary>
     property State: TKRecordState read FState;
+    /// <summary>Restores the state captured before the last state change.</summary>
     procedure RestorePreviousState;
+    /// <summary>The record collection (TKRecords) this record belongs to.</summary>
     property Records: TKRecords read GetRecords;
+    /// <summary>The store owning this record.</summary>
     property Store: TKStore read GetStore;
+    /// <summary>The record's key (the key fields with their current values).</summary>
     property Key: TKKey read GetKey;
+    /// <summary>The record's fields, by index (default property).</summary>
     property Fields[I: Integer]: TKField read GetField; default;
+    /// <summary>Number of fields in the record.</summary>
     property FieldCount: Integer read GetFieldCount;
+    /// <summary>Returns the field with the given name, or nil if absent.</summary>
     function FindField(const AFieldName: string): TKField;
+    /// <summary>Returns the field with the given name; raises if absent.</summary>
     function FieldByName(const AFieldName: string): TKField;
+    /// <summary>Calls AProc for each field until it returns False.</summary>
     procedure EnumFields(const AProc: TFunc<TKField, Boolean>);
+    /// <summary>True if every field in AValues matches this record's value for the same name.</summary>
     function MatchesValues(const AValues: TEFNode): Boolean;
+    /// <summary>Applies the deferred "set to null" instructions collected during editing.</summary>
     procedure HandleSetToNullInstructions;
 
     /// <summary>
@@ -180,7 +214,9 @@ type
     /// names are not in the passed node are set to Null.</summary>
     procedure ReadFromNode(const ANode: TEFNode);
 
+    /// <summary>The record as a JSON object {field:value,…}; AFieldFilterFunc can exclude fields.</summary>
     function GetAsJSON(const AForDisplay: Boolean; const AFieldFilterFunc: TKFieldFilterFunc = nil): string;
+    /// <summary>The record as an XML element; AFieldFilterFunc can exclude fields.</summary>
     function GetAsXML(const AForDisplay: Boolean; const AFieldFilterFunc: TKFieldFilterFunc = nil): string;
 
     /// <summary>
@@ -209,10 +245,15 @@ type
     /// </summary>
     procedure MarkAsClean;
 
+    /// <summary>True if the record is marked New (will be inserted on save).</summary>
     property IsNew: Boolean read GetIsNew;
+    /// <summary>True if the record is marked Deleted (will be deleted on save).</summary>
     property IsDeleted: Boolean read GetIsDeleted;
+    /// <summary>Number of detail (child) stores attached to this record.</summary>
     property DetailStoreCount: Integer read GetDetailStoreCount;
+    /// <summary>The detail (child) stores, by index.</summary>
     property DetailStores[I: Integer]: TKStore read GetDetailsStore;
+    /// <summary>Attaches a detail store to this record and returns it.</summary>
     function AddDetailStore(const AStore: TKStore): TKStore;
     /// <summary>
     ///  Returns the internal detail store list. Use with care — needed for
@@ -220,13 +261,18 @@ type
     /// </summary>
     function GetDetailStoreList: TObjectList<TKStore>;
 
+    /// <summary>Saves a copy of the current values, for a later Restore.</summary>
     procedure Backup;
+    /// <summary>Restores the values saved by the last Backup.</summary>
     procedure Restore;
 
+    /// <summary>True if the record (or any detail store) has unsaved changes.</summary>
     function ChangesPending: Boolean;
 
+    /// <summary>Fired after a field value changes; used to run AfterFieldChange rules.</summary>
     property OnFieldChange: TKFieldChangeEvent read FOnFieldChange write FOnFieldChange;
 
+    /// <summary>Adds a field for the given header field and returns it.</summary>
     function AddField(const AHeaderField: TKHeaderField): TKField;
 
     /// <summary>
@@ -241,7 +287,9 @@ type
     /// </summary>
     function GetFieldValuesAsString(const AFieldNames: TStringDynArray; const ASeparator: string): string;
 
+    /// <summary>Sets a transient (non-persisted) property on a subject (field/record), notifying OnSetTransientProperty.</summary>
     procedure SetTransientProperty(const ASubjectType, ASubjectName, APropertyName: string; const AValue: Variant);
+    /// <summary>Callback invoked by SetTransientProperty (subjectType, subjectName, property, value).</summary>
     property OnSetTransientProperty: TProc<string, string, string, Variant>
       read FOnSetTransientProperty write FOnSetTransientProperty;
   end;
@@ -262,15 +310,24 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>Removes and frees all records.</summary>
     procedure Clear; override;
+    /// <summary>The store owning this record collection.</summary>
     property Store: TKStore read GetStore;
 
+    /// <summary>The key definition shared by the records.</summary>
     property Key: TKKey read FKey write SetKey;
+    /// <summary>Returns the record matching the key values in AValues, or nil.</summary>
     function FindRecord(const AValues: TEFNode): TKRecord;
+    /// <summary>Returns the record matching the key values in AValues; raises if absent.</summary>
     function GetRecord(const AValues: TEFNode): TKRecord;
+    /// <summary>The records, by index (default property).</summary>
     property Records[I: Integer]: TKRecord read GetRecordByIndex; default;
+    /// <summary>Total number of records (including deleted).</summary>
     property RecordCount: Integer read GetRecordCount;
+    /// <summary>Number of records for which APredicate returns True.</summary>
     function GetRecordCount(const APredicate: TFunc<TKRecord, Boolean>): Integer; overload;
+    /// <summary>Calls AProc for the records in [AFrom, AFrom+AFor) that satisfy APredicate.</summary>
     procedure EnumRecords(const AFrom, AFor: Integer;
       const APredicate: TFunc<TKRecord, Boolean>; const AProc: TProc<TKRecord>);
     /// <summary>
@@ -282,18 +339,24 @@ type
     /// </summary>
     function EnumNonDeletedRecords(ARecord: TKRecord): Boolean;
 
+    /// <summary>Appends a new (empty) record and returns it.</summary>
     function Append: TKRecord;
+    /// <summary>Appends a new record, applies the header (creates its fields) and returns it.</summary>
     function AppendAndInitialize: TKRecord;
+    /// <summary>Removes and frees the given record (no DB effect).</summary>
     procedure Remove(const ARecord: TKRecord);
 
+    /// <summary>The records as a JSON array [{…},…]; AFrom/AFor page, AFieldFilterFunc filters fields.</summary>
     function GetAsJSON(const AForDisplay: Boolean;
       const AFrom: Integer = 0; const AFor: Integer = 0;
       const AFieldFilterFunc: TKFieldFilterFunc = nil): string;
 
+    /// <summary>The records as XML; AFrom/AFor page, AFieldFilterFunc filters fields.</summary>
     function GetAsXML(const AForDisplay: Boolean;
       const AFrom: Integer = 0; const AFor: Integer = 0;
       const AFieldFilterFunc: TKFieldFilterFunc = nil): string;
 
+    /// <summary>Calls AProc for every record (including deleted).</summary>
     procedure ForEach(const AProc: TProc<TKRecord>);
 
     /// <summary>
@@ -301,6 +364,7 @@ type
     /// </summary>
     procedure Sort(const ACompareFunc: TKRecordCompareFunc); reintroduce;
 
+    /// <summary>Marks all records as clean (no pending changes).</summary>
     procedure MarkAsClean;
   end;
 
@@ -308,6 +372,7 @@ type
   private
     function GetFieldName: string;
   public
+    /// <summary>The field's name.</summary>
     property FieldName: string read GetFieldName;
   end;
 
@@ -328,12 +393,18 @@ type
     /// </remarks>
     procedure Apply(const ARecord: TKRecord);
 
+    /// <summary>Number of fields defined in the header.</summary>
     property FieldCount: Integer read GetFieldCount;
+    /// <summary>The header fields, by index.</summary>
     property Fields[I: Integer]: TKHeaderField read GetField;
 
+    /// <summary>Adds a header field with the given name and returns it.</summary>
     function AddField(const AFieldName: string): TKHeaderField;
+    /// <summary>Fills List with the header field names, in order.</summary>
     procedure GetFieldNames(List: TStrings);
+    /// <summary>Returns the header field with the given name, or nil.</summary>
     function FindField(const AFieldName: string): TKHeaderField;
+    /// <summary>Returns the header field with the given name; raises if absent.</summary>
     function FieldByName(const AFieldName: string): TKHeaderField;
   end;
 
@@ -355,20 +426,31 @@ type
   public
     destructor Destroy; override;
   public
+    /// <summary>Suspends change notifications (reentrant; pair with EnableChangeNotifications).</summary>
     procedure DisableChangeNotifications;
+    /// <summary>Resumes change notifications suspended by DisableChangeNotifications.</summary>
     procedure EnableChangeNotifications;
+    /// <summary>True if change notifications are currently enabled.</summary>
     function ChangeNotificationsEnabled: Boolean;
+    /// <summary>Runs AProc with change notifications disabled, restoring them afterwards.</summary>
     procedure DoWithChangeNotificationsDisabled(const AProc: TProc);
 
+    /// <summary>The store's key definition.</summary>
     property Key: TKKey read GetKey write SetKey;
+    /// <summary>The header describing the store's fields (name + datatype).</summary>
     property Header: TKHeader read GetHeader;
+    /// <summary>The records held by the store.</summary>
     property Records: TKRecords read GetRecords;
+    /// <summary>Number of records in the store.</summary>
     property RecordCount: Integer read GetRecordCount;
+    /// <summary>True if the store holds no records.</summary>
     property IsEmpty: Boolean read GetIsEmpty;
 
+    /// <summary>Loads records by executing ACommandText on ADBConnection (optionally appending).</summary>
     procedure Load(const ADBConnection: TEFDBConnection;
       const ACommandText: string; const AAppend: Boolean = False;
       const AForEachRecord: TProc<TKRecord> = nil); overload;
+    /// <summary>Loads records from an already-prepared query (optionally by field index).</summary>
     procedure Load(const ADBQuery: TEFDBQuery; const AAppend: Boolean = False;
       const AFieldsByIndex: Boolean = False;
       const AForEachRecord: TProc<TKRecord> = nil); overload;
@@ -388,12 +470,16 @@ type
     /// <seealso cref="TKRecord.MarkAsDeleted"></seealso>
     procedure RemoveRecord(const ARecord: TKRecord);
 
+    /// <summary>The store's records as a JSON array; AFrom/AFor page, AFieldFilterFunc filters fields.
+    /// This is the ready-made store→JSON entry point (view-aware for a TKViewTableStore).</summary>
     function GetAsJSON(const AForDisplay: Boolean; const AFrom: Integer = 0;
       const AFor: Integer = 0; const AFieldFilterFunc: TKFieldFilterFunc = nil): string;
 
+    /// <summary>The store's records as XML; AFrom/AFor page the result.</summary>
     function GetAsXML(const AForDisplay: Boolean; const AFrom: Integer = 0;
       const AFor: Integer = 0): string;
 
+    /// <summary>True if any record has unsaved changes (new/dirty/deleted).</summary>
     function ChangesPending: Boolean;
 
     /// <summary>
@@ -437,9 +523,13 @@ type
     /// </summary>
     function Count(const AFieldName: string; const AValue: Variant): Integer; overload;
 
+    /// <summary>Maximum value of the given field over non-deleted records.</summary>
     function Max(const AFieldName: string): Variant;
+    /// <summary>Minimum value of the given field over non-deleted records.</summary>
     function Min(const AFieldName: string): Variant;
+    /// <summary>Sum of the given field over non-deleted records.</summary>
     function Sum(const AFieldName: string): Variant;
+    /// <summary>Average of the given field over non-deleted records.</summary>
     function Avg(const AFieldName: string): Variant;
 
     /// <summary>

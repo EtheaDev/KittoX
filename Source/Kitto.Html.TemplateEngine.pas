@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,6 +44,7 @@ type
     class function GetInstance: TKXTemplateEngine; static;
   public
     class destructor Destroy;
+    /// <summary>The singleton template engine.</summary>
     class property Instance: TKXTemplateEngine read GetInstance;
 
     /// <summary>

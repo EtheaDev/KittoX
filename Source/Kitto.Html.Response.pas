@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,9 @@ type
     class function GetCurrent: TKXWebResponse; static;
     class procedure SetCurrent(const AValue: TKXWebResponse); static;
   public
+    /// <summary>The KittoX HTML response bound to the current thread.</summary>
     class property Current: TKXWebResponse read GetCurrent write SetCurrent;
+    /// <summary>Frees and clears the current-thread HTML response.</summary>
     class procedure ClearCurrent;
 
     /// <summary>

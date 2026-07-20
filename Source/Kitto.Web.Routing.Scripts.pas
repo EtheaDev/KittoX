@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,9 +50,13 @@ type
     class function GetInstance: TKXScriptRegistry; static;
     function HasPath(const APath: string): Boolean;
   public
+    /// <summary>Creates the registry with an empty entry list.</summary>
     constructor Create;
+    /// <summary>Frees the entry list.</summary>
     destructor Destroy; override;
+    /// <summary>Frees the singleton instance at unit finalization.</summary>
     class destructor DestroyClass;
+    /// <summary>The lazily-created singleton registry instance.</summary>
     class property Instance: TKXScriptRegistry read GetInstance;
 
     /// <summary>Registers a JavaScript file (e.g. '/js/chart.umd.min.js').</summary>

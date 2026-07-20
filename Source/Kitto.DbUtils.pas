@@ -11,23 +11,42 @@ uses
 const
   PROGRESS_STR = 'Progressivo per';
 
+/// <summary>Computes the next progressive code, incrementing IdProgress padded to CharSize digits.</summary>
 function CalcNewProgress(const IdProgress: string; CharSize: integer): string;
+/// <summary>
+///  Builds a SQL statement that counts rows in ATableName where AFieldName equals
+///  AFieldValue, optionally excluding the row whose key equals AIdToExclude.
+///  Used for uniqueness checks.
+/// </summary>
 function GetSQLCountValue(const ATableName, AFieldName, AFieldValue: string;
   const AIdToExclude: string = ''): string;
+/// <summary>Builds a SQL statement that reads AFieldName from ATableName for the given key value.</summary>
 function GetSQLFieldValue(const ATableName, AFieldName, AKeyFieldName, AKeyFieldValue: string): string;
+/// <summary>Returns the database table name of the model that owns the given store field.</summary>
 function GetTableName(const AField: TKField): string;
+/// <summary>Returns the physical (database) column name for the given store field.</summary>
 function GetPhisicalName(const AField: TKField): string;
+/// <summary>Returns the model that owns the given store field.</summary>
 function ModelByField(const AField: TKField): TKModel;
+/// <summary>Returns the model that owns the given store record.</summary>
 function ModelByRecord(const ARecord: TKRecord): TKModel;
+/// <summary>Returns the model field corresponding to the given store field.</summary>
 function ModelFieldByField(const AField: TKField): TKModelField;
+/// <summary>Returns True if a model field can be resolved for the given store field.</summary>
 function ModelFindField(const AField: TKField): boolean;
+/// <summary>Builds a SQL DELETE statement for ATableName matching the given key field/value.</summary>
 function GetSQLDeleteStatement(const ATableName, AKeyFieldName, AFieldValue: string): string;
+/// <summary>Executes a DELETE on ATableName for the row whose key field matches AFieldValue.</summary>
 procedure DeleteRecord(const ATableName, AKeyFieldName, AFieldValue: string);
+/// <summary>Sets the value of the named parameter in AParams, handling Null/Variant conversion.</summary>
 procedure UpdateParamValue(AParams: TParams; const AParamName: string; AValue: Variant);
+/// <summary>Validates password strength; raises an exception if the password is too weak.</summary>
 procedure CheckPasswordStrenght(const APassword: string);
 
 //funzioni di recupero dati da Codice Fiscale
+/// <summary>Extracts the birth-nation code encoded in an Italian fiscal code (Codice Fiscale).</summary>
 function RecuperaNazioneNascDaCF(const ACodiceFiscale : string) : string;
+/// <summary>Extracts the birth-province code encoded in an Italian fiscal code (Codice Fiscale).</summary>
 function RecuperaProvinciaNascDaCF(const ACodiceFiscale : string) : string;
 
 implementation

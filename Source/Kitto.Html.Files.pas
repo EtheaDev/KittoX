@@ -94,6 +94,7 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>The default icon name for this controller's tool button.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('FileName', 'Server file path to download')]
@@ -151,6 +152,7 @@ type
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
+    /// <summary>The default icon name for this controller's tool button.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('Path', 'Upload directory path')]

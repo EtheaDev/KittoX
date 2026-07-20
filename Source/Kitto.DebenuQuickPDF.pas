@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2019-2025 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,12 +43,19 @@ type
   private
     function GetKeywords: string;
   public
+    /// <summary>The Items node listing the layout elements (text/image/QR) to draw on the PDF.</summary>
     property Items: TEFNode read GetItems;
+    /// <summary>PDF document Author metadata declared in the layout.</summary>
     property Author: string read GetAuthor;
+    /// <summary>PDF document Title metadata declared in the layout.</summary>
     property Title: string read GetTitle;
+    /// <summary>PDF document Subject metadata declared in the layout.</summary>
     property Subject: string read GetSubject;
+    /// <summary>PDF document Creator metadata declared in the layout.</summary>
     property Creator: string read GetCreator;
+    /// <summary>PDF document Keywords metadata declared in the layout.</summary>
     property Keywords: string read GetKeywords;
+    /// <summary>PDF document CreationDate metadata declared in the layout.</summary>
     property CreationDate: TDateTime read GetCreationDate;
   end;
 
@@ -85,6 +92,11 @@ type
     vaTopNoWrap,               //4
     vaBottomNoWrap);           //5
 
+  /// <summary>
+  ///  Generates a PDF for a view-table record by merging a YAML layout
+  ///  (text, images, QR codes and metadata) over a base PDF, using the
+  ///  Debenu Quick PDF Library.
+  /// </summary>
   TKMergePDFEngine = class(TComponent)
   strict private
     FRecord: TKViewTableRecord;
@@ -113,6 +125,10 @@ type
     function ExpandExpression(const AExpression: string): string;
   public
     procedure AfterConstruction; override;
+    /// <summary>
+    ///  Produces the output PDF AFileName by applying the layout ALayoutFileName
+    ///  (its elements bound to ARecord) over the base PDF ABaseFileName.
+    /// </summary>
     procedure MergePDF(const AFileName: string;
       const ALayoutFileName: string;
       const ABaseFileName: string;

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2019-2025 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,6 +65,10 @@ type
   TAcceptExportRecordEvent = procedure(ARecord: TKViewTableRecord; var AAccept: boolean) of object;
   TAcceptExportDataRecordEvent = procedure(ADataSet: TDataSet; var AAccept: boolean) of object;
 
+  /// <summary>
+  ///  Exports a KittoX view-table store (or a plain dataset) to an Excel file
+  ///  using FlexCel, optionally driven by an .xlsx/.xltx template.
+  /// </summary>
   TKFlexCelExportEngine = class(TKFlexCelEngine)
   strict private
     FFmtFCString : TFlxFormat;
@@ -95,23 +99,27 @@ type
     procedure GetFormatFlexCelDataType(const ADataType: TEFDataType;
       const AFieldSize : integer; out AFmtFlexCel: TFlxFormat); overload;
   public
+    /// <summary>Creates a new Excel file from a view-table store, generating the sheet from its fields.</summary>
     procedure CreateFileByTable(const AFileName: string;
       const ATableStore: TKViewTableStore;
       const AExcelRangeName: string = '';
       const AAcceptRecordEvent: TAcceptExportRecordEvent = nil;
       const AAcceptFieldEvent: TAcceptViewFieldEvent = nil;
       const AUseDisplayLabels: Boolean = False);
+    /// <summary>Creates a new Excel file from a plain dataset, generating the sheet from its fields.</summary>
     procedure CreateFileByDataSet(const AFileName: string;
       const ADataSet: TDataSet;
       const AExcelRangeName: string = '';
       const AAcceptRecordEvent: TAcceptExportDataRecordEvent = nil;
       const AAcceptFieldEvent: TAcceptDataFieldEvent = nil;
       const AUseDisplayLabels: Boolean = False);
+    /// <summary>Creates an Excel file from a view-table store using an existing template workbook.</summary>
     procedure CreateFileByTableWithTemplate(const AExcelFileName, ATemlateName, AExcelRangeName: string;
       const ATableStore: TKViewTableStore;
       AAcceptRecordEvent: TAcceptExportRecordEvent = nil;
       AAcceptFieldEvent: TAcceptViewFieldEvent = nil;
       AUseDisplayLabels: Boolean = false);
+    /// <summary>Creates an Excel file from a dataset using an existing template workbook.</summary>
     procedure CreateFileByDataSetWithTemplate(const AExcelFileName, ATemlateName, AExcelRangeName: string;
       const ADataSet: TDataSet;
       AAcceptRecordEvent: TAcceptExportDataRecordEvent = nil;
@@ -119,6 +127,10 @@ type
       AUseDisplayLabels: Boolean = false);
   end;
 
+  /// <summary>
+  ///  FlexCel virtual data table that exposes a KittoX view-table store as a
+  ///  data source for FlexCel report templates, without materializing a dataset.
+  /// </summary>
   TKFlexCelVirtualTable = class(TVirtualDataTable)
   strict protected
     function Get_ColumnCount: Int32; override;
@@ -126,18 +138,27 @@ type
     FViewTableStore: TKViewTableStore;
     FAcceptRecordEvent : TAcceptExportRecordEvent;
 
+    /// <summary>Creates the virtual table bound to the given view-table store.</summary>
     constructor Create(const aTableName: UTF16String; const aCreatedBy: TVirtualDataTable; const aTableStore: TKViewTableStore; const AAcceptRecordEvent: TAcceptExportRecordEvent = nil); overload;
 
+    /// <summary>Creates the iteration state FlexCel uses to walk this table's rows.</summary>
     function CreateState(const sort: UTF16String; const masterDetailLinks: TMasterDetailLinkArray; const splitLink: TSplitLink): TVirtualDataTableState;  override;
 
+    /// <summary>Returns the column index for the given column name.</summary>
     function GetColumn(const columnName: UTF16String): Int32; override;
 
+    /// <summary>Returns the (internal) name of the column at the given index.</summary>
     function GetColumnName(const columnIndex: Int32): UTF16String; override;
 
+    /// <summary>Returns the display caption of the column at the given index.</summary>
     function GetColumnCaption(const columnIndex: Int32): UTF16String; override;
 
   end;
 
+  /// <summary>
+  ///  Iteration state for TKFlexCelVirtualTable: tracks the current record
+  ///  position while FlexCel walks the store during report rendering.
+  /// </summary>
   TKFlexCelVirtualTableState = class(TVirtualDataTableState)
   strict private
      FViewTableStore: TKViewTableStore;
@@ -147,12 +168,18 @@ type
   strict protected
     function Get_RowCount: Int32; override;
  public
+    /// <summary>Creates the iteration state bound to the given virtual table and store.</summary>
     constructor Create(const aTableData: TVirtualDataTable; const aTableStore: TKViewTableStore; const AAcceptRecordEvent: TAcceptExportRecordEvent = nil); overload;
 
+    /// <summary>Returns True when the iteration has passed the last record.</summary>
     function Eof: Boolean; override;
+    /// <summary>Positions on the first record of the store.</summary>
     procedure MoveFirst; override;
+    /// <summary>Advances to the next record of the store.</summary>
     procedure MoveNext; override;
+    /// <summary>Returns the value of the given column in the current record.</summary>
     function GetValue(const column: Int32): TReportValue; overload; override;
+    /// <summary>Returns the value of the given column in the specified row.</summary>
     function GetValue(const row: Int32; const column: Int32): TReportValue; overload; override;
   end;
 

@@ -85,7 +85,7 @@ type
     function GetRecordKeyString: string;
     function RenderReferenceSelect(AViewField: TKViewField): string;
     function RenderLargeReferenceEditor(AViewField: TKViewField;
-      AInputName, AInputId: string; AIsReadOnly: Boolean;
+      AInputName, AInputId: string; AIsReadOnly, AIsRequired: Boolean;
       AWidthStyle: string): string;
     function RenderLayoutNode(ANode: TEFNode;
       AViewTable: TKViewTable): string;
@@ -107,7 +107,9 @@ type
   public
     [YamlNode('Operation', 'edit', 'Form operation mode (add/edit/view/dup)')]
     property Operation: string read FOperation write FOperation;
+    /// <summary>The record shown/edited by the form.</summary>
     property FormRecord: TKViewTableRecord read FRecord write FRecord;
+    /// <summary>When opened from a detail grid, the FK field pre-filled from the master key.</summary>
     property FKFieldName: string read FFKFieldName write FFKFieldName;
   end;
 
@@ -819,7 +821,7 @@ end;
 
 function TKXFormPanelController.RenderLargeReferenceEditor(
   AViewField: TKViewField; AInputName, AInputId: string;
-  AIsReadOnly: Boolean; AWidthStyle: string): string;
+  AIsReadOnly, AIsRequired: Boolean; AWidthStyle: string): string;
 var
   LDBConnection: TEFDBConnection;
   LDBQuery: TEFDBQuery;
@@ -976,6 +978,7 @@ begin
   LCtx.InputId := AInputId;
   LCtx.InputName := AInputName;
   LCtx.IsReadOnly := AIsReadOnly;
+  LCtx.IsRequired := AIsRequired;
   LCtx.CssInputClass := 'kx-form-input';
   LCtx.TriggerWidthStyle := AWidthStyle;
 
@@ -1130,7 +1133,7 @@ begin
       if GetReferenceIsLarge(AViewField) then
       begin
         SB.Append(RenderLargeReferenceEditor(AViewField, LInputName, LInputId,
-          LIsReadOnly, LTriggerWidthStyle));
+          LIsReadOnly, LIsRequired, LTriggerWidthStyle));
       end
       else
       begin

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,8 +35,13 @@ uses
   Kitto.Html.Files;
 
 type
+  /// <summary>Helper that applies an XSL transform to a view-table store/record.</summary>
   TXSLTransformer = class(TObject)
   public
+    /// <summary>
+    ///  Transforms the store (and current record) into HTML by applying the XSL
+    ///  stylesheet in ATransformFileName, and returns the resulting HTML.
+    /// </summary>
     class function ApplyXslToHtml(const ATransformFileName: string;
       AStore: TKViewTableStore; ARecord: TKViewTableRecord): string;
   end;
@@ -50,6 +55,7 @@ type
     procedure PrepareFile(const AFileName: string); override;
     function GetDefaultFileExtension: string; override;
   public
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
   //published
     [YamlNode('TransformFileName', 'Path to the XSL transform file')]

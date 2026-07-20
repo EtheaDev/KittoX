@@ -1,3 +1,7 @@
+/*!
+  kxfilters.js — part of KittoX. Copyright 2012-2026 Ethea S.r.l.
+  Licensed under the Apache License, Version 2.0 — http://www.apache.org/licenses/LICENSE-2.0
+*/
 /**
  * KittoX ButtonList filter toggle support.
  * Manages toggle buttons that update a hidden input with comma-separated

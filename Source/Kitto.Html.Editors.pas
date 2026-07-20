@@ -71,27 +71,40 @@ type
       const ACurrencyPrefix: string = 'kxForm';
       ACharHeightFactor: Double = 1.0): string;
 
+    /// <summary>Renders a text &lt;input&gt; (optionally password), with the given max length.</summary>
     class function RenderTextInput(const ACtx: TKXEditorContext;
       AMaxLength: Integer; AIsPassword: Boolean = False): string;
+    /// <summary>Renders a search text &lt;input&gt; with the given placeholder (filter panels).</summary>
     class function RenderSearchInput(const ACtx: TKXEditorContext;
       const APlaceholder: string): string;
+    /// <summary>Renders a &lt;select&gt; from the given value/label pairs (optionally with an empty item).</summary>
     class function RenderSelectInput(const ACtx: TKXEditorContext;
       const AItems: TEFPairs; AAllowEmpty: Boolean): string;
+    /// <summary>Renders a boolean checkbox input.</summary>
     class function RenderCheckboxInput(const ACtx: TKXEditorContext): string;
+    /// <summary>Renders a date input (&lt;input type="date"&gt;).</summary>
     class function RenderDateInput(const ACtx: TKXEditorContext): string;
+    /// <summary>Renders a time input (&lt;input type="time"&gt;).</summary>
     class function RenderTimeInput(const ACtx: TKXEditorContext): string;
+    /// <summary>Renders a combined date + time input pair.</summary>
     class function RenderDateTimeInput(const ACtx: TKXEditorContext): string;
+    /// <summary>Renders an integer input (optionally with spin/speed buttons).</summary>
     class function RenderIntegerInput(const ACtx: TKXEditorContext;
       AUseSpeedButtons: Boolean): string;
+    /// <summary>Renders a currency input with the given decimals/separator/symbol and JS callbacks.</summary>
     class function RenderCurrencyInput(const ACtx: TKXEditorContext;
       ADecimals: Integer; ADecSep: Char; const ACurrSymbol: string;
       const ACallbackPrefix: string = 'kxForm'): string;
+    /// <summary>Renders a decimal (floating-point) input.</summary>
     class function RenderDecimalInput(const ACtx: TKXEditorContext): string;
+    /// <summary>Renders a multi-line memo (&lt;textarea&gt;) with the given number of rows.</summary>
     class function RenderMemoInput(const ACtx: TKXEditorContext;
       ARows: Integer): string;
+    /// <summary>Renders a rich-text (HTML) memo editor (SunEditor) with the given rows/config.</summary>
     class function RenderHtmlMemoInput(const ACtx: TKXEditorContext;
       ARows: Integer; AEditorNode: TEFNode;
       ACharHeightFactor: Double = 1.0): string;
+    /// <summary>Renders a generic numeric input.</summary>
     class function RenderNumberInput(const ACtx: TKXEditorContext): string;
     /// <summary>Renders a <select> from pre-built options HTML (for FK small references).</summary>
     class function RenderSmallReferenceSelect(const ACtx: TKXEditorContext;
@@ -273,6 +286,9 @@ begin
   Result := Result + '" ';
   Result := Result + 'id="' + ACtx.InputId + '-date" name="' + TNetEncoding.HTML.Encode(ACtx.InputName) + '__date"';
   if ACtx.IsReadOnly then Result := Result + ' disabled';
+  // For a mandatory DateTime only the date part is required; an empty time part
+  // defaults to 00:00 server-side (see TKWebApplication.PopulateRecordFieldFromPost).
+  if ACtx.IsRequired and not ACtx.IsReadOnly then Result := Result + ' required';
   if ACtx.ExtraAttrs <> '' then Result := Result + ' ' + ACtx.ExtraAttrs;
   Result := Result + ' value="' + TNetEncoding.HTML.Encode(ACtx.Value) + '"';
   if LDateWidthStyle <> '' then
@@ -422,6 +438,11 @@ begin
       ' name="' + TNetEncoding.HTML.Encode(ACtx.InputName) + '"' +
       ' id="' + ACtx.InputId + '-key"' +
       ' value="' + TNetEncoding.HTML.Encode(ACurrentKeyValue) + '"' +
+      // Emit the HTML5 required attribute on the (hidden) value input for a
+      // mandatory reference, so the client-side validator blocks submission when
+      // it is left empty. A hidden input can't receive focus or show a validity
+      // bubble, so the validator surfaces the message on the visible display.
+      IfThen(ACtx.IsRequired and not ACtx.IsReadOnly, ' required', '') +
       AHiddenAttrs +
       ' />' +
       '<input type="text" class="' + ACtx.CssInputClass + ' kx-form-lookup-display" readonly' +

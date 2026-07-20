@@ -1,3 +1,7 @@
+/*!
+  kxgrid.js — part of KittoX. Copyright 2012-2026 Ethea S.r.l.
+  Licensed under the Apache License, Version 2.0 — http://www.apache.org/licenses/LICENSE-2.0
+*/
 /**
  * kxGrid — Row selection and CRUD action helpers for KittoX List controller.
  * Manages row selection state, button enable/disable, and delete confirmation.
@@ -1054,11 +1058,39 @@ var kxForm = {
         }
       }
 
+      // A required large-reference keeps its value in a hidden input that can't
+      // be focused or show a validity bubble. Redirect focus + message to the
+      // visible (readonly) display input of the same lookup wrapper.
+      var reportEl = field;
+      if (field.type === 'hidden') {
+        var lookupWrap = field.closest('.kx-form-lookup-wrapper');
+        var disp = lookupWrap && lookupWrap.querySelector('.kx-form-lookup-display');
+        if (disp) reportEl = disp;
+      }
+
       // rAF: wait for reflow so reportValidity() can anchor the tooltip to the
       // now-visible field (display:none elements have 0x0 rect).
       requestAnimationFrame(function() {
-        field.focus();
-        field.reportValidity();
+        if (reportEl === field) {
+          reportEl.focus();
+          reportEl.reportValidity();
+        } else {
+          // reportEl is the readonly display input of a lookup. A readonly input
+          // is barred from constraint validation, so lift readonly and force a
+          // message to make the bubble appear. Keep both in place until the user
+          // leaves the field, otherwise clearing them would hide the bubble.
+          var msg = (window.KX_STRINGS && KX_STRINGS.requiredField) || 'Campo obbligatorio';
+          reportEl.removeAttribute('readonly');
+          reportEl.setCustomValidity(msg);
+          reportEl.focus();
+          reportEl.reportValidity();
+          var restore = function() {
+            reportEl.setCustomValidity('');
+            reportEl.setAttribute('readonly', '');
+            reportEl.removeEventListener('blur', restore);
+          };
+          reportEl.addEventListener('blur', restore);
+        }
       });
       return false;
     }
@@ -2183,6 +2215,11 @@ var kxForm = {
       if (op === 'add' && masterKey) {
         extra += '&masterKey=' + encodeURIComponent(masterKey);
       }
+    }
+    // masterView lets the server wire the detail form's store to the master
+    // record in session, so {MasterRecord.*} macros in LookupFilter resolve.
+    if (masterView) {
+      extra += (extra ? '&' : '') + 'masterView=' + encodeURIComponent(masterView);
     }
     // Get key from alias grid for edit/view/dup
     var key = '';

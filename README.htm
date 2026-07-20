@@ -39,7 +39,7 @@ td{
 <h1>Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX</h1>
 <p><a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg" alt="Core License"/></a>
 <a href="KittoLicensing"><img src="https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg" alt="Enterprise License"/></a></p>
-<p><strong>Latest Version 4.0.9 - 06 Jul 2026</strong></p>
+<p><strong>Latest Version 4.0.10 - 20 Jul 2026</strong></p>
 <p><img src="./images/kittoX_logo_200.png" alt="KittoX_logo.png"/></p>
 <p><strong>Kitto<sup>x</sup></strong> allows to create <strong>Rich Internet Applications</strong> based on a data model that can be mapped onto any database. The client-side part uses <strong>HTMX</strong> (through webbroker technology) to create a fully <strong>AJAX</strong> application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.</p>
 <p><strong>Kitto<sup>x</sup></strong> is aimed at <strong>Delphi</strong> developers that need to create web or mobile applications without delving into the intricacies of HTML, CSS or Javascript, yet it allows access to the bare metal if required.</p>
@@ -80,6 +80,41 @@ td{
 <p>Visit <a href="https://ethea.it/Kitto-Demo/">this site</a> for online demos.</p>
 <hr />
 <h1>Release Notes</h1>
+<h2>20 Jul 2026: ver. 4.0.10 Beta</h2>
+<h3>Oracle &amp; Database</h3>
+<ul>
+<li><strong>Oracle is now a fully supported backend</strong>: new DDL + Data scripts for the HelloKitto and TasKitto examples (Oracle XE 21c), plus <code>TasKitto_Oracle_ShiftDates.sql</code> to re-center the demo dashboard dates</li>
+<li><strong>Oracle SQL dialect fixes</strong>: corrected the top-N pagination off-by-one (Oracle <code>ROWNUM</code> is 1-based — single-row fetches previously returned 0 rows, full pages were short by one) and reintroduced the portable <strong><code>%DB.CONCAT%</code></strong> macro (<code>||</code> on Oracle/PostgreSQL/Firebird, <code>+</code> on SQL Server); new <strong><code>%DB.FROM_DUAL%</code></strong> and <strong><code>%DB.CURRENT_DATE%</code></strong> macros make hand-written YAML SQL portable across all five dialects</li>
+<li><strong>FireDAC Oracle</strong> wired up in the examples: the <code>Ora</code> driver is registered in <code>UseKitto.pas</code> and a ready-to-use <code>FireDAC_Oracle</code> connection block ships (commented) in <code>Config.yaml</code></li>
+<li><strong>New optional ODAC backend</strong> (<code>EF.DB.ODAC</code>, ClassId <code>ODAC</code>): an alternative Oracle path built on Devart ODAC, modelled on the FireDAC adapter (connection, commands, queries, transactions, metadata introspection via the Oracle data dictionary). It reuses the existing Oracle dialect and is <strong>not</strong> in the core package (commercial dependency) — enable it per-app by referencing the unit; the examples ship it defined-but-disabled so they still compile without ODAC installed</li>
+<li>Fix <strong><code>ftUnknown</code> parameter binding under MS ODBC Driver 17/18</strong>: with <code>DirectExecute</code> the driver no longer infers untyped parameter types (as SQL Server Native Client 11 did), which rejected optional/unassigned columns — now bound safely</li>
+<li>New <code>KittoX_Oracle.md</code> documenting the full Oracle setup; a note in every <code>UseKitto.pas</code> clarifies that the client/server FireDAC/DBExpress drivers require Delphi Enterprise/Architect (Professional ships only local/embedded drivers)</li>
+</ul>
+<h3>Routing (attribute-based refactor complete)</h3>
+<ul>
+<li>The whole <code>kx/*</code> request surface is now <strong>attribute-routed</strong>: after the auth family in 4.0.9, this release migrates the entire <strong>view domain</strong> (<code>view</code>, <code>data</code>, <code>form</code>, <code>save</code>, <code>delete</code>) and <strong>all ancillary endpoints</strong> (<code>lookup</code>, <code>tool</code>, <code>blob</code>, <code>upload</code>, <code>notify</code>, master-detail <code>detail/{i}/data|save|delete</code>, <code>wizard-finish</code>) into typed handlers running under a single shared request-filter chain (error → JWT auth → navigation guard → authorization)</li>
+<li>Legacy <code>TKWebApplication.DoHandleRequest</code> now serves <strong>only</strong> the Home page (<code>/</code>); <strong>zero</strong> <code>IsKX*Request</code> matchers remain (down from ~24) — the monolithic dispatcher is gone</li>
+<li>New <strong><code>TKXResourceRegistry.RegisterOverride</code></strong> API: an application can subclass a framework handler and override a single endpoint or hook (e.g. a custom <code>save</code>) <strong>without forking</strong> the whole route — register the subclass and it replaces the default for its base path</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li><strong>Navigation guard</strong>: direct browser navigation to an internal <code>kx/*</code> fragment endpoint (e.g. pasting <code>.../kx/view/SomeChart</code> in the address bar) is now <strong>rejected and redirected</strong> to login / home. Only in-app HTMX requests are served the partial; typing a fragment URL no longer leaks a bare HTML partial (when logged in) nor returns a bald <code>404</code> (when not)</li>
+</ul>
+<h3>Master-Detail &amp; Forms</h3>
+<ul>
+<li><strong><code>{MasterRecord.*}</code> macros now resolve in detail-form lookup filters</strong>: the detail store is linked to the session master record, so dependent lookups populate correctly instead of coming up empty</li>
+<li><strong>Dedicated lookup grids apply the calling field's <code>LookupFilter</code></strong> (including <code>{MasterRecord.*}</code>), with search/paging state preserved</li>
+<li><strong>Detail-record rules fire on save</strong>: <code>HandleDetailSave</code> now applies each field's <code>AfterFieldChange</code> rules (calculated fields — avoids NOT NULL violations) and <code>ApplyBeforeRules</code> (rules that roll detail values up into the master, e.g. totals)</li>
+<li><strong>Reference caption &amp; AutoAddFields resolve on newly-added in-memory records</strong>: the derived-values cascade (previously skipped because populate runs with notifications off) now runs via <code>RefreshDerivedReferenceValues</code>, so a reference column is filled immediately instead of staying blank until reloaded from the DB</li>
+</ul>
+<h3>UI</h3>
+<ul>
+<li><strong>Mobile dashboard fix</strong>: cards in a maximized-dialog dashboard (<code>Controller: Dashboard</code> / FlexPanel) no longer overflow the screen width and the panel now scrolls vertically, so cards below the fold are reachable</li>
+</ul>
+<h3>Documentation</h3>
+<ul>
+<li>Framework <strong>public-API XMLDoc coverage raised from <sub>32% to </sub>74%</strong>, spanning the routing namespace, the in-memory store, the metadata system, the web engine/server, the HTML<sup>x</sup> controllers, <code>EF.DB</code>, the config/rules/SQL core, the tool controllers and the third-party integration shims — surfaced in KIDE<sup>x</sup> through <code>[YamlNode]</code> descriptions</li>
+</ul>
 <h2>06 Jul 2026: ver. 4.0.9 Beta</h2>
 <h3>Bug fixes</h3>
 <ul>

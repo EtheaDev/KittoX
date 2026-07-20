@@ -1,4 +1,8 @@
-/* KittoX Base Stylesheet — Theme-aware via CSS Custom Properties */
+/*!
+  kittox.css — KittoX base stylesheet, theme-aware via CSS custom properties.
+  Copyright 2012-2026 Ethea S.r.l. — Licensed under the Apache License, Version 2.0.
+  http://www.apache.org/licenses/LICENSE-2.0
+*/
 
 /* ===== Theme Variables ===== */
 :root {
@@ -3717,4 +3721,107 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   padding: 8px 0;
   line-height: 1.6;
   color: var(--kx-text);
+}
+
+/* -------------------------------------------------------------------------
+   Mobile (phone) — keep data-entry form fields inside the viewport.
+   The form controller emits fixed field widths from CharWidth (inline
+   "width:NNch"), and <fieldset> defaults to min-width:min-content: on a phone
+   this overflows horizontally. On narrow screens stack each field (label above
+   input), let the fieldset / flex chain shrink, and make every editor fill the
+   field width instead of its fixed CharWidth. Applies to every KittoX app.
+   Placed at end-of-file so it wins on source order; width uses !important to
+   override the per-field inline width:NNch.
+   ------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  /* <fieldset> min-width:min-content would keep the form wider than the phone */
+  .kx-form-fieldset {
+    min-width: 0;
+    min-inline-size: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* Let the whole flex chain shrink instead of scrolling sideways */
+  .kx-form-fieldset-body,
+  .kx-form-body,
+  .kx-form-page {
+    min-width: 0;
+  }
+  /* One field per line */
+  .kx-form-row {
+    flex-direction: column;
+    min-width: 0;
+  }
+  /* Field: label above input, full width (matches the server's mobile
+     LabelAlign=top) */
+  .kx-form-field {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  /* Editors fill the field width; ignore the inline width:NNch. Checkboxes /
+     radios are excluded so they keep their own square size. */
+  .kx-form-input:not(.kx-input-checkbox):not(.kx-input-radio),
+  .kx-form-field input:not([type="checkbox"]):not([type="radio"]),
+  .kx-form-field select,
+  .kx-form-field textarea {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .kx-form-field input[type="checkbox"],
+  .kx-form-field input[type="radio"] {
+    flex: 0 0 auto;
+    align-self: flex-start;
+  }
+  /* Reference/lookup fields: wrapper and its inner input fill the field width */
+  .kx-form-field .kx-form-lookup-wrapper {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .kx-form-field .kx-form-lookup-wrapper input {
+    width: 100% !important;
+    min-width: 0;
+  }
+  /* HTMLMemo: the original textarea is display:none and replaced by the
+     SunEditor widget (.sun-editor), whose width comes from data-editor-width
+     (in ch) — constrain it to the viewport too. */
+  .kx-form-field .sun-editor {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Dashboard / FlexPanel on mobile.
+   The dashboard opens as a MAXIMIZED MODAL, and in modal mode the framework
+   does NOT emit the .kx-flex-panel wrapper (TKXPanelControllerBase.Render):
+   the .kx-flex-container is placed directly inside .kx-dialog-body, which is
+   overflow:hidden. So the vertical scroll and the width clamp must live on the
+   container itself. Make it the bounded vertical scroller, single column and
+   clipped horizontally, and force each card full-width (overriding the inline
+   min-width, up to 700px, that otherwise pushes the cards off-screen).
+   ------------------------------------------------------------------------- */
+body.kx-mobile .kx-dialog-body > .kx-flex-container {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+body.kx-mobile .kx-flex-item {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
 }

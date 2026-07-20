@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +28,11 @@ interface
 type
   TJS = class
   public
+    /// <summary>Converts a Delphi date/time format string to the equivalent JavaScript format.</summary>
     class function DelphiDateTimeFormatToJSDateTimeFormat(const ADateTimeFormat: string): string;
+    /// <summary>Converts a Delphi date format string to the equivalent JavaScript format.</summary>
     class function DelphiDateFormatToJSDateFormat(const ADateFormat: string): string;
+    /// <summary>Converts a Delphi time format string to the equivalent JavaScript format.</summary>
     class function DelphiTimeFormatToJSTimeFormat(const ATimeFormat: string): string;
   end;
 

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,31 +31,43 @@ uses
   ppRTTI;
 
 Type
+  /// <summary>Base class for Ethea custom functions available in the ReportBuilder RAP scripting engine.</summary>
   TEtheaFunction = class (TraSystemFunction)
   public
     {Override Category to return a new category string}
+    /// <summary>Returns the RAP palette category these functions appear under.</summary>
     class function Category: String; override;
   end;
 
   {Descendants of TEtheaFunction will appear in the Filename category}
+  /// <summary>RAP function that expands an image file name to its full resource path.</summary>
   TEFExpandImageFilePathFunction = class (TEtheaFunction)
   public
+    /// <summary>Executes the function against the given RAP parameter list.</summary>
     procedure ExecuteFunction(aParams: TraParamList); override;
+    /// <summary>Returns the RAP signature (name and parameters) of the function.</summary>
     class function GetSignature: String; override;
   end;
 
+  /// <summary>RAP function that left-pads a string to a given length.</summary>
   TEFPadLFunction = class(TraStringFunction)
   public
+    /// <summary>Executes the function against the given RAP parameter list.</summary>
     procedure ExecuteFunction(aParams: TraParamList); override;
+    /// <summary>Returns the RAP signature (name and parameters) of the function.</summary>
     class function GetSignature: String; override;
   end;
 
+  /// <summary>RAP function that right-pads a string to a given length.</summary>
   TEFPadRFunction = class(TraStringFunction)
   public
+    /// <summary>Executes the function against the given RAP parameter list.</summary>
     procedure ExecuteFunction(aParams: TraParamList); override;
+    /// <summary>Returns the RAP signature (name and parameters) of the function.</summary>
     class function GetSignature: String; override;
   end;
 
+/// <summary>Registers the Ethea RAP functions and sets the image search paths used at report runtime.</summary>
 procedure UpdateRAPEnvironment(const AApplicationImagesPath, ACoreImagesPath: string);
 
 implementation

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -139,11 +139,16 @@ type
     constructor Create;
     destructor Destroy; override;
     class destructor ClassDestroy;
+    /// <summary>The singleton wizard-rule registry.</summary>
     class property Instance: TKXWizardRuleRegistry read GetInstance;
 
+    /// <summary>Registers a wizard-rule implementation class under the given id.</summary>
     procedure RegisterClass(const AId: string; const AClass: TKXWizardRuleImplClass);
+    /// <summary>Removes the wizard-rule implementation class registered under the given id.</summary>
     procedure UnregisterClass(const AId: string);
+    /// <summary>Returns True if a wizard-rule class is registered under the given id.</summary>
     function HasClass(const AId: string): Boolean;
+    /// <summary>Creates an instance of the wizard-rule class registered under the given id.</summary>
     function CreateObject(const AId: string): TKXWizardRuleImpl;
   end;
 

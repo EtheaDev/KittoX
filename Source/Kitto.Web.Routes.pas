@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,8 +29,10 @@ type
   TKWebRoute = class;
 
   IKWebHandleRequestEventListener = interface
+    /// <summary>Fired before a route handles a request; set AIsAllowed := False to veto it.</summary>
     procedure BeforeHandleRequest(const ASender: TKWebRoute; const ARequest: TKWebRequest;
       const AResponse: TKWebResponse; const AURL: TKWebURL; var AIsAllowed: Boolean);
+    /// <summary>Fired after a route handled a request (AIsFatalError flags a fatal error).</summary>
     procedure AfterHandleRequest(const ASender: TKWebRoute; const ARequest: TKWebRequest;
       const AResponse: TKWebResponse; const AURL: TKWebURL; const AIsFatalError: Boolean);
   end;
@@ -59,7 +61,9 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>Adds a before/after handle-request event listener.</summary>
     procedure AddSubscriber(const ASubscriber: IKWebHandleRequestEventListener);
+    /// <summary>Removes a previously added event listener.</summary>
     procedure RemoveSubscriber(const ASubscriber: IKWebHandleRequestEventListener);
     /// <summary>
     ///  Handles a request; if handled, returns True (and sets the reponse up) if handled.
@@ -94,6 +98,7 @@ type
     function DoHandleRequest(const ARequest: TKWebRequest; const AResponse: TKWebResponse;
       const AURL: TKWebURL): Boolean; override;
   public
+    /// <summary>Creates the route serving files under APath for URLs matching APattern.</summary>
     constructor Create(const APattern, APath: string);
   end;
 
@@ -111,6 +116,8 @@ type
     function DoHandleRequest(const ARequest: TKWebRequest;
       const AResponse: TKWebResponse; const AURL: TKWebURL): Boolean; override;
   public
+    /// <summary>Creates the route serving URLs under ABasePath from the first matching
+    /// file across the ordered ALocalPaths list.</summary>
     constructor Create(const ABasePath: string; const ALocalPaths: TArray<string>);
   end;
 
@@ -128,6 +135,7 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>Adds a child route at AIndex (-1 = append) and returns it; the list owns it.</summary>
     function AddRoute(const ARoute: TKWebRoute; const AIndex: Integer = -1): TKWebRoute;
   end;
 

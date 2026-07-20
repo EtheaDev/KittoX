@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+ï»¿{-------------------------------------------------------------------------------
    Copyright 2012-2019 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -138,6 +138,7 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>The rule metadata node this implementation was created from (holds its parameters).</summary>
     property Rule: TKRule read FRule write SetRule;
 
     /// <summary>
@@ -257,7 +258,7 @@ type
 
     /// <summary>
     ///  <para>
-    ///   Server side validation before deleting a database record.
+    ///   Server side validation beforeÂ deleting a database record.
     ///   Descendants should read the values in ARecord and call RaiseError
     ///   (which will raise an exception with the default or a custom
     ///   message) in order to stop the delete operation and display an error
@@ -269,7 +270,7 @@ type
     ///  </para>
     /// </summary>
     /// <param name="ARecord">
-    ///  The record being deleted. It is usually an instance of
+    ///  The record beingÂ deleted. It is usually an instance of
     ///  TKViewTableRecord.
     /// </param>
     /// <remarks>
@@ -303,7 +304,7 @@ type
     procedure AfterUpdate(const ARecord: TKRecord); virtual;
 
     /// <summary>
-    ///  Called after successfully deleting a record in the database. This
+    ///  Called after successfully deleting a record inÂ the database. This
     ///  method can still raise an exception (by calling RaiseError) causing
     ///  the transaction to be rolled back.
     /// </summary>
@@ -346,6 +347,10 @@ type
     /// </summary>
     function GetReferencedModelInstanceValue(const AReferenceName, AFieldName: string; const ARecord: TKRecord): Variant;
 
+    /// <summary>
+    ///  Called after a reference field has been refreshed (e.g. after the user
+    ///  picks a related record). The default implementation does nothing.
+    /// </summary>
     procedure AfterRefreshReferenceField(const AField: TKField); virtual;
 
   end;
@@ -357,6 +362,7 @@ type
     class function GetInstance: TKRuleImplRegistry; static;
   public
     class destructor Destroy;
+    /// <summary>The singleton registry of rule-implementation classes.</summary>
     class property Instance: TKRuleImplRegistry read GetInstance;
 
     /// <summary>Adds a rule implementation class to the registry.</summary>
@@ -369,6 +375,7 @@ type
     class function GetInstance: TKRuleImplFactory; static;
   public
     class destructor Destroy;
+    /// <summary>The singleton factory that creates rule implementations by id.</summary>
     class property Instance: TKRuleImplFactory read GetInstance;
 
     /// <summary>

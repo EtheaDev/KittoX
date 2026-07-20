@@ -21,6 +21,7 @@ unit Kitto.Web.Request;
 interface
 
 uses
+  System.Classes,
   Web.HTTPApp,
   {$IFNDEF LINUX}
   Web.ReqMulti,
@@ -61,12 +62,17 @@ type
     ///  The name of the segment of the URL's path enclusing all method calls.
     /// </summary>
     const APP_NAMESPACE = 'app';
+    /// <summary>The request bound to the current thread (per-request threadvar).</summary>
     class property Current: TKWebRequest read GetCurrent write SetCurrent;
+    /// <summary>Frees and clears the current-thread request.</summary>
     class procedure ClearCurrent;
 
+    /// <summary>Wraps the given WebBroker request (optionally taking ownership).</summary>
     constructor Create(const ARequest: TWebRequest; const AOwnsRequest: Boolean = True);
 
+    /// <summary>True if the request is an XMLHttpRequest (X-Requested-With).</summary>
     property IsAjax: Boolean read GetIsAjax;
+    /// <summary>True if the request is a browser refresh (non-Ajax, Cache-Control: max-age=0).</summary>
     property IsRefresh: Boolean read GetIsRefresh;
 
     /// <summary>
@@ -99,6 +105,12 @@ type
     /// </summary>
     function GetFormField(const AName: string): string;
     /// <summary>
+    ///  Returns the POST body fields as a TStrings of name=value pairs (the RTL
+    ///  ContentFields), by reference — owned by the request, do not free.
+    ///  Backs the [TKXFormBody] parameter binding.
+    /// </summary>
+    function GetContentFields: TStrings;
+    /// <summary>
     ///  Returns the value of a field searching first in ContentFields (POST body),
     ///  then in QueryFields (URL query string). Returns '' if not found.
     /// </summary>
@@ -116,9 +128,13 @@ type
     /// </summary>
     function GetCookie(const AName: string): string;
 
+    /// <summary>True if the User-Agent indicates an iPhone.</summary>
     function IsBrowserIPhone: Boolean;
+    /// <summary>True if the User-Agent indicates an iPad.</summary>
     function IsBrowserIPad: Boolean;
+    /// <summary>True if the User-Agent indicates a mobile device (iPhone/iPad/Android/Windows Phone).</summary>
     function IsMobileBrowser: Boolean;
+    /// <summary>True if the User-Agent indicates a Windows Phone.</summary>
     function IsBrowserWindowsPhone: Boolean;
 
     /// <summary>
@@ -127,11 +143,17 @@ type
     /// </summary>
     function IsPageRefresh(const AURLDocument: string): Boolean;
 
+    /// <summary>The Accept-Language header value.</summary>
     property AcceptLanguage: string read GetAcceptLanguage;
+    /// <summary>The requested language (from the Language query field).</summary>
     property Language: string read GetLanguage;
+    /// <summary>The User-Agent header value.</summary>
     property UserAgent: string read GetUserAgent;
+    /// <summary>The client's remote (IP) address.</summary>
     property RemoteAddr: string read GetRemoteAddr;
+    /// <summary>The request timestamp (falls back to Now if the request has no date).</summary>
     property Timestamp: TDateTime read GetTimestamp;
+    /// <summary>The uploaded files of a multipart request.</summary>
     property Files: TAbstractWebRequestFiles read GetFiles;
     /// <summary>HTTP method of the request (GET, POST, etc.).</summary>
     function Method: string;
@@ -145,7 +167,9 @@ type
     UserAgent: string;
     ClientAddress: string;
     DateTime: TDateTime;
+    /// <summary>Resets all captured fields to empty.</summary>
     procedure ClearData;
+    /// <summary>Captures UserAgent/ClientAddress/Timestamp from the given request.</summary>
     procedure SetData(const ARequest: TKWebRequest);
   end;
 
@@ -252,6 +276,12 @@ begin
   // keys. Transport decoding must happen exactly once, and the RTL already does
   // it. See BUG_Double_URL_Decode.md.
   Result := FRequest.ContentFields.Values[AName];
+end;
+
+function TKWebRequest.GetContentFields: TStrings;
+begin
+  // By reference: the WebBroker request owns ContentFields for the request's life.
+  Result := FRequest.ContentFields;
 end;
 
 function TKWebRequest.GetField(const AName: string): string;

@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,8 @@ unit Kitto.Web.Types;
 
 interface
 
+/// <summary>Returns the MIME type for the file's extension (from a ~183-entry table),
+/// or ADefaultType when the extension is unknown.</summary>
 function GetFileMimeType(const AFileName: string; const ADefaultType: string = 'application/octet-stream'): string;
 
 implementation

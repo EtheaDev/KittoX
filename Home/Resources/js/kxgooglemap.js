@@ -1,3 +1,7 @@
+/*!
+  kxgooglemap.js — part of KittoX. Copyright 2012-2026 Ethea S.r.l.
+  Licensed under the Apache License, Version 2.0 — http://www.apache.org/licenses/LICENSE-2.0
+*/
 /**
  * kxGoogleMap - Google Maps integration for KittoX GoogleMap controller.
  * Manages map instances, geocoding-based marker placement, routing, and data refresh.

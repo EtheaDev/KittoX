@@ -81,6 +81,7 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
 
+    /// <summary>The view table this data panel operates on.</summary>
     property ViewTable: TKViewTable read GetViewTable;
 
     /// <summary>Returns True if the action button should be visible.</summary>

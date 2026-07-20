@@ -1,3 +1,7 @@
+/*!
+  kxwizard.js — part of KittoX. Copyright 2012-2026 Ethea S.r.l.
+  Licensed under the Apache License, Version 2.0 — http://www.apache.org/licenses/LICENSE-2.0
+*/
 /**
  * kxWizard — Step-by-step wizard navigation for KittoX.
  * Works with the TKXWizardController Delphi class.

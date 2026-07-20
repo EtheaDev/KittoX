@@ -11,6 +11,20 @@ uses
   // Indy hosts must include this unit explicitly — the WebBroker bridge for
   // ISAPI/Apache pulls it in on its own.
   EF.Logger.TextFile,
+  // ---------------------------------------------------------------------------
+  // DELPHI ENTERPRISE (or ARCHITECT) REQUIRED for the client/server database
+  // drivers listed below: the DBExpress Data.DBX* drivers and the FireDAC
+  // FireDAC.Phys.* drivers for remote DBMS (MS SQL Server, Oracle, PostgreSQL,
+  // MySQL, Firebird...). Access to client/server databases is a feature of the
+  // Enterprise and Architect editions only. Delphi PROFESSIONAL ships FireDAC/
+  // DBExpress with local/embedded drivers only (SQLite, InterBase ToGo), so on
+  // a Professional license these uses do NOT compile (e.g. "unit
+  // Data.DBXFirebird not found"). A KittoX web app normally connects to a
+  // client/server DB, so building this example needs a license upgrade from
+  // Professional to Enterprise (or Architect). With Professional you can only
+  // target a local DB (SQLite/InterBase) — remove the client/server driver uses
+  // accordingly. (ADO/dbGo and the SQLite/InterBase drivers are in Professional.)
+  // ---------------------------------------------------------------------------
   EF.DB.DBX,
   Data.DBXFirebird,
   EF.DB.FD,

@@ -1,3 +1,7 @@
+/*!
+  kxtheme.js — part of KittoX. Copyright 2012-2026 Ethea S.r.l.
+  Licensed under the Apache License, Version 2.0 — http://www.apache.org/licenses/LICENSE-2.0
+*/
 // kxtheme.js — user-selectable theme (Light / Dark / Auto) with localStorage
 // persistence keyed per KittoX application. Companion of the inline boot
 // script emitted in <head> by TKWebApplication.RenderHTMLHead which runs

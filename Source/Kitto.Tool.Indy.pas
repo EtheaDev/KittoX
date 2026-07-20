@@ -1,4 +1,4 @@
-{-------------------------------------------------------------------------------
+﻿{-------------------------------------------------------------------------------
    Copyright 2012-2026 Ethea S.r.l.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,10 +32,12 @@ uses
   Kitto.Html.Tools;
 
 type
+  /// <summary>Data tool controller that sends an e-mail (via Indy SMTP) for the selected record(s).</summary>
   TSendEmailToolController = class(TKXDataToolController)
   strict protected
     procedure ExecuteTool; override;
   public
+    /// <summary>Returns the default toolbar icon name for this tool.</summary>
     class function GetDefaultImageName: string; override;
   end;
 

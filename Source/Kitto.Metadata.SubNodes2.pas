@@ -686,6 +686,42 @@ type
     property Password: string read GetPassword;
   end;
 
+  /// <summary>
+  ///  Devart ODAC (Oracle) connection parameters.
+  ///  YAML path: DatabaseRouter/DatabaseName/Connection
+  /// </summary>
+  TEFDBODACConnectionConfig = class(TEFNode)
+  private
+    function GetServer: string;
+    function GetUser_Name: string;
+    function GetPassword: string;
+    function GetDirect: string;
+    function GetCharset: string;
+    function GetConnectMode: string;
+    function GetSchema: string;
+  public
+    [YamlNode('Server', 'Oracle connect string (e.g. host:port/service_name)')]
+    property Server: string read GetServer;
+
+    [YamlNode('User_Name', 'Database user name')]
+    property User_Name: string read GetUser_Name;
+
+    [YamlNode('Password', 'Database password')]
+    property Password: string read GetPassword;
+
+    [YamlNode('Direct', 'Direct Oracle Net mode without installed client (Yes/No)')]
+    property Direct: string read GetDirect;
+
+    [YamlNode('Charset', 'Connection character set (e.g. AL32UTF8)')]
+    property Charset: string read GetCharset;
+
+    [YamlNode('ConnectMode', 'Connect mode: Normal, SysDBA or SysOper')]
+    property ConnectMode: string read GetConnectMode;
+
+    [YamlNode('Schema', 'Optional default (current) schema')]
+    property Schema: string read GetSchema;
+  end;
+
 implementation
 
 { TKGroupingShowCountConfig }
@@ -1267,6 +1303,43 @@ end;
 function TEFDBADOConnectionConfig.GetPassword: string;
 begin
   Result := GetString('Password');
+end;
+
+{ TEFDBODACConnectionConfig }
+
+function TEFDBODACConnectionConfig.GetServer: string;
+begin
+  Result := GetString('Server');
+end;
+
+function TEFDBODACConnectionConfig.GetUser_Name: string;
+begin
+  Result := GetString('User_Name');
+end;
+
+function TEFDBODACConnectionConfig.GetPassword: string;
+begin
+  Result := GetString('Password');
+end;
+
+function TEFDBODACConnectionConfig.GetDirect: string;
+begin
+  Result := GetString('Direct');
+end;
+
+function TEFDBODACConnectionConfig.GetCharset: string;
+begin
+  Result := GetString('Charset');
+end;
+
+function TEFDBODACConnectionConfig.GetConnectMode: string;
+begin
+  Result := GetString('ConnectMode');
+end;
+
+function TEFDBODACConnectionConfig.GetSchema: string;
+begin
+  Result := GetString('Schema');
 end;
 
 end.

@@ -41,12 +41,19 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    /// <summary>Removes all accumulated HTML.</summary>
     procedure Clear;
+    /// <summary>Appends an HTML fragment to the content.</summary>
     procedure AddHTML(const AHTML: string);
+    /// <summary>Returns the full accumulated HTML and clears the buffer.</summary>
     function Consume: string;
+    /// <summary>The content type for this HTML content ('text/html; charset=…').</summary>
     function GetContentType: string;
+    /// <summary>The character set used for the content (default utf-8).</summary>
     property Charset: string read FCharset write FCharset;
+    /// <summary>The text encoding matching Charset.</summary>
     property Encoding: TEncoding read GetEncoding;
+    /// <summary>Number of HTML fragments accumulated.</summary>
     property Count: Integer read GetCount;
   end;
 
@@ -68,15 +75,23 @@ type
     procedure AfterConstruction; override;
     destructor Destroy; override;
   public
+    /// <summary>The response bound to the current thread (per-request threadvar).</summary>
     class property Current: TKWebResponse read GetCurrent write SetCurrent;
+    /// <summary>Frees and clears the current-thread response.</summary>
     class procedure ClearCurrent;
 
+    /// <summary>Wraps the given WebBroker response (optionally taking ownership).</summary>
     constructor Create(const AResponse: TWebResponse; const AOwnsResponse: Boolean = True);
 
+    /// <summary>The response Content-Type header.</summary>
     property ContentType: string read GetContentType write SetContentType;
+    /// <summary>The HTTP status code.</summary>
     property StatusCode: Integer read GetStatusCode write SetStatusCode;
+    /// <summary>Sets (or replaces) a custom response header.</summary>
     procedure SetCustomHeader(const AName, AValue: string);
+    /// <summary>The custom response headers collection.</summary>
     property CustomHeaders: TStrings read GetCustomHeaders;
+    /// <summary>Writes a simple cookie (name/value/expiry).</summary>
     procedure SetCookie(const AName, AValue: string; const AExpires: TDateTime);
     /// <summary>
     ///  Writes a cookie with the full set of attributes needed by JWT auth:
@@ -87,7 +102,9 @@ type
       const APath: string; const AHttpOnly: Boolean; const ASecure: Boolean;
       const ASameSite: string);
 
+    /// <summary>True if any HTML content has been accumulated in Items.</summary>
     function HasItems: Boolean;
+    /// <summary>The top HTML content buffer (the HTMX/HTML output pipeline).</summary>
     property Items: TKWebResponseContent read GetItems;
     /// <summary>
     ///  Generates content for all the Items and sets Content/ContentStream and
