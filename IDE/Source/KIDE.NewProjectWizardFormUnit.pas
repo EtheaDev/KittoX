@@ -59,6 +59,7 @@ uses
   Vcl.Controls,
   Vcl.Forms,
   Vcl.Dialogs,
+  {$IFDEF KIDEGUI}Vcl.StyledTaskDialog,{$ENDIF}
   Vcl.ActnList,
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
@@ -286,7 +287,7 @@ begin
     FTemplate.ProjectDirectory := ProjectPathEdit.Text;
     if System.SysUtils.DirectoryExists(FTemplate.ProjectDirectory) and not IsDirectoryEmpty(FTemplate.ProjectDirectory) then
     begin
-      if MessageDlg(_('The chosen directory is not empty. Files may be overwritten. Are you sure you want to continue?'), mtWarning, [mbYes, mbNo], 0) <> mrYes then
+      if {$IFDEF KIDEGUI}StyledMessageDlg{$ELSE}MessageDlg{$ENDIF}(_('The chosen directory is not empty. Files may be overwritten. Are you sure you want to continue?'), mtWarning, [mbYes, mbNo], 0) <> mrYes then
         Abort;
     end;
     FTemplate.ProjectName := ProjectNameEdit.Text;

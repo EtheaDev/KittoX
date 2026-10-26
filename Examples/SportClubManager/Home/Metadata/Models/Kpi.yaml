@@ -1,4 +1,4 @@
-DisplayLabel: _(KPI)
+﻿DisplayLabel: _(KPI)
 PluralDisplayLabel: _(KPIs)
 Fields:
   KpiId: Integer primary key

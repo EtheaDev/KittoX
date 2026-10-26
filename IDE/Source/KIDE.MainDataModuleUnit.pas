@@ -73,6 +73,7 @@ const
   VALIDATE_PICTURE = 'Validate';
   NEW_MODEL_PICTURE = 'New-model';
   DATA_WIZARD_PICTURE = 'Data-wizard';
+  VIEW_WIZARD_PICTURE = 'View-wizard';
   NEW_VIEW_PICTURE = 'New-view';
   NEW_LAYOUT_PICTURE = 'New-layout';
   FIELD_PICTURE = 'Field';

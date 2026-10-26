@@ -1,4 +1,4 @@
-Field: FinancialYear
+﻿Field: FinancialYear
 Field: TaxLevyCode
   DisplayWidth: 20
 Field: WithholdingType

@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Daily Activity Trend)
 Controller: List
   CenterController: ChartPanel

@@ -59,6 +59,7 @@ uses
   Vcl.Controls,
   Vcl.Forms,
   Vcl.Dialogs,
+  {$IFDEF KIDEGUI}Vcl.StyledTaskDialog,{$ENDIF}
   Vcl.StdCtrls,
   Vcl.ComCtrls,
   Vcl.ActnList,
@@ -80,6 +81,7 @@ type
     procedure ForwardActionUpdate(Sender: TObject);
     procedure BackActionExecute(Sender: TObject);
     procedure ForwardActionExecute(Sender: TObject);
+    procedure RefreshForwardButton;
     procedure FormShow(Sender: TObject);
   private
     function GetPageTitle: string;
@@ -147,7 +149,8 @@ implementation
 uses
   EF.Tree,
   EF.Localization,
-  Kide.Config;
+  Kide.Config,
+  KIDE.MRUOptions;
 
 function TBaseWizardForm.CanGoBack: Boolean;
 begin
@@ -193,6 +196,16 @@ begin
   // Let the form see Esc before the focused control (a wizard has no Cancel
   // button, so Esc would otherwise be ignored).
   KeyPreview := True;
+  // The MRU remembers where the wizard was closed, and FormShow restores
+  // it - but poMainFormCenter centres the window right AFTER OnShow
+  // (TCustomForm.CMShowingChanged), undoing that Left/Top: every wizard
+  // reopened centred, and the stored position was never used. With a
+  // position to restore, use poDesigned so the centring does not run. It
+  // must be decided here, before the window exists: changing Position
+  // recreates the window, which OnShow forbids ("Cannot change Visible in
+  // OnShow or OnHide"). The first opening, with nothing stored, stays centred.
+  if Assigned(TMRUOptions.Instance.FindNode(Name + '/Left')) then
+    Position := poDesigned;
 end;
 
 procedure TBaseWizardForm.KeyDown(var Key: Word; Shift: TShiftState);
@@ -215,7 +228,7 @@ begin
   // ModalResult <> mrOk: confirm, so the user does not lose the wizard's work by
   // accidentally closing the window (this fires on any page, last one included).
   if ModalResult <> mrOk then
-    Result := MessageDlg(_('Close the wizard without finishing? Any changes will be lost.'),
+    Result := {$IFDEF KIDEGUI}StyledMessageDlg{$ELSE}MessageDlg{$ENDIF}(_('Close the wizard without finishing? Any changes will be lost.'),
       mtConfirmation, [mbYes, mbNo], 0) = mrYes;
 end;
 
@@ -226,6 +239,19 @@ begin
   PageControl.SelectNextPage(False, False);
   AfterLeavePage(PageControl.ActivePageIndex + 1, PageControl.ActivePageIndex, False);
   AfterEnterPage(PageControl.ActivePageIndex, PageControl.ActivePageIndex + 1, False);
+  RefreshForwardButton;
+end;
+
+// The caption of the forward button ("Next >>" or "Finish") follows the page
+// through ForwardActionUpdate, but the styled button KIDEX draws (every TButton
+// is a TStyledButton) does not repaint when only its text changes: coming back
+// from the last page it kept saying "Finish" until something else - the mouse
+// over it, a change of Enabled - made it redraw. Set the caption at once and
+// repaint, so that the page change and the button agree without waiting.
+procedure TBaseWizardForm.RefreshForwardButton;
+begin
+  ForwardActionUpdate(ForwardAction);
+  ForwardButton.Invalidate;
 end;
 
 procedure TBaseWizardForm.ForwardActionUpdate(Sender: TObject);
@@ -261,6 +287,7 @@ begin
     PageControl.SelectNextPage(True, False);
     AfterLeavePage(PageControl.ActivePageIndex - 1, PageControl.ActivePageIndex, True);
     AfterEnterPage(PageControl.ActivePageIndex, PageControl.ActivePageIndex - 1, True);
+    RefreshForwardButton;
   end;
 end;
 
@@ -283,7 +310,9 @@ begin
   LNode := TKideConfig.Instance.Config.GetNode(Self.Name+'/Size', True);
   Width := LNode.GetValue('Width', 900);
   Height := LNode.GetValue('Height', 700);
-  inherited;
+  inherited; // restores Left/Top/Width/Height from the MRU
+  if Position = poDesigned then
+    MakeFullyVisible; // a position saved on a monitor that is gone
   InitWizard;
 end;
 

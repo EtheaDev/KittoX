@@ -1547,6 +1547,7 @@ var
   LDBField: TField;
   LFieldName: string;
   LValue: string;
+  LFirst: Boolean;
 begin
   Assert(Assigned(AFields), 'Assigned(AFields)');
   if AByIndex then
@@ -1576,12 +1577,16 @@ begin
       else if Fields[I].FieldName.Contains(TKConfig.Instance.MultiFieldSeparator) then
       begin
         LValue := '';
+        LFirst := True;
+        // Use a flag rather than testing LValue = '': a leading empty part must
+        // still be followed by the separator, or the part count gets lost.
         for LFieldName in Split(Fields[I].FieldName, TKConfig.Instance.MultiFieldSeparator) do
         begin
-          if LValue = '' then
+          if LFirst then
             LValue := AFields.FieldByName(TranslateFieldName(LFieldName)).AsString
           else
             LValue := LValue + TKConfig.Instance.MultiFieldSeparator + AFields.FieldByName(TranslateFieldName(LFieldName)).AsString;
+          LFirst := False;
         end;
         Fields[I].AsString := LValue;
         Fields[I].MarkAsUnmodified;

@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Deductions to be printed)
 ImageName: dash_receipts_to_print.svg
 Controller: TemplateDataPanel

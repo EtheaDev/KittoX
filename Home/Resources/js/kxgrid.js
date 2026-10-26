@@ -1548,6 +1548,27 @@ var kxForm = {
       var saveBtn = form.querySelector('.kx-form-btn-save');
       if (saveBtn) saveBtn.disabled = false;
     }
+    // AfterConfirm rules may have changed the in-memory details
+    kxForm.reloadLoadedDetails(viewName);
+  },
+
+  /**
+   * Reloads every detail panel of the master form that has already been
+   * loaded (tabs, bottom panels, an open popup), from the session store.
+   * Panels never opened are left alone: they load lazily, already up to date.
+   * @param {string} viewName - Master view name
+   */
+  reloadLoadedDetails: function(viewName) {
+    var form = document.getElementById('kx-form-' + viewName);
+    var keyInput = form ? form.querySelector('input[name="_key"]') : null;
+    var masterKey = keyInput ? keyInput.value : '';
+    var prefix = 'kx-detail-' + viewName + '-';
+    document.querySelectorAll('[id^="' + prefix + '"]').forEach(function(panel) {
+      var suffix = panel.id.substring(prefix.length);
+      // Only "<prefix><index>": a longer id belongs to another view or element
+      if (!/^\d+$/.test(suffix) || !panel.children.length) return;
+      kxForm.loadDetailTab(viewName, parseInt(suffix, 10), masterKey);
+    });
   },
 
   /**
@@ -2029,13 +2050,15 @@ var kxForm = {
     var callbackView = cvInput.value;
     var callbackField = cfInput.value;
 
-    // Extract the FK value from the key string (e.g. "EMPLOYEE_ID=abc123")
-    var fkValue = '';
-    var parts = selectedKey.split('&');
-    if (parts.length > 0) {
-      var pair = parts[0].split('=');
-      if (pair.length === 2) fkValue = decodeURIComponent(pair[1]);
-    }
+    // Extract the FK value from the key string (e.g. "EMPLOYEE_ID=abc123").
+    // A multi-field key ("CLASS=X&ID=Y") is joined with the composite field
+    // separator (Config MultiFieldSeparator, default "~"): "X~Y".
+    var fkValues = [];
+    selectedKey.split('&').forEach(function(part) {
+      var eq = part.indexOf('=');
+      if (eq >= 0) fkValues.push(decodeURIComponent(part.substring(eq + 1)));
+    });
+    var fkValue = fkValues.join('~');
 
     // Read caption from the selected row's data-caption attribute
     var selectedRow = document.querySelector(
@@ -2216,10 +2239,18 @@ var kxForm = {
       body.style.minWidth = body.offsetWidth + 'px';
       body.style.minHeight = body.offsetHeight + 'px';
     }
-    // Switch active tab button
-    form.querySelectorAll('.kx-form-tab').forEach(function(t, i) {
+    // Switch active tab button; scroll it into view when the strip overflows
+    var tabs = form.querySelectorAll('.kx-form-tab');
+    tabs.forEach(function(t, i) {
       t.classList.toggle('kx-form-tab-active', i === tabIndex);
     });
+    if (window.kxTabs) {
+      var strip = document.getElementById('kx-form-tabs-' + viewName);
+      if (strip) {
+        kxTabs.updateStripOverflow(strip);
+        kxTabs.scrollButtonIntoView(strip, tabs[tabIndex]);
+      }
+    }
     // Hide all pages
     form.querySelectorAll('.kx-form-page').forEach(function(p) { p.style.display = 'none'; });
     if (tabIndex < fieldPageCount) {
@@ -2235,6 +2266,8 @@ var kxForm = {
         if (!panel.children.length) {
           var keyInput = form.querySelector('input[name="_key"]');
           kxForm.loadDetailTab(viewName, detailIdx, keyInput ? keyInput.value : '');
+        } else {
+          kxGrid.syncCellTitles(panel);
         }
       }
     }
@@ -2273,6 +2306,10 @@ var kxForm = {
         panel.innerHTML = html;
         // Process any HTMX directives in the loaded content
         if (typeof htmx !== 'undefined') htmx.process(panel);
+        // Loaded via fetch, not an HTMX swap: htmx:afterSwap does not fire,
+        // so sync the truncated-cell tooltips here. A hidden panel measures
+        // zero width: the tab switch re-syncs it when it becomes visible.
+        kxGrid.syncCellTitles(panel);
         // Execute inline scripts
         panel.querySelectorAll('script').forEach(function(script) {
           var s = document.createElement('script');
@@ -2350,6 +2387,8 @@ var kxForm = {
     if (panel && !panel.children.length) {
       var keyInput = form.querySelector('input[name="_key"]');
       kxForm.loadDetailTab(viewName, detailIndex, keyInput ? keyInput.value : '');
+    } else if (panel) {
+      kxGrid.syncCellTitles(panel);
     }
   },
 

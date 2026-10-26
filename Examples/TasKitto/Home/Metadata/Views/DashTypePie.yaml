@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Hours by Type)
 Controller: List
   CenterController: ChartPanel

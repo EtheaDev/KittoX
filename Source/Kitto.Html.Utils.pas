@@ -311,6 +311,10 @@ begin
         'icons/filled/' + StringReplace(AIconName, '-', '_', [rfReplaceAll]) + '.svg');
   end;
 
+  // 5. Try svg file as Application Resource
+  if LSvgURL = '' then
+    LSvgURL := TKWebApplication.Current.FindImageURL(AIconName, '.svg');
+
   if LSvgURL <> '' then
   begin
     // SVG icon: render as span with CSS mask-image (theme-adaptive)
@@ -323,8 +327,8 @@ begin
   end
   else
   begin
-    // 5. Fall back to PNG
-    LPngURL := TKWebApplication.Current.FindImageURL(AIconName);
+    // 6. Fall back to PNG
+    LPngURL := TKWebApplication.Current.FindImageURL(AIconName, '.png');
     if LPngURL <> '' then
     begin
       LClassList := 'kx-icon-img ' + LSizeClass;

@@ -1,4 +1,4 @@
-Controller:
+﻿Controller:
   Title: _(Sign in to %Config:AppTitle% %APP_VERSION_FULL%)
   Style: opacity:0.9
   ExtraWidth: 400

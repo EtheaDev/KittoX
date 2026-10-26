@@ -346,7 +346,7 @@ begin
           SB.Append('<option value="">--</option>');
           while not LDBQuery.DataSet.Eof do
           begin
-            LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+            LKeyValue := TKSQLBuilder.GetLookupKeyValue(AViewField, LDBQuery.DataSet);
             if LDBQuery.DataSet.FieldCount > 1 then
               LCaptionValue := LDBQuery.DataSet.Fields[LDBQuery.DataSet.FieldCount - 1].AsString
             else
@@ -457,7 +457,7 @@ begin
             SB.Append('[');
             while not LDBQuery.DataSet.Eof do
             begin
-              LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+              LKeyValue := TKSQLBuilder.GetLookupKeyValue(AViewField, LDBQuery.DataSet);
               if LDBQuery.DataSet.FieldCount > 1 then
                 LCaptionValue := LDBQuery.DataSet.Fields[
                   LDBQuery.DataSet.FieldCount - 1].AsString

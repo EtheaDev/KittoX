@@ -100,7 +100,7 @@ type
     [YamlNode('YField', 'Y axis data field')]
     property YField: string read GetYField;
 
-    [YamlNode('DisplayName', 'Legend label for this series')]
+    [YamlNode('DisplayName', 'Legend label for this series (older name; Title is used when both are given)')]
     property DisplayName: string read GetDisplayName;
 
     [YamlSubNode('Style', TKChartSeriesStyleConfig, 'Series visual style')]
@@ -461,11 +461,18 @@ begin
       SBBorders.Append('"').Append(CHART_BORDER_COLORS[I mod Length(CHART_BORDER_COLORS)]).Append('"');
     end;
 
-    // Series title
+    // Series title: Title, or DisplayName when Title is missing. DisplayName
+    // is the older node (declared since r383 and used by hand-written views)
+    // that this code never read, so those views showed "undefined" in the
+    // legend as soon as one was docked.
     LSeriesNode := Config.FindNode('Chart/Series/Series');
     LSeriesTitle := '';
     if Assigned(LSeriesNode) then
+    begin
       LSeriesTitle := _(LSeriesNode.GetString('Title', ''));
+      if LSeriesTitle = '' then
+        LSeriesTitle := _(LSeriesNode.GetString('DisplayName', ''));
+    end;
 
     // Build Chart.js config JSON
     SB.Append('{"type": ').Append(JSONStr(LChartJsType));

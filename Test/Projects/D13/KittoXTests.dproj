@@ -38,7 +38,7 @@
         <DCC_AssertionsAtRuntime>true</DCC_AssertionsAtRuntime>
         <DCC_DcuOutput>..\..\Lib\D13\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>..\..\Bin\$(Platform)\$(Config)</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\..\Source;..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source\Common;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\..\Source;..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\MarkdownProcessor\source;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source\Common;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
@@ -94,6 +94,7 @@
         <DCCReference Include="..\..\Source\Kitto.AuthTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.SessionTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.DBUtilsTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.ChatHtmlTests.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -1337,8 +1337,11 @@ body.kx-mobile .kx-dialog {
   height: auto;
 }
 
+/* Same 10px below the north region as between two field rows
+   (.kx-login-fields gap), so the first input does not sit on the border. */
 .kx-login-north {
   border-bottom: 1px solid var(--kx-border-light);
+  margin-bottom: 10px;
 }
 
 /* South region of the login dialog — last item in the centre column, sitting
@@ -2255,14 +2258,21 @@ body.kx-col-resize-active * {
   padding: 12px 12px;
 }
 
-/* Multi-page form tabs (PageBreak layout) */
+/* Multi-page form tabs (PageBreak layout + detail pages).
+   The strip is hosted by a .kx-tab-header, which draws the bottom border and
+   provides the two scroll buttons shown when the tabs do not fit. */
+.kx-form-tab-header {
+  padding: 0 4px;
+}
+
 .kx-form-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 2px solid var(--kx-border);
-  padding: 0 16px;
+  flex: 1;
+  overflow: hidden;
+  padding: 0 12px 2px 12px;
+  margin-bottom: -2px;
   background: var(--kx-surface);
-  flex-shrink: 0;
 }
 
 .kx-form-tab {
@@ -2275,6 +2285,7 @@ body.kx-col-resize-active * {
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .kx-form-tab:hover {
@@ -3561,6 +3572,16 @@ input[type="time"]::-moz-datetime-edit-fields-wrapper {
   padding: 6px 8px;
 }
 
+/* A disabled toolbar button (Today, while today is already shown) keeps the
+   theme text colour, dimmed. The library colours only enabled buttons
+   (.ec-button:not(:disabled)), so a disabled one fell back to the browser
+   default: black, unreadable on a dark theme. */
+.kx-calendar-container .ec-button:disabled {
+  color: var(--ec-button-text-color);
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Selected event highlight — same style as grid/card row selection */
 .ec-event.kx-cal-event-selected {
   outline: 2px solid var(--kx-accent);
@@ -4223,9 +4244,9 @@ body.kx-mobile .kx-flex-item {
 .kx-chat-assistant { justify-content: flex-start; }
 .kx-chat-bubble { max-width: 80%; padding: 8px 11px; border-radius: 12px; font-size: 13.5px;
   line-height: 1.4; white-space: normal; word-wrap: break-word; }
-.kx-chat-user .kx-chat-bubble { background: var(--kx-accent, #d9534f); color: #fff; border-bottom-right-radius: 0; }
+.kx-chat-user .kx-chat-bubble { background: var(--kx-accent, #d9534f); color: #fff; border-top-right-radius: 0; }
 .kx-chat-assistant .kx-chat-bubble { background: var(--kx-surface, #fff); color: var(--kx-text, #222);
-  border: 1px solid var(--kx-border, #e2e2e2); border-bottom-left-radius: 0; }
+  border: 1px solid var(--kx-border, #e2e2e2); border-top-left-radius: 0; }
 .kx-chat-msg-error .kx-chat-bubble { background: var(--kx-danger-bg, #fdecea); color: var(--kx-danger, #b71c1c);
   border-color: var(--kx-danger, #b71c1c); }
 .kx-chat-bubble a { color: inherit; text-decoration: underline; font-weight: 600; }

@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Expired certificates)
 ImageName: dash_expired_certificates.svg
 Controller: TemplateDataPanel

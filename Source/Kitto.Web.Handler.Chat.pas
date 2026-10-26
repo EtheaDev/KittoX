@@ -66,12 +66,35 @@ type
     procedure HandleClear;
   end;
 
+/// <summary>Plain text to HTML: encodes the text and turns newlines into &lt;br&gt;.
+/// Used for the user's own messages and for error texts, which are never
+/// interpreted as Markdown.</summary>
+function KXChatTextToHtml(const AText: string): string;
+
+/// <summary>Markdown to a safe HTML fragment (CommonMark, active HTML escaped,
+/// link and image URLs restricted to <see cref="KXChatIsSafeUrl" />). Tolerant
+/// of partial input, so it also renders the growing partial of a streaming
+/// reply. On any error it falls back to HTML-encoded text.</summary>
+function KXChatMarkdownToSafeHtml(const AMarkdown: string): string;
+
+/// <summary>True for URLs a chat bubble may link to: http(s), mailto, ftp(s),
+/// anchors and relative paths. Anything with another scheme (javascript:,
+/// data:, vbscript:, file:...) is rejected. Entity-encoded and whitespace-padded
+/// schemes are normalized before the check.</summary>
+function KXChatIsSafeUrl(const AUrl: string): Boolean;
+
+/// <summary>Rewrites every href/src attribute of an HTML fragment whose URL is
+/// not <see cref="KXChatIsSafeUrl" /> to "#" (the original is dropped). The
+/// Markdown library escapes active elements but not dangerous link targets.</summary>
+function KXChatSanitizeUrls(const AHtml: string): string;
+
 implementation
 
 uses
   System.SysUtils,
   System.StrUtils,
   System.NetEncoding,
+  System.RegularExpressions,
   EF.Tree,
   EF.Localization,
   Kitto.Auth,
@@ -95,7 +118,7 @@ begin
 end;
 
 // Plain-text -> safe HTML: encode, then turn newlines into <br>.
-function TextToHtml(const AText: string): string;
+function KXChatTextToHtml(const AText: string): string;
 begin
   Result := TNetEncoding.HTML.Encode(AText);
   Result := StringReplace(Result, #13#10, '<br>', [rfReplaceAll]);
@@ -103,30 +126,96 @@ begin
   Result := StringReplace(Result, #13, '<br>', [rfReplaceAll]);
 end;
 
+function KXChatIsSafeUrl(const AUrl: string): Boolean;
+var
+  LUrl: string;
+  C: Char;
+  LColon, LSlash: Integer;
+begin
+  // Normalize what a browser would tolerate before looking at the scheme:
+  // entities (java&#115;cript:), control characters and spaces (java\tscript:).
+  LUrl := '';
+  for C in TNetEncoding.HTML.Decode(AUrl) do
+    if Ord(C) > 32 then
+      LUrl := LUrl + C;
+  if LUrl = '' then
+    Exit(True); // empty: harmless
+  LUrl := LUrl.ToLower;
+  if LUrl.StartsWith('#') or LUrl.StartsWith('/') or LUrl.StartsWith('./') or LUrl.StartsWith('../') then
+    Exit(True);
+  if LUrl.StartsWith('http://') or LUrl.StartsWith('https://') or LUrl.StartsWith('mailto:') or
+     LUrl.StartsWith('ftp://') or LUrl.StartsWith('ftps://') then
+    Exit(True);
+  // No scheme at all (no ':' before the first '/', '?' or '#'): a relative path.
+  LColon := LUrl.IndexOf(':');
+  if LColon < 0 then
+    Exit(True);
+  LSlash := LUrl.IndexOfAny(['/', '?', '#']);
+  Result := (LSlash >= 0) and (LSlash < LColon);
+end;
+
+type
+  // TMatchEvaluator is a method pointer ("of object"), hence the tiny holder.
+  TKXUrlAttributeSanitizer = class
+    function Evaluate(const AMatch: TMatch): string;
+  end;
+
+function TKXUrlAttributeSanitizer.Evaluate(const AMatch: TMatch): string;
+var
+  LQuoted, LUrl: string;
+begin
+  // Group 2 is the quoted value, whichever quote was used: strip the delimiters
+  // (the optional inner groups are not reliable across RTL versions).
+  LQuoted := AMatch.Groups[2].Value;
+  LUrl := LQuoted.Substring(1, LQuoted.Length - 2);
+  if KXChatIsSafeUrl(LUrl) then
+    Result := AMatch.Value
+  else
+    Result := AMatch.Groups[1].Value + '"#"';
+end;
+
+function KXChatSanitizeUrls(const AHtml: string): string;
+var
+  LSanitizer: TKXUrlAttributeSanitizer;
+begin
+  // (href|src) = "..." or '...': the value is checked, never rewritten in
+  // place; an unsafe target becomes a harmless anchor.
+  LSanitizer := TKXUrlAttributeSanitizer.Create;
+  try
+    Result := TRegEx.Replace(AHtml, '(\b(?:href|src)\s*=\s*)("[^"]*"|''[^'']*'')',
+      LSanitizer.Evaluate, [roIgnoreCase]);
+  finally
+    LSanitizer.Free;
+  end;
+end;
+
 // Renders the assistant's Markdown reply to a safe HTML fragment using Ethea's
 // MarkdownProcessor (vendored under Source\ThirdParty\MarkdownProcessor):
 // CommonMark dialect in safe mode (AllowUnsafe = False), so active HTML
 // (script/iframe/object/applet/frame...) is escaped and AI-produced content
-// cannot inject markup. Tolerant of partial input, so it also renders the
-// growing partial while a streaming provider is still producing the reply. On
-// any error it falls back to plain HTML-encoded text.
-function MarkdownToSafeHtml(const AText: string): string;
+// cannot inject markup. Safe mode does NOT restrict link targets, though:
+// [x](javascript:alert(1)) is valid CommonMark and comes out as a live anchor,
+// so the rendered fragment is passed through KXChatSanitizeUrls. Tolerant of
+// partial input, so it also renders the growing partial while a streaming
+// provider is still producing the reply. On any error it falls back to plain
+// HTML-encoded text.
+function KXChatMarkdownToSafeHtml(const AMarkdown: string): string;
 var
   LProcessor: TMarkdownProcessor;
 begin
-  if Trim(AText) = '' then
+  if Trim(AMarkdown) = '' then
     Exit('');
   try
     LProcessor := TMarkdownProcessor.CreateDialect(mdCommonMark);
     try
       LProcessor.AllowUnsafe := False;
-      Result := LProcessor.Process(AText);
+      Result := KXChatSanitizeUrls(LProcessor.Process(AMarkdown));
     finally
       LProcessor.Free;
     end;
   except
     on E: Exception do
-      Result := TextToHtml(AText);
+      Result := KXChatTextToHtml(AMarkdown);
   end;
 end;
 
@@ -145,20 +234,20 @@ begin
     // typing indicator.
     LExtra := ' data-pending="1"';
     if AMessage.Content <> '' then
-      LBody := MarkdownToSafeHtml(AMessage.Content)
+      LBody := KXChatMarkdownToSafeHtml(AMessage.Content)
     else
       LBody := '<span class="kx-chat-typing"><span></span><span></span><span></span></span>';
   end
   else if AMessage.IsError then
   begin
     LExtra := ' data-error="1"';
-    LBody := TextToHtml(AMessage.Content);
+    LBody := KXChatTextToHtml(AMessage.Content);
   end
   else if AMessage.Role = crAssistant then
     // Completed assistant reply: render its Markdown as safe HTML.
-    LBody := MarkdownToSafeHtml(AMessage.Content)
+    LBody := KXChatMarkdownToSafeHtml(AMessage.Content)
   else
-    LBody := TextToHtml(AMessage.Content);
+    LBody := KXChatTextToHtml(AMessage.Content);
 
   Result :=
     '<div class="kx-chat-msg kx-chat-' + RoleToClass(AMessage.Role) +
@@ -179,7 +268,7 @@ begin
     _('Hi! Ask me anything about how to use the application.'));
   Result :=
     '<div class="kx-chat-msg kx-chat-assistant kx-chat-greeting">' +
-      '<div class="kx-chat-bubble">' + TextToHtml(LGreeting) + '</div>' +
+      '<div class="kx-chat-bubble">' + KXChatTextToHtml(LGreeting) + '</div>' +
     '</div>';
 end;
 

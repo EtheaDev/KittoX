@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Booked visits)
 ImageName: dash_booked_visits.svg
 Controller: TemplateDataPanel

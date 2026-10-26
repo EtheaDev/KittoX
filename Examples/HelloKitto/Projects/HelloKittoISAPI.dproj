@@ -1,12 +1,12 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{96E9D668-3FDD-4E6C-A86C-20ED9D83E7B8}</ProjectGuid>
+        <ProjectGuid>{93519634-8144-4D79-A794-79F6B60F1486}</ProjectGuid>
         <ProjectVersion>19.2</ProjectVersion>
         <FrameworkType>None</FrameworkType>
-        <MainSource>mod_hellokitto.dpr</MainSource>
+        <MainSource>HelloKittoISAPI.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Library</AppType>
     </PropertyGroup>
@@ -38,12 +38,12 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_AssertionsAtRuntime>true</DCC_AssertionsAtRuntime>
         <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
-        <SanitizedProjectName>mod_hellokitto</SanitizedProjectName>
+        <SanitizedProjectName>HelloKittoISAPI</SanitizedProjectName>
         <DCC_DUPLICATE_CTOR_DTOR>false</DCC_DUPLICATE_CTOR_DTOR>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=HelloKitto;FileVersion=4.1.0.0;InternalName=HelloKitto;LegalCopyright=Copyright © Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=HelloKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=HelloKitto;FileVersion=4.2.0.0;InternalName=HelloKitto;LegalCopyright=Copyright © Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=HelloKitto;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <Icon_MainIcon>HelloKitto_Icon.ico</Icon_MainIcon>
-        <DCC_ExeOutput>D:\Apache24\htdocs\KittoX\App\HelloKitto\Home</DCC_ExeOutput>
+        <DCC_ExeOutput>C:\inetpub\KittoX\App\HelloKitto\Home</DCC_ExeOutput>
         <DCC_DcuOutput>..\Lib\$(Platform)</DCC_DcuOutput>
         <DCC_UnitSearchPath>..\..\..\Source;..\..\..\Source\EF;..\..\..\Source\ThirdParty;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source\Common;..\..\..\Source\ThirdParty\delphi-jose-jwt\Source\JOSE;..\..\..\Source\ThirdParty\MarkdownProcessor\source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_E>false</DCC_E>
@@ -56,7 +56,7 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
         <VerInfo_Release>0</VerInfo_Release>
-        <VerInfo_MinorVer>1</VerInfo_MinorVer>
+        <VerInfo_MinorVer>2</VerInfo_MinorVer>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -130,7 +130,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">mod_hellokitto.dpr</Source>
+                    <Source Name="MainSource">HelloKittoISAPI.dpr</Source>
                 </Source>
                 <Excluded_Packages/>
             </Delphi.Personality>

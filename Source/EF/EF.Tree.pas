@@ -3160,7 +3160,8 @@ begin
 
   ANode.LockDataType;
   try
-    if AField.IsNull then
+    // Array/ADT columns (TArrayField) are read as null, as dbExpress delivered them.
+    if AField.IsNull or (AField is TObjectField) then
       ANode.SetToNull
     else
       InternalFieldValueToNode(AField, ANode);

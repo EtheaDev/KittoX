@@ -1,4 +1,4 @@
-DisplayLabel: _(About)
+﻿DisplayLabel: _(About)
 ImageName: info
 Controller: HtmlPanel
   IsModal: True

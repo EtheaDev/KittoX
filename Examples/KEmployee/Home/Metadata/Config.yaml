@@ -136,7 +136,6 @@ Login:
     BorderPanel:
       NorthView:
         Controller: HtmlPanel
-          Height: 120
           Html: |
             <div style="text-align: center">
               <p/>

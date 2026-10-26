@@ -1356,6 +1356,11 @@ begin
     if LRecord.State = rsClean then
       LRecord.MarkAsModified;
 
+    // AfterConfirm rules may prepare the in-memory details (e.g. fill the
+    // detail rows a new master needs) before Save All; onSaveCacheSuccess
+    // reloads the detail tabs already displayed, so the user sees them now.
+    LRecord.ApplyConfirmRules;
+
     LHtml := '<script>kxForm.onSaveCacheSuccess(''' + AViewName + ''');</script>';
     TKXWebResponse.Current.SendFragment(LHtml);
   except
@@ -2263,6 +2268,12 @@ begin
     // out of them.
     if Assigned(LRecord) then
       LRecord.RefreshMasterReferenceValues;
+
+    // After PopulateRecordFromPost, which may have reset the key from the
+    // post: a pending row needs its own key to be found again (see
+    // TKViewTableRecord.EnsureTemporaryKey).
+    if Assigned(LRecord) then
+      LRecord.EnsureTemporaryKey;
 
     // Apply each field's AfterFieldChange rules on the freshly-populated
     // record, so computed fields get set (e.g. Descrizione via CalcDescrizione).

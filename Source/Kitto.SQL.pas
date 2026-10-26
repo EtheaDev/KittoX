@@ -138,6 +138,15 @@ type
       const ADBQuery: TEFDBQuery; const ASearchString: string; const ARecord: TKViewTableRecord);
 
     /// <summary>
+    ///  Returns the key value of the current row of a dataset opened with
+    ///  BuildLookupSelectStatement: the key columns come first, so a multi-field
+    ///  key is returned concatenated with TKConfig.Instance.MultiFieldSeparator,
+    ///  the form the composite reference field expects.
+    /// </summary>
+    class function GetLookupKeyValue(const AViewField: TKViewField;
+      const ADataSet: TDataSet): string;
+
+    /// <summary>
     ///  Builds in the specified command an insert statement against
     ///  the specified record's table with a parameter for each value in AValues.
     ///  Also sets the parameter values, so that the command is ready for
@@ -836,6 +845,20 @@ begin
   Result := DelimitId(FViewTable.Model.DBTableName);
   for I := 0 to FUsedReferenceFields.Count - 1 do
     Result := Result + sLineBreak + BuildJoin(FUsedReferenceFields[I]);
+end;
+
+class function TKSQLBuilder.GetLookupKeyValue(const AViewField: TKViewField;
+  const ADataSet: TDataSet): string;
+var
+  I: Integer;
+begin
+  Assert(Assigned(AViewField), 'Assigned(AViewField)');
+  Assert(Assigned(ADataSet), 'Assigned(ADataSet)');
+  Assert(AViewField.IsReference, 'AViewField.IsReference');
+
+  Result := ADataSet.Fields[0].AsString;
+  for I := 1 to AViewField.ModelField.ReferencedModel.KeyFieldCount - 1 do
+    Result := Result + TKConfig.Instance.MultiFieldSeparator + ADataSet.Fields[I].AsString;
 end;
 
 procedure TKSQLBuilder.BuildLookupSelectStatement(const AViewField: TKViewField;

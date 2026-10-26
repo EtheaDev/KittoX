@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 Controller: List
   Filters:
     DisplayLabel: _(Search Automatic Reasons)

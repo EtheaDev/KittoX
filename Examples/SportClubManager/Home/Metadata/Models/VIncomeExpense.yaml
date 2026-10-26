@@ -1,4 +1,4 @@
-DisplayLabel: _(Income vs Expenses)
+﻿DisplayLabel: _(Income vs Expenses)
 PluralDisplayLabel: _(Income vs Expenses)
 Fields:
   FlowType: String(10) primary key

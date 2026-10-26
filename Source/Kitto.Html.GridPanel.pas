@@ -572,6 +572,11 @@ begin
       if LRecord.State = rsDeleted then
         Continue;
 
+      // A pending detail row with a database-generated key has no key yet:
+      // give it a temporary one, or every such row would share the empty key
+      // and opening/saving/deleting any of them would reach the first one.
+      LRecord.EnsureTemporaryKey;
+
       // Build URL-encoded key string for row selection (field=value&field2=value2)
       SBKey.Clear;
       for J := 0 to AViewTable.FieldCount - 1 do

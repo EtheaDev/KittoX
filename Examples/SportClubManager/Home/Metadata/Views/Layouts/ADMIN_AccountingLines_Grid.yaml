@@ -1,4 +1,4 @@
-Field: LineNumber
+﻿Field: LineNumber
   DisplayWidth: 10
   DisplayLabel: _(Line No.)
 Field: LedgerAccount

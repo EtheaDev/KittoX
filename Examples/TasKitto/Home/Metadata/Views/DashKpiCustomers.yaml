@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Active Customers)
 ImageName: business_contact.svg
 Controller: TemplateDataPanel

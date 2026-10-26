@@ -315,6 +315,35 @@ type
     procedure AfterDelete(const ARecord: TKRecord); virtual;
 
     /// <summary>
+    ///  Called when the user confirms the master record of a master-detail
+    ///  form (Confirm button: save to the session cache, no database write),
+    ///  after the posted values have been copied into the record. The default
+    ///  implementation does nothing.
+    /// </summary>
+    /// <param name="ARecord">
+    ///  The master record held in the session store. It is usually an
+    ///  instance of TKViewTableRecord, whose detail stores are in memory too.
+    /// </param>
+    /// <remarks>
+    ///  <para>
+    ///   Use it to prepare what the user is going to see and complete before
+    ///   Save All: change master values, or add, modify and remove records in
+    ///   the in-memory detail stores. The form reloads the detail tabs already
+    ///   displayed, so changes to the details show up at once.
+    ///  </para>
+    ///  <para>
+    ///   Nothing is written to the database: the changes are persisted (and
+    ///   checked by the Before/After rules) only by Save All.
+    ///  </para>
+    ///  <para>
+    ///   Calling RaiseError keeps the form in edit mode and shows the message.
+    ///   Master values are restored, changes already made to the detail
+    ///   stores are not: validate first, then change.
+    ///  </para>
+    /// </remarks>
+    procedure AfterConfirm(const ARecord: TKRecord); virtual;
+
+    /// <summary>
     ///  Called before changing a field's value. This method can silently disallow
     ///  the change by setting ADoIt to False, or it can call RaiseError to abort
     ///  with an error message, or even modify the new value before it is written
@@ -423,6 +452,10 @@ begin
 end;
 
 procedure TKRuleImpl.AfterAddOrUpdate(const ARecord: TKRecord);
+begin
+end;
+
+procedure TKRuleImpl.AfterConfirm(const ARecord: TKRecord);
 begin
 end;
 

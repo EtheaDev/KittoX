@@ -954,7 +954,7 @@ begin
             while not LDBQuery.DataSet.Eof do
             begin
               // First field(s) = key, last field = caption (if distinct from key)
-              LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+              LKeyValue := TKSQLBuilder.GetLookupKeyValue(AViewField, LDBQuery.DataSet);
               if LDBQuery.DataSet.FieldCount > 1 then
                 LCaptionValue := LDBQuery.DataSet.Fields[LDBQuery.DataSet.FieldCount - 1].AsString
               else
@@ -1129,11 +1129,24 @@ begin
       LDBConnection := TKConfig.DatabaseFor(LRefModel.DatabaseName);
       LDBQuery := LDBConnection.CreateDBQuery;
       try
+        // A multi-field key arrives concatenated: match every key column.
+        var LKeyParts: TArray<string>;
+        if LRefModel.KeyFieldCount > 1 then
+          LKeyParts := LCurrentKeyValue.Split([TKConfig.Instance.MultiFieldSeparator], TStringSplitOptions.None)
+        else
+          LKeyParts := [LCurrentKeyValue];
+        var LWhere := '';
+        for var LKeyIndex := 0 to Min(LRefModel.KeyFieldCount, Length(LKeyParts)) - 1 do
+        begin
+          if LWhere <> '' then
+            LWhere := LWhere + ' AND ';
+          LWhere := LWhere + LRefModel.KeyFields[LKeyIndex].DBColumnNameOrExpression +
+            ' = ''' + ReplaceStr(LKeyParts[LKeyIndex], '''', '''''') + '''';
+        end;
         LDBQuery.CommandText :=
           'SELECT ' + LCaptionField.DBColumnNameOrExpression +
           ' FROM ' + LRefModel.DBTableName +
-          ' WHERE ' + LRefModel.KeyFields[0].DBColumnNameOrExpression +
-          ' = ''' + ReplaceStr(LCurrentKeyValue, '''', '''''') + '''';
+          ' WHERE ' + LWhere;
         LDBQuery.Open;
         try
           if not LDBQuery.DataSet.Eof then
@@ -1180,7 +1193,7 @@ begin
             SB.Append('[');
             while not LDBQuery.DataSet.Eof do
             begin
-              LKeyValue := LDBQuery.DataSet.Fields[0].AsString;
+              LKeyValue := TKSQLBuilder.GetLookupKeyValue(AViewField, LDBQuery.DataSet);
               if LDBQuery.DataSet.FieldCount > 1 then
                 LCaptionValue := LDBQuery.DataSet.Fields[
                   LDBQuery.DataSet.FieldCount - 1].AsString
@@ -1657,7 +1670,14 @@ begin
     // Build tab strip + page panes
     SB := TStringBuilder.Create;
     try
-      SB.Append('<div class="kx-form-tabs">');
+      // The strip lives in a kx-tab-header providing a scroll button on each
+      // side, like the Home tab panel: with many pages (field pages plus one
+      // per detail table) the tabs scroll instead of overflowing the form.
+      SB.Append('<div class="kx-tab-header kx-form-tab-header">');
+      SB.Append('<button type="button" class="kx-tab-scroll-btn" tabindex="-1"');
+      SB.Append(' onclick="kxTabs.scrollStrip(''kx-form-tabs-').Append(FViewName)
+        .Append(''',-1)">&#9666;</button>');
+      SB.Append('<div class="kx-form-tabs" id="kx-form-tabs-').Append(FViewName).Append('">');
       for LPageIndex := 0 to LPageTitles.Count - 1 do
       begin
         SB.Append('<button type="button" class="kx-form-tab');
@@ -1670,6 +1690,13 @@ begin
         SB.Append('</button>');
       end;
       SB.Append('</div>');
+      SB.Append('<button type="button" class="kx-tab-scroll-btn" tabindex="-1"');
+      SB.Append(' onclick="kxTabs.scrollStrip(''kx-form-tabs-').Append(FViewName)
+        .Append(''',1)">&#9656;</button>');
+      SB.Append('</div>');
+      // Show the scroll buttons only while the tabs do not fit
+      SB.Append('<script>if(window.kxTabs)kxTabs.watchStrip("kx-form-tabs-')
+        .Append(FViewName).Append('");</script>');
 
       // Build page panes inside a paged form body
       SB.Append('<div class="kx-form-body kx-form-body-paged">');

@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 Controller: GoogleMap
   GoogleMap:
     Zoom: 6

@@ -1,8 +1,18 @@
 # Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
+[![Delphi 10.4+](https://img.shields.io/badge/Delphi-10.4%2B-e62329.svg)](https://www.embarcadero.com/products/delphi)
+[![Platform: VCL](https://img.shields.io/badge/Platform-VCL-8a2be2.svg)](https://docwiki.embarcadero.com/RADStudio/en/Main_Page)
+[![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d6.svg)](https://www.microsoft.com/windows)
 
-**Actual Version 4.1.0 - 20 Sep 2026**
+[![HTMX 2.0.10](https://img.shields.io/badge/HTMX-2.0.10-3d72d7.svg)](https://htmx.org)
+[![Alpine.js 3.17.3](https://img.shields.io/badge/Alpine.js-3.17.3-77c1d2.svg)](https://alpinejs.dev)
+[![Chart.js 4.5.1](https://img.shields.io/badge/Chart.js-4.5.1-ff6384.svg)](https://www.chartjs.org)
+[![EventCalendar 5.13.1](https://img.shields.io/badge/EventCalendar-5.13.1-2f6fab.svg)](https://github.com/vkurko/calendar)
+[![SunEditor 2.47.12](https://img.shields.io/badge/SunEditor-2.47.12-4b89dc.svg)](https://github.com/JiHong88/SunEditor)
+[![Swagger UI 5.33.0](https://img.shields.io/badge/Swagger%20UI-5.33.0-85ea2d.svg)](https://swagger.io/tools/swagger-ui/)
+
+**Latest Version 4.2.0 - 26 Oct 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -53,6 +63,20 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 26 Oct 2026: ver. 4.2.0
+
+- **KIDE<sup>x</sup> — View Wizard**: a wizard that covers all **seven view builders** — data grid, edit form, grouped grid, template panel, chart, calendar and map. Pick a Model and a type, fill in what that builder needs, and the last page shows **the Yaml that will be written**, byte for byte, before anything is written. It opens from a Model's context menu, from the Views folder and from *Metadata ▸ View Wizard…*. The wizard, the `view_*_create` tools of MCP-KittoX and a runtime `View: Build Auto…` expression all go through the same builder, so the three produce the same view.
+- **Five new view builders in the framework** (`Kitto.Metadata.ViewBuilders`): `AutoGroupingList`, `AutoTemplateData`, `AutoChart`, `AutoCalendar` and `AutoGoogleMap` join `AutoList` and `AutoForm`. Each is also a runtime `View: Build <name>` expression — a complete view over a Model, with no Yaml file at all. Chart and calendar come out as presenters in the Center of a `List`, which owns the data context and draws the filters; the map is the controller of the view, because it already draws a grid of its own.
+- **MCP-KittoX — 18 scopes, 49 tools**: the seven typed View generators, `project_delete_app`, and a defect that mattered — **no tool with an object parameter was callable** (`project_create_app`, the four `*_update` and the View generators all answered *"X is required"* to any call). `project_open` now resolves a folder as well as a `.kproj` file.
+- **MCP-KittoX — smoke test suite**: 37 scripts and 585 checks (`run_tests.ps1`), each one declaring its own result; they run on a throwaway copy of the examples and no longer write in the working copy.
+- **Security — Help Chat**: the destination of a link in an assistant answer now goes through an allow-list of protocols. `[x](javascript:alert(1))` is valid CommonMark, and the markdown renderer's safe mode escapes active HTML but does not look at where a link points: it came out as a live anchor inside the chat bubble, i.e. an XSS on untrusted content. Three tests cover the renderer, the protocol list and the rewriting.
+- **Charts and calendars**: the series name reaches the legend (it read *undefined*), built chart and calendar views no longer carry the grid's free-search filter — no hand-written one ever had it — and a computed field (an `Expression` with no column) is no longer put in the free search, where it broke the query.
+- **Forms — the detail tabs scroll**: with several detail tables the tab strip ran past the width of the dialog and the tabs in excess were unreachable. Now it scrolls with the same arrows as the Home tabs; a form with two or three pages looks exactly as before.
+- **Master and detail**: rules applied to the detail rows after the confirmation, temporary keys for the rows still in memory, lookup on a composite key, and the tooltip for long descriptions in the detail grids.
+- **Array columns** (`INTEGER[4]` and the like, on Firebird) are read as null instead of failing the view with *"Cannot access field as type Integer"*.
+- **KIDE<sup>x</sup> — dark theme and wizards**: every message box follows the active style (the native task dialog ignored it and stayed white), the four wizards reopen where you closed them, keep a minimum size and repaint the *Finish* button; a new About box; and the lookup of an SVG icon among the application resources is fixed.
+- **Repository and build**: Yaml files and the framework sources are uniformly UTF-8 with CRLF line endings, and the product images (logo, box, setup wizard) are new.
 
 ## 20 Sep 2026: ver. 4.1.0
 

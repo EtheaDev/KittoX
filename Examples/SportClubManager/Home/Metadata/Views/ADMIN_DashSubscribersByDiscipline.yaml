@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Subscribers by discipline)
 ImageName: bar_chart
 Controller: List

@@ -1,4 +1,4 @@
-DisplayLabel: _(Subscribers by discipline)
+﻿DisplayLabel: _(Subscribers by discipline)
 PluralDisplayLabel: _(Subscribers by discipline)
 Fields:
   Discipline: String(200) primary key

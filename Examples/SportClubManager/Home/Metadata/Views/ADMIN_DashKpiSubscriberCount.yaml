@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Number of subscribers)
 ImageName: dash_subscriber_count.svg
 Controller: TemplateDataPanel

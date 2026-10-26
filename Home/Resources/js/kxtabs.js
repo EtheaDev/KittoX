@@ -12,41 +12,40 @@ if (typeof KX_CLOSE_ICON === 'undefined') var KX_CLOSE_ICON = '<svg xmlns="http:
 var kxTabs = {
   _scrollStep: 150,
 
-  /** Returns the tab strip container (buttons live here). */
-  _strip: function() {
-    return document.getElementById('kx-tab-strip');
+  /* ===== Generic tab strip scrolling =====
+     Shared by the Home tab bar (.kx-tab-strip) and by the tab strips rendered
+     inside forms (.kx-form-tabs: field pages + detail pages). A strip whose
+     buttons do not fit scrolls between the two arrow buttons of its header,
+     instead of overflowing its host. The header is the strip's parent element
+     and carries the kx-tab-overflow class while the arrows are needed. */
+
+  /** Resolves a strip given either its element or its id. */
+  _resolveStrip: function(aStrip) {
+    return (typeof aStrip === 'string') ? document.getElementById(aStrip) : aStrip;
   },
 
-  /**
-   * Check if tabs overflow and show/hide scroll buttons accordingly.
-   * Called after open, close, and on window resize.
-   */
-  checkOverflow: function() {
-    var header = document.getElementById('kx-tab-header-bar');
-    var strip = this._strip();
-    if (!header || !strip) return;
-    if (strip.scrollWidth > strip.clientWidth) {
+  /** Shows or hides the scroll buttons of the header hosting the strip. */
+  updateStripOverflow: function(aStrip) {
+    var strip = this._resolveStrip(aStrip);
+    if (!strip) return;
+    var header = strip.parentElement;
+    if (!header) return;
+    if (strip.scrollWidth > strip.clientWidth + 1) {
       header.classList.add('kx-tab-overflow');
     } else {
       header.classList.remove('kx-tab-overflow');
     }
   },
 
-  /** Scroll the tab strip to the left. */
-  scrollLeft: function() {
-    var strip = this._strip();
-    if (strip) strip.scrollBy({left: -this._scrollStep, behavior: 'smooth'});
+  /** Scrolls a strip by one step; dir is -1 (left) or 1 (right). */
+  scrollStrip: function(aStrip, dir) {
+    var strip = this._resolveStrip(aStrip);
+    if (strip) strip.scrollBy({left: dir * this._scrollStep, behavior: 'smooth'});
   },
 
-  /** Scroll the tab strip to the right. */
-  scrollRight: function() {
-    var strip = this._strip();
-    if (strip) strip.scrollBy({left: this._scrollStep, behavior: 'smooth'});
-  },
-
-  /** Scroll to make the given button visible in the strip. */
-  _scrollIntoView: function(btn) {
-    var strip = this._strip();
+  /** Scrolls a strip so that the given button becomes fully visible. */
+  scrollButtonIntoView: function(aStrip, btn) {
+    var strip = this._resolveStrip(aStrip);
     if (!strip || !btn) return;
     var sl = strip.scrollLeft;
     var sw = strip.clientWidth;
@@ -57,6 +56,61 @@ var kxTabs = {
     } else if (bl + bw > sl + sw) {
       strip.scrollTo({left: bl + bw - sw, behavior: 'smooth'});
     }
+  },
+
+  /**
+   * Starts tracking a strip created at runtime (the tab strip of a form):
+   * checks its overflow now and whenever the strip is resized. Safe to call
+   * more than once on the same strip.
+   */
+  watchStrip: function(aStrip) {
+    var strip = this._resolveStrip(aStrip);
+    if (!strip || strip.getAttribute('data-kx-watched')) return;
+    strip.setAttribute('data-kx-watched', '1');
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(function() {
+        if (!strip.isConnected) { ro.disconnect(); return; }
+        kxTabs.updateStripOverflow(strip);
+      });
+      ro.observe(strip);
+    }
+    // The dialog may not be laid out yet when its markup is swapped in.
+    setTimeout(function() { kxTabs.updateStripOverflow(strip); }, 0);
+  },
+
+  /** Re-checks every strip on the page (window resize, font or theme change). */
+  checkAllOverflow: function() {
+    document.querySelectorAll('.kx-tab-strip, .kx-form-tabs').forEach(function(s) {
+      kxTabs.updateStripOverflow(s);
+    });
+  },
+
+  /** Returns the Home tab strip (the view tab buttons live here). */
+  _strip: function() {
+    return document.getElementById('kx-tab-strip');
+  },
+
+  /**
+   * Check if the Home tabs overflow and show/hide scroll buttons accordingly.
+   * Called after open, close, and on window resize.
+   */
+  checkOverflow: function() {
+    this.updateStripOverflow(this._strip());
+  },
+
+  /** Scroll the Home tab strip to the left. */
+  scrollLeft: function() {
+    this.scrollStrip(this._strip(), -1);
+  },
+
+  /** Scroll the Home tab strip to the right. */
+  scrollRight: function() {
+    this.scrollStrip(this._strip(), 1);
+  },
+
+  /** Scroll to make the given Home tab button visible in the strip. */
+  _scrollIntoView: function(btn) {
+    this.scrollButtonIntoView(this._strip(), btn);
   },
 
   /**
@@ -185,6 +239,6 @@ var kxTabs = {
   }
 };
 
-// Re-check overflow on window resize and initial load
-window.addEventListener('resize', function() { kxTabs.checkOverflow(); });
-document.addEventListener('DOMContentLoaded', function() { kxTabs.checkOverflow(); });
+// Re-check overflow of every strip on window resize and initial load
+window.addEventListener('resize', function() { kxTabs.checkAllOverflow(); });
+document.addEventListener('DOMContentLoaded', function() { kxTabs.checkAllOverflow(); });

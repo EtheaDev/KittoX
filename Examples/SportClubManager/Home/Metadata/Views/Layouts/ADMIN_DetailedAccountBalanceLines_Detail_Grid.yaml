@@ -1,4 +1,4 @@
-Field: EntryNumber
+﻿Field: EntryNumber
   DisplayWidth: 10
   DisplayLabel: _(Entry No.)
 Field: EntryDescription

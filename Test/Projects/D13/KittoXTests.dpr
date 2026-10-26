@@ -47,7 +47,8 @@ uses
   Kitto.WebRoutesTests in '..\..\Source\Kitto.WebRoutesTests.pas',
   Kitto.AuthTests in '..\..\Source\Kitto.AuthTests.pas',
   Kitto.SessionTests in '..\..\Source\Kitto.SessionTests.pas',
-  Kitto.DBUtilsTests in '..\..\Source\Kitto.DBUtilsTests.pas';
+  Kitto.DBUtilsTests in '..\..\Source\Kitto.DBUtilsTests.pas',
+  Kitto.ChatHtmlTests in '..\..\Source\Kitto.ChatHtmlTests.pas';
 
 var
   LRunner: ITestRunner;

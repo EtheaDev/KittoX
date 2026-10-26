@@ -1374,6 +1374,9 @@ begin
   // Avoid storing the DetailReferences node if it's empty.
   if GetDetailReferences.DetailReferenceCount = 0 then
     DeleteNode('DetailReferences');
+  // Same for Rules, which InternalAfterLoad creates even when there are none.
+  if GetRules.RuleCount = 0 then
+    DeleteNode('Rules');
 end;
 
 function TKModel.DetailReferenceByName(const AName: string): TKModelDetailReference;
@@ -2185,6 +2188,8 @@ begin
     DeleteNode('Fields');
   if Length(AllowedValues) = 0 then
     DeleteNode('AllowedValues');
+  if GetRules.RuleCount = 0 then
+    DeleteNode('Rules');
 end;
 
 function TKModelField.FieldByName(const AName: string): TKModelField;

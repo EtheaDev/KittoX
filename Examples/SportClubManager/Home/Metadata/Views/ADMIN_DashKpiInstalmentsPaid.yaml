@@ -1,4 +1,4 @@
-Type: Data
+﻿Type: Data
 DisplayLabel: _(Instalments paid)
 ImageName: dash_instalments_paid.svg
 Controller: TemplateDataPanel

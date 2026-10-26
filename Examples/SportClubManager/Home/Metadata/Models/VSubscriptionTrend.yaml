@@ -1,4 +1,4 @@
-DisplayLabel: _(Subscription trend)
+﻿DisplayLabel: _(Subscription trend)
 PluralDisplayLabel: _(Subscription trend)
 Fields:
   Period: String(7) primary key
