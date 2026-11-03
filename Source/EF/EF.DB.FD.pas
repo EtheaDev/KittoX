@@ -110,6 +110,9 @@ type
     procedure FetchTableColumnDescriptions(const ATable: TEFDBTableInfo);
     procedure FetchTableForeignKeys(const ATable: TEFDBTableInfo);
     procedure FetchTablePrimaryKey(const ATable: TEFDBTableInfo);
+    /// <summary>Reads the columns of the primary key through mkPrimaryKeyFields,
+    /// for a driver whose primary key index has no readable columns (SQLite).</summary>
+    procedure FetchTablePrimaryKeyFields(const ATable: TEFDBTableInfo; const ColumnNames: TStrings);
   public
     /// <summary>Creates the metadata reader bound to the given FireDAC connection.</summary>
     constructor Create(const AConnection: TFDConnection);
@@ -1119,7 +1122,10 @@ begin
     while not LTableDataSet.Eof do
     begin
       LTableType := TFDPhysTableKind(LTableDataSet.FieldByName('TABLE_TYPE').AsInteger);
-      if (LTableType = tkTable) or (LTableType = tkView) then
+      // Views only on request (ViewsAsTables, the "Use views" option of the
+      // Model Wizard): the flag was set but never read, and every view became
+      // a model whatever the option said.
+      if (LTableType = tkTable) or ((LTableType = tkView) and ViewsAsTables) then
       begin
         LTable := TEFDBTableInfo.Create;
         try
@@ -1375,9 +1381,34 @@ begin
       LIndexName := LPrimaryKeyDataSet.FieldByName('INDEX_NAME').AsString;
       ATable.PrimaryKey.Name := LIndexName;
       FetchTableIndexColumns(ATable, LIndexName, ATable.PrimaryKey.ColumnNames);
+      // SQLite reports the primary key as an index named PRIMARY, which
+      // mkIndexFields does not know (the real index is sqlite_autoindex_*):
+      // the columns came back empty and the model lost its key. The
+      // mkPrimaryKeyFields query names the columns of the key directly,
+      // whatever the driver calls its index.
+      if ATable.PrimaryKey.ColumnNames.Count = 0 then
+        FetchTablePrimaryKeyFields(ATable, ATable.PrimaryKey.ColumnNames);
     end;
   finally
     LPrimaryKeyDataSet.Free;
+  end;
+end;
+
+procedure TEFDBFDInfo.FetchTablePrimaryKeyFields(const ATable: TEFDBTableInfo;
+  const ColumnNames: TStrings);
+var
+  LDataSet: TFDMetaInfoQuery;
+begin
+  LDataSet := TFDMetaInfoQuery.Create(nil);
+  try
+    LDataSet.Connection := FConnection;
+    LDataSet.BaseObjectName := ATable.Name;
+    LDataSet.MetaInfoKind := mkPrimaryKeyFields;
+    LDataSet.Open;
+    AddKeyColumnsInPositionOrder(LDataSet, 'COLUMN_NAME', '', ColumnNames, nil,
+      Format('primary key of table %s', [ATable.Name]));
+  finally
+    LDataSet.Free;
   end;
 end;
 

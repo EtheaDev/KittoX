@@ -73,15 +73,15 @@ type
 
     /// <summary>
     ///  Returns true if access is granted to the resource representing
-    ///  the metadata object in the specified mode. This is a shortcut to
-    ///  calling TKConfig.Instance.IsAccessGranted (possibly multiple times for
-    ///  cascading, and "or"ing the results).
+    ///  the metadata object in the specified mode. Asks
+    ///  TKAccessController.Current about the user that
+    ///  TKMetadataContext.CurrentUserName names (empty outside an
+    ///  application, where the default controller grants everything).
     /// </summary>
     function IsAccessGranted(const AMode: string): Boolean; virtual;
 
     /// <summary>
-    ///  Calls IsAccessGranted and raises an exception if the method returns False.
-    ///  This is a shortcut to calling TKConfig.Instance.CheckAccessGranted. (possibly multiple times for
+    ///  Same question as IsAccessGranted, but raises when the answer is No.
     /// </summary>
     procedure CheckAccessGranted(const AMode: string);
 
@@ -116,15 +116,15 @@ type
 
     /// <summary>
     ///  Returns True if access is granted to the resource representing
-    ///  the metadata object in the specified mode. This is a shortcut to
-    ///  calling TKConfig.Instance.IsAccessGranted (possibly multiple times for
-    ///  cascading, and "or"ing the results).
+    ///  the metadata object in the specified mode. Asks
+    ///  TKAccessController.Current about the user that
+    ///  TKMetadataContext.CurrentUserName names (empty outside an
+    ///  application, where the default controller grants everything).
     /// </summary>
     function IsAccessGranted(const AMode: string): Boolean; virtual;
 
     /// <summary>
-    ///  Calls IsAccessGranted and raises an exception if the method returns False.
-    ///  This is a shortcut to calling TKConfig.Instance.CheckAccessGranted. (possibly multiple times for
+    ///  Same question as IsAccessGranted, but raises when the answer is No.
     /// </summary>
     procedure CheckAccessGranted(const AMode: string);
   end;
@@ -328,7 +328,7 @@ uses
   EF.Localization,
   EF.StrUtils,
   Kitto.Types,
-  Kitto.Auth,
+  Kitto.Metadata.Context,
   Kitto.AccessControl;
 
 { TKMetadataCatalog<T> }
@@ -1073,7 +1073,7 @@ end;
 
 function TKMetadata.IsAccessGranted(const AMode: string): Boolean;
 begin
-  Result := TKAccessController.Current.IsAccessGranted(TKAuthenticator.Current.UserName, GetACURI, AMode);
+  Result := TKAccessController.Current.IsAccessGranted(TKMetadataContext.CurrentUserName, GetACURI, AMode);
 end;
 
 procedure TKMetadata.Assign(const ASource: TEFTree; const AProc: TEFTree.TAssignNodeProc);
@@ -1085,7 +1085,7 @@ end;
 
 procedure TKMetadata.CheckAccessGranted(const AMode: string);
 begin
-  TKAccessController.Current.CheckAccessGranted(TKAuthenticator.Current.UserName, GetACURI, AMode);
+  TKAccessController.Current.CheckAccessGranted(TKMetadataContext.CurrentUserName, GetACURI, AMode);
 end;
 
 function TKMetadata.GetACURI: string;
@@ -1121,7 +1121,7 @@ end;
 
 procedure TKMetadataItem.CheckAccessGranted(const AMode: string);
 begin
-  TKAccessController.Current.CheckAccessGranted(TKAuthenticator.Current.UserName, GetACURI, AMode);
+  TKAccessController.Current.CheckAccessGranted(TKMetadataContext.CurrentUserName, GetACURI, AMode);
 end;
 
 function TKMetadataItem.GetACURI: string;
@@ -1144,7 +1144,7 @@ end;
 
 function TKMetadataItem.IsAccessGranted(const AMode: string): Boolean;
 begin
-  Result := TKAccessController.Current.IsAccessGranted(TKAuthenticator.Current.UserName, GetACURI, AMode);
+  Result := TKAccessController.Current.IsAccessGranted(TKMetadataContext.CurrentUserName, GetACURI, AMode);
 end;
 
 end.

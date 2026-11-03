@@ -611,7 +611,8 @@ uses
   Kitto.Web.Application,
   Kitto.Web.Session,
   Kitto.Types,
-  Kitto.DatabaseRouter;
+  Kitto.DatabaseRouter,
+  Kitto.Metadata.Context;
 
 procedure TKConfig.AfterConstruction;
 var
@@ -945,10 +946,37 @@ begin
   FJSFormatSettings.DateSeparator := '/';
   FJSFormatSettings.TimeSeparator := ':';
   TEFYAMLReader.FormatSettings := FJSFormatSettings;
+
+  // The model layer does not know the configuration: it asks
+  // TKMetadataContext for the alternate language, the default database and
+  // the macro engine. A KittoX application answers from its configuration,
+  // resolved at each call (the database name depends on the session).
+  TKMetadataContext.OnGetUseAltLanguage :=
+    function: Boolean
+    begin
+      Result := TKConfig.Instance.UseAltLanguage;
+    end;
+  TKMetadataContext.OnGetDefaultDatabaseName :=
+    function: string
+    begin
+      Result := TKConfig.Instance.DatabaseName;
+    end;
+  TKMetadataContext.OnGetMacroExpansionEngine :=
+    function: TEFMacroExpansionEngine
+    begin
+      Result := TKConfig.Instance.MacroExpansionEngine;
+    end;
+  TKMetadataContext.OnGetCurrentUserName :=
+    function: string
+    begin
+      Result := TKAuthenticator.Current.UserName;
+    end;
 end;
 
 class destructor TKConfig.Destroy;
 begin
+  // Before the instance goes: nobody must reach it through the context.
+  TKMetadataContext.ResetCallbacks;
   // Clean up the per-thread cached connections for the main thread.
   // Worker threads are expected to call ClearDatabase themselves at the
   // end of each unit of work (the web engine does it automatically).

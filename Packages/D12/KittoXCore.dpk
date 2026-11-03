@@ -83,6 +83,7 @@ contains
   Kitto.MarkdownTables in '..\..\Source\ThirdParty\MarkdownProcessor\source\Kitto.MarkdownTables.pas',
   Kitto.MarkdownMathCode in '..\..\Source\ThirdParty\MarkdownProcessor\source\Kitto.MarkdownMathCode.pas',
   Kitto.Metadata.Types in '..\..\Source\Kitto.Metadata.Types.pas',
+  Kitto.Metadata.Context in '..\..\Source\Kitto.Metadata.Context.pas',
   Kitto.Metadata.SubNodes in '..\..\Source\Kitto.Metadata.SubNodes.pas',
   Kitto.Config.Reader in '..\..\Source\Kitto.Config.Reader.pas',
   Kitto.Config.Server in '..\..\Source\Kitto.Config.Server.pas',

@@ -3003,8 +3003,13 @@ begin
 end;
 
 procedure TEFTree.Sort(const ACompareFunc: TEFNodeCompareFunc);
+var
+  LComparer: IComparer<TEFNode>;
 begin
-  NodeList.Sort(TComparer.Create(ACompareFunc));
+  // Through an interface variable: passed straight to Sort the comparer was
+  // never released (one TComparer leaked per call).
+  LComparer := TComparer.Create(ACompareFunc);
+  NodeList.Sort(LComparer);
 end;
 
 function TEFTree._AddRef: Integer;

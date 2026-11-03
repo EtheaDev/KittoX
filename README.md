@@ -12,7 +12,7 @@
 [![SunEditor 2.47.12](https://img.shields.io/badge/SunEditor-2.47.12-4b89dc.svg)](https://github.com/JiHong88/SunEditor)
 [![Swagger UI 5.33.0](https://img.shields.io/badge/Swagger%20UI-5.33.0-85ea2d.svg)](https://swagger.io/tools/swagger-ui/)
 
-**Latest Version 4.2.0 - 26 Oct 2026**
+**Latest Version 4.2.1 - 03 Nov 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -63,6 +63,14 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 03 Nov 2026: ver. 4.2.1
+
+- **Models independent of the configuration**: the new unit `Kitto.Metadata.Context` (`UseAltLanguage`, `DefaultDatabaseName`, `MacroExpansionEngine`, `CurrentUserName`, callbacks with a default) is used by `Kitto.Metadata.Models` and `Kitto.Metadata` instead of `TKConfig`/`TKAuthenticator`: the model layer can be used without a project (the Model Wizard of KIDE<sup>x</sup> and MCP-KittoX use it)
+- **Model Wizard**: *Preserve physical names* now keeps the physical names of models, fields, sub-fields of the references and detail references; the model of a reference is the real `ModelName`; *Use views* is honoured: the views enter the schema only when it is checked (models generated from views are proposed for deletion by *Delete Models Not Existing in Database* when it is not)
+- `EF.DB.FD`: the columns of the primary key come from `mkPrimaryKeyFields` when the index does not expose them (SQLite)
+- `EF.Tree.Sort`: fixed a memory leak of the comparer at every call
+- **KIDE<sup>x</sup>**: the code editor uses Ethea SynEdit 3.0.0 (https://github.com/EtheaDev/SynEdit), the EtheaDev fork of pyscripter/SynEdit with every unit under the `SynEdit.` scope; License Manager: new *Help* button, the real reason of a rejected activation is shown, and the serial number of a trial comes from the answer of the service
 
 ## 26 Oct 2026: ver. 4.2.0
 

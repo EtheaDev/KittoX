@@ -1285,7 +1285,7 @@ uses
   EF.VariantUtils,
   EF.Localization,
   Kitto.Types,
-  Kitto.Config,
+  Kitto.Metadata.Context,
   Kitto.DatabaseRouter;
 
 function DefaultBeautifyName(const AName: string): string;
@@ -1639,7 +1639,7 @@ end;
 
 function TKModel.GetPluralDisplayLabel: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('PluralDisplayLabel2')
   else
     Result := GetString('PluralDisplayLabel');
@@ -1882,7 +1882,7 @@ begin
     Result := TKDatabaseRouterFactory.Instance.GetDatabaseName(
       LDatabaseRouterNode.AsString, Self, LDatabaseRouterNode)
   else
-    Result := TKConfig.Instance.DatabaseName;
+    Result := TKMetadataContext.DefaultDatabaseName;
 end;
 
 function TKModel.GetDefaultPhysicalName: string;
@@ -1909,7 +1909,7 @@ end;
 
 function TKModel.GetDisplayLabel: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('DisplayLabel2')
   else
     Result := GetString('DisplayLabel');
@@ -2030,7 +2030,7 @@ end;
 
 function TKModelField.GetHint: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('Hint2')
   else
     Result := GetString('Hint');
@@ -2474,7 +2474,7 @@ begin
   if DataType is TEFStringDataType then
   begin
     LStringValue := EFVarToStr(Result);
-    TKConfig.Instance.MacroExpansionEngine.Expand(LStringValue);
+    TKMetadataContext.MacroExpansionEngine.Expand(LStringValue);
     Result := LStringValue;
   end;
 end;
@@ -2519,7 +2519,7 @@ end;
 
 function TKModelField.GetDisplayLabel: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('DisplayLabel2')
   else
     Result := GetString('DisplayLabel');
@@ -2529,7 +2529,7 @@ end;
 
 function TKModelField.GetDisplayLabel_Form: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('DisplayLabel_Form2')
   else
     Result := GetString('DisplayLabel_Form');
@@ -2539,7 +2539,7 @@ end;
 
 function TKModelField.GetDisplayLabel_Grid: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('DisplayLabel_Grid2')
   else
     Result := GetString('DisplayLabel_Grid');
@@ -2910,7 +2910,7 @@ end;
 
 function TKModelDetailReference.GetDisplayLabel: string;
 begin
-  if TKConfig.Instance.UseAltLanguage then
+  if TKMetadataContext.UseAltLanguage then
     Result := GetString('DisplayLabel2')
   else
     Result := GetString('DisplayLabel');

@@ -123,7 +123,7 @@ pre.mermaid{
 <a href="https://github.com/vkurko/calendar"><img src="https://img.shields.io/badge/EventCalendar-5.13.1-2f6fab.svg" alt="EventCalendar 5.13.1" /></a>
 <a href="https://github.com/JiHong88/SunEditor"><img src="https://img.shields.io/badge/SunEditor-2.47.12-4b89dc.svg" alt="SunEditor 2.47.12" /></a>
 <a href="https://swagger.io/tools/swagger-ui/"><img src="https://img.shields.io/badge/Swagger%20UI-5.33.0-85ea2d.svg" alt="Swagger UI 5.33.0" /></a></p>
-<p><strong>Latest Version 4.2.0 - 26 Oct 2026</strong></p>
+<p><strong>Latest Version 4.2.1 - 03 Nov 2026</strong></p>
 <p><img src="./images/kittoX_logo_200.png" alt="KittoX_logo.png" /></p>
 <p><strong>Kitto<sup>x</sup></strong> allows to create <strong>Rich Internet Applications</strong> based on a data model that can be mapped onto any database. The client-side part uses <strong>HTMX</strong> (through webbroker technology) to create a fully <strong>AJAX</strong> application, allowing you to build standard and advanced data-manipulating forms in a fraction of the time.</p>
 <p><strong>Kitto<sup>x</sup></strong> is aimed at <strong>Delphi</strong> developers that need to create web or mobile applications without delving into the intricacies of HTML, CSS or Javascript, yet it allows access to the bare metal if required.</p>
@@ -168,6 +168,14 @@ pre.mermaid{
 <p>Visit <a href="https://ethea.it/Kitto-Demo/">this site</a> for online demos.</p>
 <hr />
 <h1 id="release-notes">Release Notes</h1>
+<h2 id="03-nov-2026-ver-421">03 Nov 2026: ver. 4.2.1</h2>
+<ul>
+<li><strong>Models independent of the configuration</strong>: the new unit <code>Kitto.Metadata.Context</code> (<code>UseAltLanguage</code>, <code>DefaultDatabaseName</code>, <code>MacroExpansionEngine</code>, <code>CurrentUserName</code>, callbacks with a default) is used by <code>Kitto.Metadata.Models</code> and <code>Kitto.Metadata</code> instead of <code>TKConfig</code>/<code>TKAuthenticator</code>: the model layer can be used without a project (the Model Wizard of KIDE<sup>x</sup> and MCP-KittoX use it)</li>
+<li><strong>Model Wizard</strong>: <em>Preserve physical names</em> now keeps the physical names of models, fields, sub-fields of the references and detail references; the model of a reference is the real <code>ModelName</code>; <em>Use views</em> is honoured: the views enter the schema only when it is checked (models generated from views are proposed for deletion by <em>Delete Models Not Existing in Database</em> when it is not)</li>
+<li><code>EF.DB.FD</code>: the columns of the primary key come from <code>mkPrimaryKeyFields</code> when the index does not expose them (SQLite)</li>
+<li><code>EF.Tree.Sort</code>: fixed a memory leak of the comparer at every call</li>
+<li><strong>KIDE<sup>x</sup></strong>: the code editor uses Ethea SynEdit 3.0.0 (<a href="https://github.com/EtheaDev/SynEdit">https://github.com/EtheaDev/SynEdit</a>), the EtheaDev fork of pyscripter/SynEdit with every unit under the <code>SynEdit.</code> scope; License Manager: new <em>Help</em> button, the real reason of a rejected activation is shown, and the serial number of a trial comes from the answer of the service</li>
+</ul>
 <h2 id="26-oct-2026-ver-420">26 Oct 2026: ver. 4.2.0</h2>
 <ul>
 <li><strong>KIDE<sup>x</sup> — View Wizard</strong>: a wizard that covers all <strong>seven view builders</strong> — data grid, edit form, grouped grid, template panel, chart, calendar and map. Pick a Model and a type, fill in what that builder needs, and the last page shows <strong>the Yaml that will be written</strong>, byte for byte, before anything is written. It opens from a Model's context menu, from the Views folder and from <em>Metadata ▸ View Wizard…</em>. The wizard, the <code>view_*_create</code> tools of MCP-KittoX and a runtime <code>View: Build Auto…</code> expression all go through the same builder, so the three produce the same view.</li>
