@@ -231,6 +231,7 @@ type
     function GetIsReadOnly: Boolean;
     function GetIsKey: Boolean;
     function GetIsGenerated: Boolean;
+    function GetSequence: string;
     function GetIsPassword: Boolean;
     function GetIsPicture: Boolean;
     function GetDefaultValue: Variant;
@@ -460,6 +461,27 @@ type
     /// </summary>
     [YamlNode('IsGenerated', 'False', 'Auto-generated at DB level (e.g. auto-increment)')]
     property IsGenerated: Boolean read GetIsGenerated;
+
+    /// <summary>
+    ///   Name of a database sequence generator (optionally schema-qualified,
+    ///   e.g. SEQ_PROMAN or PROMAN.SEQ_PROMAN) that gives this field its value
+    ///   in a new record.
+    /// </summary>
+    /// <remarks>
+    ///   <para>The value is drawn when the new record is created - the Add
+    ///   form opens, a record is duplicated, a detail row is added - like a
+    ///   %COMPACT_GUID% default, and not at INSERT time: a new master has its
+    ///   real key from the start, so its new detail rows can carry it. A
+    ///   record that is never saved leaves a gap in the sequence, which is
+    ///   what sequences allow for.</para>
+    ///   <para>Takes precedence over DefaultValue. If the field is still
+    ///   empty when the record is inserted (a path that did not create the
+    ///   record through the default values), the value is drawn then.</para>
+    ///   <para>Unlike IsGenerated, the database does nothing on its own: no
+    ///   trigger or identity column is needed.</para>
+    /// </remarks>
+    [YamlNode('Sequence', 'Database sequence generator that assigns the value to new records')]
+    property Sequence: string read GetSequence;
 
     [YamlNode('IsPassword', 'False', 'Mask input and enable hashed storage')]
     property IsPassword: Boolean read GetIsPassword;
@@ -2044,6 +2066,11 @@ end;
 function TKModelField.GetIsGenerated: Boolean;
 begin
   Result := GetBoolean('IsGenerated', False);
+end;
+
+function TKModelField.GetSequence: string;
+begin
+  Result := Trim(GetString('Sequence'));
 end;
 
 function TKModelField.GetIsPassword: Boolean;

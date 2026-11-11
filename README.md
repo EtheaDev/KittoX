@@ -1,5 +1,6 @@
 # Kitto<sup>x</sup> - A framework for creating data-driven web applications with Delphi and HTMX
 [![Core License](https://img.shields.io/badge/Core-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Latest release](https://img.shields.io/github/v/release/EtheaDev/KittoX?label=Latest%20release&color=brightgreen)](https://github.com/EtheaDev/KittoX/releases/latest)
 [![Enterprise License](https://img.shields.io/badge/Enterprise-AGPL--3.0%20%2F%20Commercial-blue.svg)](KittoLicensing)
 [![Delphi 10.4+](https://img.shields.io/badge/Delphi-10.4%2B-e62329.svg)](https://www.embarcadero.com/products/delphi)
 [![Platform: VCL](https://img.shields.io/badge/Platform-VCL-8a2be2.svg)](https://docwiki.embarcadero.com/RADStudio/en/Main_Page)
@@ -11,8 +12,6 @@
 [![EventCalendar 5.13.1](https://img.shields.io/badge/EventCalendar-5.13.1-2f6fab.svg)](https://github.com/vkurko/calendar)
 [![SunEditor 2.47.12](https://img.shields.io/badge/SunEditor-2.47.12-4b89dc.svg)](https://github.com/JiHong88/SunEditor)
 [![Swagger UI 5.33.0](https://img.shields.io/badge/Swagger%20UI-5.33.0-85ea2d.svg)](https://swagger.io/tools/swagger-ui/)
-
-**Latest Version 4.2.1 - 03 Nov 2026**
 
 ![KittoX_logo.png](./images/kittoX_logo_200.png)
 
@@ -63,6 +62,13 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 12 Nov 2026: ver. 4.2.2
+
+- Compatibility with Delphi 13.2
+- **Database sequences**: the new model field node `Sequence` draws the value of a new record from a database sequence generator — the usual way to number keys on Oracle, and available on Firebird, PostgreSQL, SQL Server 2012+ and MariaDB 10.3+ as well. The name may be schema-qualified (`PROMAN.SEQ_PROMAN`) and the value is drawn when the record is created, so a new master already has its real key when its new detail rows copy it. `FetchSequenceGeneratorValue` is implemented for every adapter — it used to return 0 without querying the database on FireDAC and ADO — with the statement coming from the engine dialect. KIDE<sup>x</sup> exposes the property in both model field designers
+- **PostgreSQL**: the configured schema search path is applied to the private connections taken from the pool too; an unqualified name used to resolve differently depending on which physical connection served the query
+- **WebBroker**: the application root with a query string returned a 500 under Apache, because the redirect appended the trailing slash after the query (`/app?x=1/`); the slash now goes into the path and the query is reattached after it
 
 ## 03 Nov 2026: ver. 4.2.1
 

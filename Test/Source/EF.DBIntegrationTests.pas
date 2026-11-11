@@ -178,6 +178,27 @@ type
     [TestCase('PostgreSQL', 'PostgreSQL')]
     [TestCase('Oracle', 'Oracle')]
     procedure CreateDBQuery_GivesTheQueryItsOwnConnection(const ADatabaseName: string);
+
+    /// <summary>
+    ///  FetchSequenceGeneratorValue draws from a real sequence, on every
+    ///  backend: the statement comes from the dialect, and before it did the
+    ///  FireDAC adapter returned 0 without asking the database at all. Two
+    ///  draws must give two different, increasing values.
+    /// </summary>
+    [Test]
+    [TestCase('MSSQL', 'MSSQL')]
+    [TestCase('Firebird', 'Firebird')]
+    [TestCase('PostgreSQL', 'PostgreSQL')]
+    [TestCase('Oracle', 'Oracle')]
+    procedure Sequence_GivesIncreasingValues(const ADatabaseName: string);
+
+    /// <summary>
+    ///  The sequence name is spliced into the statement, so anything that is
+    ///  not a plain (dotted) identifier is refused before reaching the server.
+    /// </summary>
+    [Test]
+    [TestCase('Oracle', 'Oracle')]
+    procedure Sequence_WithMalformedName_IsRefused(const ADatabaseName: string);
   end;
 
 implementation
@@ -187,6 +208,7 @@ uses
   System.Classes,
   Data.DB,
   FireDAC.Comp.Client,
+  EF.Types,
   EF.DB.FD,
   // For TCountingForeignKeyInfo: a foreign key that counts how many times it is
   // destroyed without ever releasing its memory, so a second free is countable
@@ -747,6 +769,96 @@ begin
     finally
       LQuery.Free;
     end;
+  finally
+    LConnection.Free;
+  end;
+end;
+
+procedure TEFDBIntegrationTests.Sequence_GivesIncreasingValues(
+  const ADatabaseName: string);
+const
+  SEQUENCE_NAME = 'kx_test_seq';
+
+  procedure DropSequence(const AConnection: TEFDBConnection);
+  begin
+    // It may well not be there: a failed run is not a reason to fail the next.
+    try
+      AConnection.StartTransaction;
+      try
+        Execute(AConnection, 'drop sequence ' + SEQUENCE_NAME);
+        AConnection.CommitTransaction;
+      except
+        AConnection.RollbackTransaction;
+        raise;
+      end;
+    except
+      // As in DropTestTable: on PostgreSQL and Firebird the failed statement
+      // leaves the connection unusable, so reopen it.
+      try
+        AConnection.Close;
+        AConnection.Open;
+      except
+        // The test that follows will report the real state.
+      end;
+    end;
+  end;
+
+var
+  LConnection: TEFDBConnection;
+  LFirst, LSecond: Int64;
+begin
+  LConnection := OpenOrSkip(ADatabaseName);
+  try
+    DropSequence(LConnection);
+    LConnection.StartTransaction;
+    try
+      // START WITH 1 spelled out: on SQL Server a bare CREATE SEQUENCE starts
+      // from the type's minimum, a large negative number.
+      Execute(LConnection, 'create sequence ' + SEQUENCE_NAME +
+        ' start with 1 increment by 1');
+      LConnection.CommitTransaction;
+    except
+      LConnection.RollbackTransaction;
+      raise;
+    end;
+    try
+      LFirst := LConnection.FetchSequenceGeneratorValue(SEQUENCE_NAME);
+      LSecond := LConnection.FetchSequenceGeneratorValue(SEQUENCE_NAME);
+      Assert.IsTrue(LFirst > 0, Format('%s: first value %d, expected > 0 ' +
+        '(0 is what the adapter returned when it did not ask).',
+        [ADatabaseName, LFirst]));
+      Assert.IsTrue(LSecond > LFirst, Format('%s: second value %d not greater ' +
+        'than the first %d.', [ADatabaseName, LSecond, LFirst]));
+    finally
+      DropSequence(LConnection);
+    end;
+  finally
+    LConnection.Free;
+  end;
+end;
+
+procedure TEFDBIntegrationTests.Sequence_WithMalformedName_IsRefused(
+  const ADatabaseName: string);
+var
+  LConnection: TEFDBConnection;
+begin
+  LConnection := OpenOrSkip(ADatabaseName);
+  try
+    Assert.WillRaise(
+      procedure
+      begin
+        LConnection.FetchSequenceGeneratorValue('seq from dual; drop table x --');
+      end, EEFError, 'A malformed name went through.');
+    Assert.WillRaise(
+      procedure
+      begin
+        LConnection.FetchSequenceGeneratorValue('schema..seq');
+      end, EEFError, 'An empty name part went through.');
+    Assert.WillRaise(
+      procedure
+      begin
+        LConnection.FetchSequenceGeneratorValue('');
+      end, EEFError, 'An empty name went through.');
   finally
     LConnection.Free;
   end;

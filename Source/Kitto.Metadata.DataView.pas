@@ -333,8 +333,25 @@ type
     ///  have at most one default value (returned by the DefaultValue property),
     ///  while reference fields can have more (one for each physical constituent
     ///  field). Model fields are queries for default values automatically.
+    ///  A field drawn from a sequence (see IsSequenced) gets the sequence's
+    ///  next value instead, which costs a database round trip: call this only
+    ///  when a new record is actually being created.
     /// </summary>
     procedure AppendDefaultValues(const ANode: TEFNode);
+
+    /// <summary>
+    ///  True if this field takes its value in new records from a database
+    ///  sequence (TKModelField.Sequence). Only a plain field of the table's
+    ///  own model qualifies: a reference gets its value from the referenced
+    ///  record, and a field brought in from another model is not inserted.
+    /// </summary>
+    function IsSequenced: Boolean;
+
+    /// <summary>
+    ///  Draws the next value of this field's sequence, on the connection of
+    ///  the table's database. Requires IsSequenced.
+    /// </summary>
+    function FetchSequenceValue: Int64;
 
     [YamlNode('Expression', 'SQL expression for computed fields')]
     property Expression: string read GetExpression;
@@ -2656,6 +2673,15 @@ var
 begin
   Assert(Assigned(ANode), 'Assigned(ANode)');
 
+  // A sequence takes precedence over any DefaultValue: drawn now, when the
+  // record is created, so that a new master already has its real key when
+  // its new detail rows copy it.
+  if IsSequenced then
+  begin
+    ANode.AddChild(FieldName, FetchSequenceValue);
+    Exit;
+  end;
+
   // Get regular default value.
   LValue := DefaultValue;
   if not VarIsNull(LValue) and (EFVarToStr(LValue) <> '') then
@@ -2695,6 +2721,20 @@ begin
       ANode.SetString(Join(ModelField.GetFieldNames, TKConfig.Instance.MultiFieldSeparator), LConcatenation);
     end;
   end;
+end;
+
+function TKViewField.IsSequenced: Boolean;
+begin
+  Result := Assigned(ModelField) and not IsReference
+    and (ModelField.Sequence <> '') and (Model = Table.Model);
+end;
+
+function TKViewField.FetchSequenceValue: Int64;
+begin
+  Assert(IsSequenced, 'IsSequenced');
+
+  Result := TKConfig.DatabaseFor(Table.DatabaseName).FetchSequenceGeneratorValue(
+    ModelField.Sequence);
 end;
 
 procedure TKViewField.EnumRules(const AEnumFunc: TFunc<TKRuleImpl, Boolean>);

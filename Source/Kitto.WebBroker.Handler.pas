@@ -190,8 +190,8 @@ begin
   // ISAPI: PathInfo = full path (e.g. /hellokittox/kx/view/...), ScriptName = alias
   // Apache: ScriptName = app alias (e.g. /hellokittox), PathInfo = path after alias (e.g. /kx/view/...)
   // Standalone: URL = full path
-  if (ARequest.ScriptName <> '') and (ARequest.PathInfo <> '') then
-    LURL := ARequest.ScriptName + ARequest.PathInfo  // Apache module
+  if ARequest.ScriptName <> '' then
+    LURL := ARequest.ScriptName + ARequest.PathInfo  // Apache module (PathInfo empty on the app root)
   else if ARequest.PathInfo <> '' then
     LURL := ARequest.PathInfo                         // ISAPI
   else
@@ -202,7 +202,11 @@ begin
     and not LURL.Contains('/kx/')
     and not LURL.Contains('/res/') then
   begin
-    AResponse.SendRedirect(LURL + '/');
+    // The slash goes into the path; the query string is re-attached after it.
+    LURL := LURL + '/';
+    if ARequest.Query <> '' then
+      LURL := LURL + '?' + ARequest.Query;
+    AResponse.SendRedirect(LURL);
     Result := True;
     Exit;
   end;

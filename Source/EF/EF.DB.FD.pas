@@ -160,6 +160,15 @@ type
     ///  the FireDAC MARS-on-shared-connection issue.
     /// </summary>
     property PoolDefName: string read FPoolDefName;
+    /// <summary>
+    ///  The statement that prepares a freshly opened TFDConnection for this
+    ///  database's session: on PostgreSQL "SET search_path TO <Schema>,
+    ///  public", empty elsewhere. Run on the shared connection and on every
+    ///  private one a query takes from the pool - the search path is session
+    ///  state, and a pooled connection only had it if it had once served as a
+    ///  shared one.
+    /// </summary>
+    function GetSessionSetupStatement: string;
   protected
     function GetQueryClass: TEFDBFDQueryClass; virtual;
     function CreateDBEngineType: TEFDBEngineType; override;
@@ -191,8 +200,6 @@ type
     procedure InternalRollbackTransaction; override;
     /// <summary>Returns True if the underlying TFDConnection is in a transaction.</summary>
     function IsInTransaction: Boolean; override;
-    /// <summary>Sequence generators are not currently supported; always returns 0.</summary>
-    function FetchSequenceGeneratorValue(const ASequenceName: string): Int64; override;
     /// <summary>Auto-inc value retrieval is not currently supported; always returns 0.</summary>
     function GetLastAutoincValue(const ATableName: string = ''): Int64; override;
     /// <summary>Creates a TEFDBFDCommand linked to this connection.</summary>
@@ -250,8 +257,18 @@ type
     ///  transaction.
     /// </summary>
     FOwnedConnection: TFDConnection;
+    /// <summary>
+    ///  The parent's session setup statement (see
+    ///  TEFDBFDConnection.GetSessionSetupStatement), copied when the private
+    ///  connection is created: the query may outlive the parent wrapper, so the
+    ///  handler must not reach back to it.
+    /// </summary>
+    FSessionSetupStatement: string;
     FParams: TEFDBFDParams;
     FCommandText: string;
+    /// <summary>Runs FSessionSetupStatement on the private connection each time
+    /// it is (re)acquired from the pool.</summary>
+    procedure OwnedConnectionAfterConnect(Sender: TObject);
     /// <summary>
     ///  Picks the TFDConnection this query must run on - the parent's shared
     ///  one, or a private one from the pool. Called both when the connection is
@@ -514,16 +531,23 @@ begin
   FConnectionString := TStringList.Create;
 end;
 
+function TEFDBFDConnection.GetSessionSetupStatement: string;
+begin
+  if SameText(GetDriverId, 'PG') then
+    Result := Format('SET search_path TO %s, public',
+      [Config.GetString('Connection/Schema', 'public')])
+  else
+    Result := '';
+end;
+
 procedure TEFDBFDConnection.AfterConnectionOpen(Sender: TObject);
 var
-  LSchema: string;
+  LStatement: string;
 begin
   inherited;
-  if SameText(GetDriverId, 'PG') then
-  begin
-    LSchema := Config.GetString('Connection/Schema', 'public');
-    FConnection.ExecSQL(Format('SET search_path TO %s, public', [LSchema]));
-  end;
+  LStatement := GetSessionSetupStatement;
+  if LStatement <> '' then
+    FConnection.ExecSQL(LStatement);
 end;
 
 procedure TEFDBFDConnection.InternalOpen;
@@ -767,13 +791,6 @@ begin
   end;
 end;
 
-function TEFDBFDConnection.FetchSequenceGeneratorValue(
-  const ASequenceName: string): Int64;
-begin
-  // Currently not supported.
-  Result := 0;
-end;
-
 function TEFDBFDConnection.GetQueryClass: TEFDBFDQueryClass;
 begin
   Result := TEFDBFDQuery;
@@ -952,9 +969,21 @@ begin
       FOwnedConnection.ResourceOptions.DirectExecute := LParent.FConnection.ResourceOptions.DirectExecute;
       FOwnedConnection.ResourceOptions.MacroCreate := False;
       FOwnedConnection.ResourceOptions.MacroExpand := False;
+      // Same session state as the shared connection (the PostgreSQL search
+      // path): without it the query resolved unqualified names against
+      // whatever schema the pooled connection happened to have.
+      FSessionSetupStatement := LParent.GetSessionSetupStatement;
+      if FSessionSetupStatement <> '' then
+        FOwnedConnection.AfterConnect := OwnedConnectionAfterConnect;
     end;
     FQuery.Connection := FOwnedConnection;
   end;
+end;
+
+procedure TEFDBFDQuery.OwnedConnectionAfterConnect(Sender: TObject);
+begin
+  if Assigned(FOwnedConnection) and (FSessionSetupStatement <> '') then
+    FOwnedConnection.ExecSQL(FSessionSetupStatement);
 end;
 
 function TEFDBFDQuery.Execute: Integer;

@@ -526,6 +526,16 @@ type
     ///</summary>
     function FormatDateTime(const ADateTimeValue: TDateTime): string; virtual;
 
+    ///	<summary>
+    ///	  Returns the statement that draws the next value from the sequence
+    ///	  generator ASequenceName: a single-row, single-column select. The base
+    ///	  class returns the ANSI SQL:2003 form "select next value for X", which
+    ///	  SQL Server (2012+) and MariaDB (10.3+) understand as is; Oracle,
+    ///	  Firebird and PostgreSQL override it. The name may be schema-qualified
+    ///	  (SCHEMA.SEQ) and goes through DelimitIdentifier.
+    ///	</summary>
+    function GetSequenceNextValueSQL(const ASequenceName: string): string; virtual;
+
     ///	<summary>When the connection has DelimitedIdent enabled, wraps each
     ///	dot-separated part of the identifier (catalog.schema.table or
     ///	table.column) in the dialect-specific delimiters, so that names
@@ -586,6 +596,8 @@ type
       const AFrom: Integer; const AFor: Integer): string; override;
     ///	<summary>Formats a TDateTime as an Oracle to_date() literal.</summary>
     function FormatDateTime(const ADateTimeValue: TDateTime): string; override;
+    ///	<summary>"select X.nextval from dual".</summary>
+    function GetSequenceNextValueSQL(const ASequenceName: string): string; override;
   end;
 
   ///	<summary>Firebird/InterBase dialect: DATEDIFF/DATEADD date functions,
@@ -602,12 +614,18 @@ type
     ///	<summary>Expands %DB.FROM_DUAL% to "FROM RDB$DATABASE" then delegates to
     ///	the inherited expansion.</summary>
     function ExpandCommandText(const ACommandText: string): string; override;
+    ///	<summary>"select next value for X from RDB$DATABASE" (Firebird 2.0+;
+    ///	same as GEN_ID(X, 1)).</summary>
+    function GetSequenceNextValueSQL(const ASequenceName: string): string; override;
   end;
 
   ///	<summary>PostgreSQL dialect: uses the ANSI/standard base behaviour and only
   ///	overrides paging to emit a LIMIT/OFFSET clause.</summary>
   TEFPostgreSQLDBEngineType = class(TEFDBEngineType)
   public
+    ///	<summary>"select nextval('X')": PostgreSQL takes the sequence name as
+    ///	a string (regclass), so any delimiters go inside the quotes.</summary>
+    function GetSequenceNextValueSQL(const ASequenceName: string): string; override;
     ///	<summary>Adds a PostgreSQL "LIMIT n OFFSET m" paging clause to the select
     ///	statement.</summary>
     function AddLimitClause(const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
@@ -702,9 +720,20 @@ type
     ///	<summary>Tells whether a transaction was started or not.</summary>
     function IsInTransaction: Boolean; virtual; abstract;
 
-    ///	<summary>Fetches and returns a nEF sequence generator value. Use only
-    ///	with databases that support sequence generators (IB/Fb,	Oracle).</summary>
-    function FetchSequenceGeneratorValue(const ASequenceName: string): Int64; virtual; abstract;
+    ///	<summary>
+    ///	  Draws and returns the next value of the sequence generator
+    ///	  ASequenceName (optionally schema-qualified). The statement comes from
+    ///	  DBEngineType.GetSequenceNextValueSQL, so it works on every engine that
+    ///	  has sequences: Oracle, Firebird, PostgreSQL, SQL Server 2012+,
+    ///	  MariaDB 10.3+.
+    ///	</summary>
+    ///	<remarks>
+    ///	  The name is spliced into the statement, so it is checked to be a
+    ///	  plain (possibly dotted) identifier first: letters, digits, '_', '$',
+    ///	  '#'. Raises EEFError if it is empty, malformed, or the database
+    ///	  returns no value.
+    ///	</remarks>
+    function FetchSequenceGeneratorValue(const ASequenceName: string): Int64; virtual;
 
     ///	<summary>Returns the last generated auto-inc value for a given table
     ///	(or globally, if the database doesn't support getting auto-inc values
@@ -986,6 +1015,52 @@ end;
 function TEFDBConnection.CreateDBInfo: TEFDBInfo;
 begin
   Result := InternalCreateDBInfo;
+end;
+
+function TEFDBConnection.FetchSequenceGeneratorValue(
+  const ASequenceName: string): Int64;
+
+  function IsValidSequenceName(const AName: string): Boolean;
+  var
+    LChar: Char;
+    LPart: string;
+  begin
+    Result := AName <> '';
+    if not Result then
+      Exit;
+    // Every dot-separated part must be non-empty (no "A..B", ".A", "A.").
+    for LPart in AName.Split(['.']) do
+      if LPart = '' then
+        Exit(False);
+    for LChar in AName do
+      if not CharInSet(LChar, ['A'..'Z', 'a'..'z', '0'..'9', '_', '$', '#', '.']) then
+        Exit(False);
+  end;
+
+var
+  LQuery: TEFDBQuery;
+begin
+  if ASequenceName = '' then
+    raise EEFError.Create(_('Unspecified Sequence name.'));
+  if not IsValidSequenceName(ASequenceName) then
+    raise EEFError.CreateFmt(_('Invalid Sequence name "%s".'), [ASequenceName]);
+
+  LQuery := CreateDBQuery;
+  try
+    LQuery.CommandText := DBEngineType.GetSequenceNextValueSQL(ASequenceName);
+    LQuery.Open;
+    try
+      if LQuery.DataSet.IsEmpty or LQuery.DataSet.Fields[0].IsNull then
+        raise EEFError.CreateFmt(_('Sequence "%s" returned no value.'), [ASequenceName]);
+      // AsLargeInt, not the Variant: Oracle hands NUMBER back as BCD/float,
+      // and going through Value would round or fail the conversion.
+      Result := LQuery.DataSet.Fields[0].AsLargeInt;
+    finally
+      LQuery.Close;
+    end;
+  finally
+    FreeAndNil(LQuery);
+  end;
 end;
 
 function TEFDBConnection.GetSingletonValue(
@@ -1639,6 +1714,11 @@ begin
     Result := System.SysUtils.FormatDateTime('yyyy''-''mm''-''dd hh'':''mm'':''ss''.''zzz', ADateTimeValue);
 end;
 
+function TEFDBEngineType.GetSequenceNextValueSQL(const ASequenceName: string): string;
+begin
+  Result := 'select next value for ' + DelimitIdentifier(ASequenceName);
+end;
+
 function TEFDBEngineType.DelimitName(const AName: string): string;
 begin
   // ANSI / standard SQL delimited identifier (PostgreSQL, Firebird, Oracle).
@@ -1832,7 +1912,17 @@ begin
   Result := inherited ExpandCommandText(Result);
 end;
 
+function TEFFirebirdDBEngineType.GetSequenceNextValueSQL(const ASequenceName: string): string;
+begin
+  Result := inherited GetSequenceNextValueSQL(ASequenceName) + ' from RDB$DATABASE';
+end;
+
 { TEFPostgreSQLDBEngineType }
+
+function TEFPostgreSQLDBEngineType.GetSequenceNextValueSQL(const ASequenceName: string): string;
+begin
+  Result := 'select nextval(' + QuotedStr(DelimitIdentifier(ASequenceName)) + ')';
+end;
 
 function TEFPostgreSQLDBEngineType.AddLimitClause(
   const ASelectClause, AFromClause, AWhereClause, AOrderByClause: string;
@@ -1915,6 +2005,11 @@ begin
     Result := Format('to_date(''%s'', ''yyyymmdd'')', [System.SysUtils.FormatDateTime('yyyymmdd', ADateTimeValue)])
   else
     Result := Format('to_date(''%s'', ''yyyy/mm/dd hh24:mi:ss'')', [System.SysUtils.FormatDateTime('yyyymmdd hh:mm:ss', ADateTimeValue)]);
+end;
+
+function TEFOracleDBEngineType.GetSequenceNextValueSQL(const ASequenceName: string): string;
+begin
+  Result := 'select ' + DelimitIdentifier(ASequenceName) + '.nextval from dual';
 end;
 
 { EEFDBError }

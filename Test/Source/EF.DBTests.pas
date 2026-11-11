@@ -64,6 +64,20 @@ type
 
     [Test]
     procedure BaseDialect_WithoutPaging_KeepsTheClausesInOrder;
+
+    /// <summary>
+    ///  The statement that draws a sequence value, per dialect. The base one is
+    ///  the ANSI form, which SQL Server and MariaDB take as is.
+    /// </summary>
+    [Test]
+    procedure SequenceSQL_PerDialect;
+    /// <summary>
+    ///  With DelimitedIdent on, every part of a schema-qualified name is
+    ///  delimited; on PostgreSQL the delimited name goes inside the string
+    ///  nextval() takes.
+    /// </summary>
+    [Test]
+    procedure SequenceSQL_DelimitsEveryPartWhenAsked;
   end;
 
   /// <summary>
@@ -691,6 +705,60 @@ begin
     // inclusive. 'ROWNUM < 1' would never be true and the edit form of a record
     // would come back empty.
     Assert.IsTrue(ContainsText(LSQL, 'ROWNUM <= 1'), LSQL);
+  finally
+    LEngine.Free;
+  end;
+end;
+
+procedure TEFDBEngineTypeTests.SequenceSQL_PerDialect;
+
+  procedure Check(const AEngine: TEFDBEngineType; const AExpected: string);
+  begin
+    try
+      Assert.AreEqual(AExpected, AEngine.GetSequenceNextValueSQL('SEQ_PROMAN'),
+        AEngine.ClassName);
+    finally
+      AEngine.Free;
+    end;
+  end;
+
+begin
+  Check(TEFDBEngineType.Create, 'select next value for SEQ_PROMAN');
+  Check(TEFSQLServerDBEngineType.Create, 'select next value for SEQ_PROMAN');
+  Check(TEFMySQLDBEngineType.Create, 'select next value for SEQ_PROMAN');
+  Check(TEFOracleDBEngineType.Create, 'select SEQ_PROMAN.nextval from dual');
+  Check(TEFFirebirdDBEngineType.Create,
+    'select next value for SEQ_PROMAN from RDB$DATABASE');
+  Check(TEFPostgreSQLDBEngineType.Create, 'select nextval(''SEQ_PROMAN'')');
+end;
+
+procedure TEFDBEngineTypeTests.SequenceSQL_DelimitsEveryPartWhenAsked;
+var
+  LEngine: TEFDBEngineType;
+begin
+  LEngine := TEFOracleDBEngineType.Create;
+  try
+    LEngine.DelimitIdentifiers := True;
+    Assert.AreEqual('select "PROMAN"."SEQ_PROMAN".nextval from dual',
+      LEngine.GetSequenceNextValueSQL('PROMAN.SEQ_PROMAN'));
+  finally
+    LEngine.Free;
+  end;
+
+  LEngine := TEFPostgreSQLDBEngineType.Create;
+  try
+    LEngine.DelimitIdentifiers := True;
+    Assert.AreEqual('select nextval(''"public"."seq"'')',
+      LEngine.GetSequenceNextValueSQL('public.seq'));
+  finally
+    LEngine.Free;
+  end;
+
+  LEngine := TEFSQLServerDBEngineType.Create;
+  try
+    LEngine.DelimitIdentifiers := True;
+    Assert.AreEqual('select next value for [dbo].[seq]',
+      LEngine.GetSequenceNextValueSQL('dbo.seq'));
   finally
     LEngine.Free;
   end;

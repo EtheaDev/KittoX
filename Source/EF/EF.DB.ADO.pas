@@ -112,8 +112,6 @@ type
     procedure InternalRollbackTransaction; override;
     ///	<summary>ADO implementation of TEFDBConnection.IsInTransaction.</summary>
     function IsInTransaction: Boolean; override;
-    ///	<summary>Sequence generators are not supported by the ADO adapter; always returns 0.</summary>
-    function FetchSequenceGeneratorValue(const ASequenceName: string): Int64; override;
     ///	<summary>Returns the last generated autoincrement value (SQL Server @@IDENTITY).</summary>
     function GetLastAutoincValue(const ATableName: string = ''): Int64; override;
     ///	<summary>ADO implementation of TEFDBConnection.CreateDBCommand.</summary>
@@ -428,13 +426,6 @@ begin
     on E: Exception do
       raise EEFDBError.CreateForQuery(E.Message, AStatement);
   end;
-end;
-
-function TEFDBADOConnection.FetchSequenceGeneratorValue(
-  const ASequenceName: string): Int64;
-begin
-  // Currently not supported.
-  Result := 0;
 end;
 
 function TEFDBADOConnection.GetQueryClass: TEFDBADOQueryClass;

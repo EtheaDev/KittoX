@@ -444,10 +444,8 @@ end;
 function TEFDBDBXConnection.GetFetchSequenceGeneratorValueSQL(
   const ASequenceName: string): string;
 begin
-  if Pos('ORACLE', UpperCase(FConnection.DriverName)) > 0 then
-    Result := 'select ' + ASequenceName + '.NEXTVAL from DUAL'
-  else
-    Result := 'select GEN_ID(' + ASequenceName + ', 1) from RDB$DATABASE';
+  // The dialect knows the syntax (it used to be Oracle-or-Firebird here).
+  Result := DBEngineType.GetSequenceNextValueSQL(ASequenceName);
 end;
 
 function TEFDBDBXConnection.GetLastAutoincValue(

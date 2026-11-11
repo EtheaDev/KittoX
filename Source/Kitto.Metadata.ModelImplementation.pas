@@ -484,6 +484,30 @@ var
         [LWho, LWhat]);
   end;
 
+  /// <summary>
+  ///  Gives a field drawn from a sequence its value, if it is still empty at
+  ///  INSERT time. The value is normally drawn when the record is created,
+  ///  through the default values (TKViewField.AppendDefaultValues): this
+  ///  covers the paths that create a record without them.
+  /// </summary>
+  procedure AssignMissingSequenceValues;
+  var
+    I: Integer;
+    LViewField: TKViewField;
+    LField: TKViewTableField;
+  begin
+    for I := 0 to ARecord.ViewTable.FieldCount - 1 do
+    begin
+      LViewField := ARecord.ViewTable.Fields[I];
+      if not LViewField.IsSequenced then
+        Continue;
+      LField := ARecord.FindField(LViewField.AliasedName);
+      if Assigned(LField) and LField.IsNull then
+        LField.Value := LDBConnection.FetchSequenceGeneratorValue(
+          LViewField.ModelField.Sequence);
+    end;
+  end;
+
 begin
   Assert(Assigned(ARecord), 'Assigned(ARecord)');
 
@@ -506,6 +530,9 @@ begin
     // Before the master's own delete, and inside its transaction.
     if ARecord.State = rsDeleted then
       CascadeDeleteDetails;
+
+    if ARecord.State = rsNew then
+      AssignMissingSequenceValues;
 
     LDBCommand := LDBConnection.CreateDBCommand;
     try
