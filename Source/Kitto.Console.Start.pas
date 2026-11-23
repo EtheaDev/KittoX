@@ -43,7 +43,7 @@ uses
   EF.Sys,
   EF.Tree,
   Kitto.Config,
-  Kitto.Web.Server,
+  Kitto.Web.Host,
   Kitto.Web.Application;
 
 { TKStart }
@@ -51,7 +51,7 @@ uses
 class procedure TKStart.Start;
 var
   LLogEndPoint: TKConsoleLogEndpoint;
-  LServer: TKWebServer;
+  LServer: TKWebHost;
   LApplication: TKWebApplication;
 
   procedure Configure;
@@ -77,13 +77,15 @@ begin
   try
     WriteLn(Format(_('Build date: %s'), [DateTimeToStr(GetFileDateTime(ParamStr(0)))]));
     TEFLogger.Instance.LogDetailed('Console start. Initializing web server...');
-    LServer := TKWebServer.Create(nil);
+    // Which stack serves it is in Server/Engine; the console does not care.
+    LServer := TKWebHost.CreateDefault;
     try
       LApplication := TKWebApplication.Create;
       LServer.Engine.AddRoute(LApplication);
       TEFLogger.Instance.LogDetailed('Console start. Turning on web server...');
       LServer.Active := True;
-      TEFLogger.Instance.LogDetailed('Console start. Web server on.');
+      TEFLogger.Instance.LogDetailed('Console start. Web server on (' +
+        LServer.EngineName + ').');
       TEFLogger.Instance.Log(Format(_('Home URL: %s'), [LApplication.GetHomeURL(LServer.DefaultPort)]));
       WriteLn('Press enter to exit.');
       ReadLn;

@@ -217,6 +217,7 @@ var
   LRecordField: TKViewTableField;
   LValue: string;
   LUserFmt: TFormatSettings;
+  LNumFmt: TFormatSettings;
   LPlaceholder, LPlaceholderDate: string;
   LBytes: TBytes;
   LExt, LMime: string;
@@ -274,6 +275,14 @@ begin
     begin
       if LField.DataType is TEFDateTimeDataTypeBase then
         LValue := LField.DataType.NodeToJSONValue(True, LRecordField, LUserFmt, False)
+      else if LField.DataType is TEFDecimalNumericDataTypeBase then
+      begin
+        // Decimal, float and currency values in the UserFormats separators
+        // (GetAsJSONValue would use the fixed JS ones).
+        LNumFmt := LUserFmt;
+        LNumFmt.CurrencyDecimals := LField.DecimalPrecision;
+        LValue := LField.DataType.NodeToJSONValue(True, LRecordField, LNumFmt, False);
+      end
       else
         LValue := LRecordField.GetAsJSONValue(True, False);
       if SameText(LValue, 'null') then

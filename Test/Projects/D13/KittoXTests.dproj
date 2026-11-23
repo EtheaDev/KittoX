@@ -93,8 +93,15 @@
         <DCCReference Include="..\..\Source\Kitto.WebRoutesTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.AuthTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.SessionTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.UserFormatsTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.DBUtilsTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.ChatHtmlTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.ChatStoreTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.ChatSearchTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.ChatPromptTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.ChatAttachmentTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.HttpSysTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.VendoredPatchTests.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

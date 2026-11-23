@@ -1,0 +1,120 @@
+[
+{
+"id": "countries",
+"title": "Countries",
+"url": "countries.html",
+"summary": "The shortest list in the application, and the one the others lean on.",
+"keywords": [
+"Before deleting one"
+],
+"text": "Countries\n\nThe shortest list in the application, and the one the others lean on.\n\n Field | |\n \n Country | The name of the country. It is the key: it is what jobs and customers refer to. |\n Currency | The currency of that country. Required. |\n\nThe currency is what makes the salary range of a job mean something: a minimum of 20.000 is not\nthe same number in two countries, and the country is what says which.\n\n Before deleting one\n\nA country used by a job or by a customer cannot be deleted.",
+"areas": [
+"tables"
+]
+},
+{
+"id": "customers",
+"title": "Customers",
+"url": "customers.html",
+"summary": "Who buys from the company, and what they ordered.",
+"keywords": [
+"What a customer is made of",
+"Orders",
+"Exporting"
+],
+"text": "Customers\n\nWho buys from the company, and what they ordered.\n\n What a customer is made of\n\n Field | |\n \n Customer Id | The number that identifies the customer. |\n Customer Name | Required. |\n Contact Firstname, Contact Lastname | The person to talk to. |\n Phone no, City, State/Province | Where and how to reach them. |\n\n Orders\n\nOpen a customer and the tab underneath holds their orders:\n\n Field | |\n \n PO number | The order number. It is the key. |\n Order status | Where the order stands. Required. |\n Order date | When it was placed. Required. |\n Ship date, Date needed | When it left, and when it was wanted. |\n Qty ordered, Total value, Discount | How much, for how much, less how much. |\n Item type | What kind of goods. |\n Paid | Whether it was paid. |\n\nOrders are saved together with the customer they belong to.\n\n Exporting\n\nThe toolbar carries Download in CSV and Download in Excel: what comes out is the customers\nthe list is showing, filters included.",
+"areas": [
+"business"
+]
+},
+{
+"id": "departments",
+"title": "Departments",
+"url": "departments.html",
+"summary": "The departments of the company. They are a tree: a department may have a parent department, which is how a division contains its offices.",
+"keywords": [
+"What a department is made of",
+"Before deleting one"
+],
+"text": "Departments\n\nThe departments of the company. They are a tree: a department may have a parent department,\nwhich is how a division contains its offices.\n\n What a department is made of\n\n Field | |\n \n Dept no | The code, three characters. It is the key, and it is what the other screens refer to. |\n Department | The name. Required. |\n Budget | The budget of the department. |\n Location | Where it is. |\n Phone no | The switchboard number. |\n Head department | The department this one belongs to, if any. Leave it empty for a department at the top. |\n Manager | The employee who runs it. |\n\n Before deleting one\n\nA department with employees in it, or with another department under it, cannot be deleted. Move\nthose first.",
+"areas": [
+"tables"
+]
+},
+{
+"id": "employees",
+"title": "Employees",
+"url": "employees.html",
+"summary": "The people of the company: what they are paid, when they were hired, which department they belong to and what job they hold.",
+"keywords": [
+"What an employee is made of",
+"Salary history",
+"Exporting"
+],
+"text": "Employees\n\nThe people of the company: what they are paid, when they were hired, which department they belong\nto and what job they hold.\n\n What an employee is made of\n\n Field | |\n \n First name, Last name | Required. The full name shown by other screens is built from them. |\n Phone ext | The internal extension, four characters. |\n Hire date | The day the employee was hired. Required. |\n Salary | The current salary. Required - and see the salary history below, which is where its changes are kept. |\n Department | One of the departments. Required. |\n Job | One of the jobs. Required. |\n\nA job carries a minimum and a maximum salary for the country it belongs to, so a salary and a job\nthat disagree are a thing worth checking before saving.\n\n Salary history\n\nOpen an employee and the tab underneath holds the changes to that salary, one row each:\n\n Field | |\n \n Change date | When the change was applied. Part of the key: two changes to the same employee on the same date by the same person are the same row. |\n Updater id | Who applied it. |\n Old salary, New salary, Percent change | What it was, what it became, by how much. |\n\nThe history is saved together with the employee it belongs to.\n\n Exporting\n\nThe toolbar offers Download in TXT besides the usual buttons: it takes away the employees the\nlist is showing, filters included.",
+"areas": [
+"business"
+]
+},
+{
+"id": "index",
+"title": "KEmployee",
+"url": "index.html",
+"summary": "KEmployee is a demo application of the KittoX framework built on the employee database that ships with Firebird - the one with departments, jobs, projects and a sales history. It is a company seen from its personnel office: who works where, on what, for how much, and who buys from it.",
+"keywords": [
+"The menu",
+"Where to start",
+"A word about the data"
+],
+"text": "KEmployee\n\nKEmployee is a demo application of the KittoX framework built on the employee database that\nships with Firebird - the one with departments, jobs, projects and a sales history. It is a\ncompany seen from its personnel office: who works where, on what, for how much, and who buys from\nit.\n\n The menu\n\n Folder | What is inside |\n \n Tables | The lists the rest of the application chooses from: countries, jobs, departments. |\n Business | The day to day: customers with their orders, employees with their salary history, and projects. |\n Maintenance | Close session, which ends your session. |\n\n Where to start\n\nOpen Employees: it is the screen with the most in it, and it shows in one place what every\nother screen does separately - a search panel, a form, and a tab underneath with the records that\nbelong to the one you are looking at. Lists and forms explains those once.\n\n A word about the data\n\nIt is demo data: salaries, orders and dates are the ones Firebird ships for teaching, not a real\ncompany. Nothing you change here reaches anything but your own copy of the database.",
+"areas": [
+"basics"
+]
+},
+{
+"id": "jobs",
+"title": "Jobs",
+"url": "jobs.html",
+"summary": "The jobs an employee can hold. A job is not only a title: it carries the salary range it is paid within, and that range is per country, because the same job is not paid the same everywhere.",
+"keywords": [
+"What a job is made of",
+"Why the key is made of three fields",
+"Before deleting one"
+],
+"text": "Jobs\n\nThe jobs an employee can hold. A job is not only a title: it carries the salary range it is paid\nwithin, and that range is per country, because the same job is not paid the same everywhere.\n\n What a job is made of\n\n Field | |\n \n Job code | The code, up to five characters. |\n Job grade | The grade. Part of the key together with the code and the country: the same code at two grades is two jobs. |\n Job country | One of the countries. Part of the key. |\n Job title | The name of the job. Required. |\n Min salary, Max salary | The range this job is paid within, in the currency of its country. Required. |\n Job requirement | What the job asks for, as long a text as you need. |\n Language req | The language it requires. |\n\n Why the key is made of three fields\n\nA job is the same job only when code, grade and country are the same. That is what lets the\nsame title exist at two grades, and in two countries with two different salary ranges, without\nthe records getting in each other's way.\n\n Before deleting one\n\nA job someone holds cannot be deleted: look at the employees first.",
+"areas": [
+"tables"
+]
+},
+{
+"id": "lists-and-forms",
+"title": "Lists and forms",
+"url": "lists-and-forms.html",
+"summary": "Every screen of KEmployee is a list, and the same handful of gestures works on all of them.",
+"keywords": [
+"The search panel",
+"The toolbar",
+"Sorting, paging, exporting",
+"Tabs under a form"
+],
+"text": "Lists and forms\n\nEvery screen of KEmployee is a list, and the same handful of gestures works on all of them.\n\n The search panel\n\nAbove the rows, a panel narrows what the list shows: Search Employees, Search Customers,\n Search Projects, Search Departments, Search Jobs, each with the filters that screen\noffers. Filters add up, and emptying one puts back the rows it was hiding.\n\n The toolbar\n\n New, Edit, View, Delete, Refresh - add a record, change it, read it without\nthe risk of changing it, remove it after a confirmation, read the rows again.\n\nA record other records depend on cannot be deleted: a department with employees, a job someone\nholds, a country a job belongs to. The application says what is holding it rather than letting the\ndatabase refuse with a message nobody can read.\n\n Sorting, paging, exporting\n\nClick a column heading to sort by it, click again to reverse. Long lists are read a page at a\ntime. Where a screen offers it, the toolbar carries Download in CSV, Download in Excel or\n Download in TXT, and what comes out is what the list is showing - filters included.\n\n Tabs under a form\n\nSome records own others: an employee owns a salary history, a customer owns orders. Those appear\nin a tab under the form of the record they belong to, with a toolbar of their own, and they\nare saved together with it.",
+"areas": [
+"basics"
+]
+},
+{
+"id": "projects",
+"title": "Projects",
+"url": "projects.html",
+"summary": "Field | |    Proj id | The code, up to five characters. It is the key. |  Proj name | The name. Required. |  Product | The product the project belongs to. |  Team Leader | The employee who leads it. |  Proj desc | The description, as long as you need. |",
+"keywords": [
+"What a project is made of",
+"Who works on it, and on whose budget",
+"Before deleting one"
+],
+"text": "Projects\n\nWhat the company is working on.\n\n What a project is made of\n\n Field | |\n \n Proj id | The code, up to five characters. It is the key. |\n Proj name | The name. Required. |\n Product | The product the project belongs to. |\n Team Leader | The employee who leads it. |\n Proj desc | The description, as long as you need. |\n\n Who works on it, and on whose budget\n\nTwo things connect a project to the rest of the company, and they are worth knowing even though\neach is a table of its own:\n\n Employee projects says which employees work on which projects. The same employee may be on\n several, and a project has several people on it.\n Project department budgets says, for a fiscal year, how much a department put into a\n project and with how many people: the key is the three of them together - year, department,\n project - which is what lets two departments fund the same project in the same year.\n\n Before deleting one\n\nA project with people on it, or with a budget recorded against it, cannot be deleted.",
+"areas": [
+"business"
+]
+}
+]

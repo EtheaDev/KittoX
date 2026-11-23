@@ -221,5 +221,11 @@ begin
   inherited;
 end;
 
+initialization
+  // This unit is linked only by the hosts that serve through Indy (standalone,
+  // service, console, embedded, KIDEX preview). Its bridge copies the WebBroker
+  // cookie into a TIdCookie, which emits no Expires/Max-Age only for 0.
+  TKWebResponse.NoExpiryCookieValue := 0;
+
 end.
 

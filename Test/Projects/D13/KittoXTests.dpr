@@ -47,8 +47,15 @@ uses
   Kitto.WebRoutesTests in '..\..\Source\Kitto.WebRoutesTests.pas',
   Kitto.AuthTests in '..\..\Source\Kitto.AuthTests.pas',
   Kitto.SessionTests in '..\..\Source\Kitto.SessionTests.pas',
+  Kitto.UserFormatsTests in '..\..\Source\Kitto.UserFormatsTests.pas',
   Kitto.DBUtilsTests in '..\..\Source\Kitto.DBUtilsTests.pas',
-  Kitto.ChatHtmlTests in '..\..\Source\Kitto.ChatHtmlTests.pas';
+  Kitto.ChatHtmlTests in '..\..\Source\Kitto.ChatHtmlTests.pas',
+  Kitto.ChatStoreTests in '..\..\Source\Kitto.ChatStoreTests.pas',
+  Kitto.ChatSearchTests in '..\..\Source\Kitto.ChatSearchTests.pas',
+  Kitto.ChatPromptTests in '..\..\Source\Kitto.ChatPromptTests.pas',
+  Kitto.ChatAttachmentTests in '..\..\Source\Kitto.ChatAttachmentTests.pas',
+  Kitto.HttpSysTests in '..\..\Source\Kitto.HttpSysTests.pas',
+  Kitto.VendoredPatchTests in '..\..\Source\Kitto.VendoredPatchTests.pas';
 
 var
   LRunner: ITestRunner;

@@ -50,7 +50,7 @@ uses
   Kitto.Config,
   EF.Logger,
   Kitto.Types,
-  Kitto.Web.Server,
+  Kitto.Web.Host,
   Kitto.Web.Application,
   Kitto.Web.Session,
   Kitto.Web.Engine;
@@ -124,7 +124,7 @@ type
     procedure SessionListViewInfoTip(Sender: TObject; Item: TListItem; var InfoTip: string);
     procedure SessionListRefreshTimerTimer(Sender: TObject);
   private
-    FServer: TKWebServer;
+    FServer: TKWebHost;
     FApplication: TKWebApplication;
     FRestart: Boolean;
     FLogEndPoint: TKMainFormLogEndpoint;
@@ -555,7 +555,7 @@ procedure TKMainForm.RecreateServer;
 begin
   FreeAndNil(FServer);
 
-  FServer := TKWebServer.Create(nil);
+  FServer := TKWebHost.CreateDefault;
   FServer.Engine.OnSessionStart := SessionListUpdateHandler;
   FServer.Engine.OnSessionEnd := SessionListUpdateHandler;
   FApplication := FServer.Engine.AddRoute(TKWebApplication.Create) as TKWebApplication;

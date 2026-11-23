@@ -85,6 +85,7 @@ uses
   System.StrUtils,
   System.Math,
   System.NetEncoding,
+  System.RegularExpressions,
   Data.DB,
   EF.DB,
   EF.Localization,
@@ -434,6 +435,60 @@ begin
   end;
 end;
 
+/// <summary>
+///  Turns a colour as written in YAML (Colors: / Images: Color:) into something
+///  safe to emit in a style attribute. The semantic names success, danger,
+///  warning, info and neutral become the theme tokens (--kx-color-*), which
+///  the stylesheet re-tunes for the dark theme; otherwise a hex triplet or
+///  sextet with or without the leading # (which YAML would read as a comment,
+///  hence the usual omission), or a plain CSS colour name. Anything else
+///  yields ''.
+/// </summary>
+function NormalizeCssColor(const AColor: string): string;
+const
+  SEMANTIC_COLORS: array[0..4] of string = ('success', 'danger', 'warning', 'info', 'neutral');
+var
+  LColor: string;
+  I: Integer;
+begin
+  LColor := Trim(AColor);
+  for I := Low(SEMANTIC_COLORS) to High(SEMANTIC_COLORS) do
+    if SameText(LColor, SEMANTIC_COLORS[I]) then
+      Exit('var(--kx-color-' + SEMANTIC_COLORS[I] + ')');
+  if (LColor <> '') and (LColor[1] = '#') then
+    Delete(LColor, 1, 1);
+  if TRegEx.IsMatch(LColor, '^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$') then
+    Result := '#' + LColor
+  else if TRegEx.IsMatch(LColor, '^[A-Za-z]+$') then
+    Result := LColor
+  else
+    Result := '';
+end;
+
+/// <summary>First pair whose value (a regexp) matches AValue; -1 if none.</summary>
+function FirstMatchingPair(const APairs: TEFPairs; const AValue: string): Integer;
+var
+  I: Integer;
+begin
+  for I := 0 to High(APairs) do
+    if (APairs[I].Value <> '') and TRegEx.IsMatch(AValue, APairs[I].Value) then
+      Exit(I);
+  Result := -1;
+end;
+
+/// <summary>First child of an Images node whose value (a regexp) matches AValue; nil if none.</summary>
+function FirstMatchingChild(const ANode: TEFNode; const AValue: string): TEFNode;
+var
+  I: Integer;
+begin
+  if Assigned(ANode) then
+    for I := 0 to ANode.ChildCount - 1 do
+      if (ANode.Children[I].AsExpandedString <> '')
+          and TRegEx.IsMatch(AValue, ANode.Children[I].AsExpandedString) then
+        Exit(ANode.Children[I]);
+  Result := nil;
+end;
+
 class function TKXGridPanelController.BuildDataRows(
   AStore: TKViewTableStore; AViewTable: TKViewTable;
   const AViewName: string; const AUrlViewName: string;
@@ -451,6 +506,8 @@ var
   LIsCurrency: Boolean;
   LChecked: string;
   LUserFmt: TFormatSettings;
+  LNumFmt: TFormatSettings;
+  LFullText: string;
   LCurrSymbol: string;
   LCaptionField: TKModelField;
   LCaptionValue: string;
@@ -464,6 +521,18 @@ var
   LAutoAddNode: TEFNode;
   LAutoAddSourceFields, LAutoAddAliases: TArray<string>;
   LAutoAddSrcField: TKViewField;
+  // Per-column display rules, resolved once per request (see ResolveColumnRules):
+  // AllowedValues labels, Images icons, BlankValue.
+  LColAllowed: TArray<TEFPairs>;
+  LColImages: TArray<TEFNode>;
+  LColBlank: TArray<Boolean>;
+  // Row colouring: the first view table field with a Colors node drives the
+  // background of the whole row (HowToCustomizeGridRowColors), as in Kitto 1.
+  LRowColorField: TKViewField;
+  LRowColors: TEFPairs;
+  LRowColor: string;
+  LRawValue, LDisplay, LIconHTML, LCellStyle, LColor: string;
+  LImageNode: TEFNode;
 
   function GetCellField(AIndex: Integer; out AField: TKViewField;
     out ALayoutNode: TEFNode): Boolean;
@@ -494,6 +563,69 @@ var
     end;
   end;
 
+  // Reads AllowedValues, Images and BlankValue of every column once, so the
+  // per-cell work is a lookup and not a metadata walk; and finds the field
+  // whose Colors node colours the rows (the first one, hidden columns included).
+  procedure ResolveColumnRules;
+  var
+    LIndex: Integer;
+    LColField: TKViewField;
+    LColNode: TEFNode;
+  begin
+    SetLength(LColAllowed, LColCount);
+    SetLength(LColImages, LColCount);
+    SetLength(LColBlank, LColCount);
+    for LIndex := 0 to LColCount - 1 do
+    begin
+      if not GetCellField(LIndex, LColField, LColNode) then
+        Continue;
+      LColAllowed[LIndex] := LColField.AllowedValues;
+      LColImages[LIndex] := LColField.FindImagesNode;
+      LColBlank[LIndex] := LColField.BlankValue;
+    end;
+    LRowColorField := nil;
+    LRowColors := nil;
+    for LIndex := 0 to AViewTable.FieldCount - 1 do
+    begin
+      LRowColors := AViewTable.Fields[LIndex].GetColorsAsPairs;
+      if Length(LRowColors) > 0 then
+      begin
+        LRowColorField := AViewTable.Fields[LIndex];
+        Break;
+      end;
+    end;
+  end;
+
+  // Colour of the current row from the Colors rules: the first <color>: <regexp>
+  // whose regexp matches the row's value of the Colors field; '' when none does.
+  function GetRowColor(const ARecord: TKViewTableRecord): string;
+  var
+    LColorField: TKViewTableField;
+    LIndex: Integer;
+  begin
+    Result := '';
+    if not Assigned(LRowColorField) then
+      Exit;
+    LColorField := ARecord.FindField(LRowColorField.AliasedName);
+    if not Assigned(LColorField) then
+      Exit;
+    LIndex := FirstMatchingPair(LRowColors, LColorField.GetAsJSONValue(True, False));
+    if LIndex >= 0 then
+      Result := NormalizeCssColor(LRowColors[LIndex].Key);
+  end;
+
+  // Label of an AllowedValues entry for a raw value; the value itself when the
+  // field has no AllowedValues or the value is not among them.
+  function AllowedValueLabel(const APairs: TEFPairs; const AValue: string): string;
+  var
+    LIndex: Integer;
+  begin
+    for LIndex := 0 to High(APairs) do
+      if SameText(APairs[LIndex].Key, AValue) then
+        Exit(_(APairs[LIndex].Value));
+    Result := AValue;
+  end;
+
 begin
   LUserFmt := TKConfig.Instance.UserFormatSettings;
   LCurrSymbol := LUserFmt.CurrencyString;
@@ -502,6 +634,7 @@ begin
     LColCount := ALayout.ChildCount
   else
     LColCount := AViewTable.FieldCount;
+  ResolveColumnRules;
 
   // Find caption field for data-caption attribute (used by lookup selection)
   LCaptionField := nil;
@@ -607,6 +740,13 @@ begin
 
       SB.Append('<tr data-key="').Append(SBKey.ToString).Append('"');
       SB.Append(' data-caption="').Append(TNetEncoding.HTML.Encode(LCaptionValue)).Append('"');
+
+      // Colors: the row takes the matching colour and leaves the zebra striping
+      // (kx-custom-row), as rows classed by RowClassProvider do.
+      LRowColor := GetRowColor(LRecord);
+      if LRowColor <> '' then
+        SB.Append(' class="kx-custom-row kx-row-colored" style="--kx-row-bg:')
+          .Append(LRowColor).Append('"');
 
       // AutoAddFields: emit JSON {alias: value} from the referenced model record
       // so onLookupSelect can fan-out the values into the calling form.
@@ -728,19 +868,58 @@ begin
           end
           else
           begin
-            LValue := LRecordField.GetAsJSONValue(True, False);
-            if SameText(LValue, 'null') then
-              LValue := '';
-            SB.Append('<td style="text-align:').Append(LAlign).Append('"');
+            LRawValue := LRecordField.GetAsJSONValue(True, False);
+            if SameText(LRawValue, 'null') then
+              LRawValue := '';
+            // What the user reads: the AllowedValues label when there is one.
+            LDisplay := AllowedValueLabel(LColAllowed[J], LRawValue);
+            // Decimal and float values: LRawValue uses the JS format (fixed '.'
+            // and ','), the user reads them in the UserFormats separators. The raw
+            // value stays as is for AllowedValues and Images matching.
+            if (LRawValue <> '') and (LDisplay = LRawValue)
+              and (LField.DataType is TEFDecimalNumericDataTypeBase)
+              and (LField.GetString('DisplayTemplate') = '') then
+            begin
+              LNumFmt := LUserFmt;
+              LNumFmt.CurrencyDecimals := LField.DecimalPrecision;
+              LDisplay := LField.DataType.NodeToJSONValue(True, LRecordField, LNumFmt, False);
+            end;
+            // Tooltip text, taken before BlankValue images can clear LDisplay.
+            LFullText := LDisplay;
+            LCellStyle := 'text-align:' + LAlign;
+            LIconHTML := '';
+            if LRawValue <> '' then
+            begin
+              // Images: first <icon>: <regexp> matching the raw value adds an icon,
+              // coloured by its own Color sub-node; BlankValue leaves only the icon.
+              LImageNode := FirstMatchingChild(LColImages[J], LRawValue);
+              if Assigned(LImageNode) then
+              begin
+                LColor := NormalizeCssColor(LImageNode.GetString('Color'));
+                if LColBlank[J] then
+                  LDisplay := '';
+                // kx-cell-icon-text spaces the icon from the text that follows it:
+                // CSS cannot tell a text node sibling apart, so the server does.
+                LIconHTML := '<span class="kx-cell-icon'
+                  + IfThen(LDisplay <> '', ' kx-cell-icon-text', '') + '"';
+                if LColor <> '' then
+                  LIconHTML := LIconHTML + ' style="color:' + LColor + '"';
+                LIconHTML := LIconHTML + ' title="' + TNetEncoding.HTML.Encode(
+                  AllowedValueLabel(LColAllowed[J], LRawValue)) + '">'
+                  + GetIconHTML(LImageNode.Name, isSmall) + '</span>';
+              end;
+            end;
+            SB.Append('<td style="').Append(LCellStyle).Append('"');
             // HTMLMemo fields contain HTML markup: no tooltip (raw tags would show).
-            if (LValue <> '') and not (LField.DataType is TKHTMLMemoDataType) then
-              SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LValue)).Append('"');
+            if (LRawValue <> '') and not (LField.DataType is TKHTMLMemoDataType) then
+              SB.Append(' data-full="').Append(TNetEncoding.HTML.Encode(LFullText)).Append('"');
             SB.Append('>');
+            SB.Append(LIconHTML);
             // HTMLMemo fields contain trusted HTML content — render without encoding
             if LField.DataType is TKHTMLMemoDataType then
-              SB.Append(LValue)
+              SB.Append(LDisplay)
             else
-              SB.Append(TNetEncoding.HTML.Encode(LValue));
+              SB.Append(TNetEncoding.HTML.Encode(LDisplay));
             SB.Append('</td>');
           end;
         end

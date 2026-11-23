@@ -498,7 +498,19 @@ type
     [TestCase('bcd money, Decimal', 'ftBCD,0,4,123456789012345.6789,Decimal,123456789012346')]
     [TestCase('bcd money, Currency', 'ftBCD,0,4,123456789012345.6789,Currency,123456789012345.6789')]
     [TestCase('double money, Decimal', 'ftCurrency,0,0,123456789012345.6789,Decimal,123456789012346')]
+    // The one rendering that depends on the compiler. The field holds a Double,
+    // and the nearest Double to the written value is 123456789012345.671875:
+    // the cents are gone before EF sees anything. What differs is the RTL's
+    // Double-to-Currency conversion that TCurrencyField.GetAsCurrency runs. The
+    // 32-bit one scales in extended precision and rounds that Double correctly,
+    // to .6719; the 64-bit one multiplies by 10000 in a Double, past the 53
+    // bits it has, and lands on .6768. Neither is the value written, and
+    // neither is EF's doing - measured with a three-line program on both.
+    {$IFDEF CPUX64}
     [TestCase('double money, Currency', 'ftCurrency,0,0,123456789012345.6789,Currency,123456789012345.6768')]
+    {$ELSE}
+    [TestCase('double money, Currency', 'ftCurrency,0,0,123456789012345.6789,Currency,123456789012345.6719')]
+    {$ENDIF}
     [TestCase('15 digits, Decimal', 'ftFMTBcd,18,4,12345678901.2345,Decimal,12345678901.2345')]
     procedure ADecimalValue_ReadThroughDecimalOrCurrency(const AFieldType: string;
       const APrecision, AScale: Integer; const AWritten, ATypeName, AExpected: string);
@@ -2046,7 +2058,13 @@ begin
       // money arrives in a Double-backed field: 15 significant digits through
       // Decimal, and not the written cents through Currency either.
       'c_money|Decimal|TCurrencyField|123456789012346',
+      // Which wrong cents depends on the compiler: see the 'double money,
+      // Currency' case of ADecimalValue_ReadThroughDecimalOrCurrency.
+      {$IFDEF CPUX64}
       'c_money>Currency|123456789012345.6768',
+      {$ELSE}
+      'c_money>Currency|123456789012345.6719',
+      {$ENDIF}
       'c_smallmoney|Decimal|TCurrencyField|1234.5678',
       'c_smallmoney>Currency|1234.5678',
       // 16 bytes become 8 arbitrary UTF-16 characters.

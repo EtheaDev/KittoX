@@ -24,6 +24,7 @@ Authentication:
     Item: DBServer
     Item: OSDB
     Item: TextFile
+    Item: Ini
     Item: LDAP
 AccessControl:
   AccessControllers:

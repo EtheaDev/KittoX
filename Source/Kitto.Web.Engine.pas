@@ -33,6 +33,7 @@ uses
   System.Generics.Collections,
   Web.HTTPApp,
   EF.ObserverIntf,
+  EF.Tree,
   Kitto.Web.Request,
   Kitto.Web.Response,
   Kitto.Web.Routes,
@@ -74,6 +75,9 @@ type
     FOnSessionStart: TKWebEngineSessionProc;
     FOnSessionEnd: TKWebEngineSessionProc;
     procedure EnsureSession(const AURL: TKWebURL);
+    procedure ReleaseCurrentSession;
+    procedure FinishRequest(const ARequest: TKWebRequest; const AResponse: TKWebResponse;
+      const AURL: TKWebURL; const AIsFatalError: Boolean);
     function GetSessionIdFromRequest: string;
     procedure SetSessionIdIntoResponse(const ASession: TKWebSession; const ARemove: Boolean);
     procedure SetActive(const Value: Boolean);
@@ -129,6 +133,15 @@ type
       const AURLDocument: string; const AOwnsObjects: Boolean = False; const AHandleAllRequests: Boolean = False): Boolean;
   end;
 
+/// <summary>
+///  The session timeout a configuration asks for, in minutes.
+///  <para><c>Engine/Session/TimeOut</c> is the node. <c>Server/SessionTimeOut</c>
+///  is read when that one is missing: it is where the New Project wizard wrote
+///  the value for years, into a node the engine never looked at, so every
+///  project it generated has it there. Neither gives 10.</para>
+/// </summary>
+function ReadSessionTimeOutMinutes(const AConfig: TEFTree): Integer;
+
 implementation
 
 uses
@@ -141,7 +154,6 @@ uses
   System.JSON,
   System.NetEncoding,
   EF.DB,
-  EF.Tree,
   EF.Logger,
   EF.Localization,
   Kitto.Auth,
@@ -151,6 +163,13 @@ uses
   Kitto.Web.Routing.Registry,
   Kitto.Html.Response,
   Kitto.Web.Types;
+
+function ReadSessionTimeOutMinutes(const AConfig: TEFTree): Integer;
+begin
+  Assert(Assigned(AConfig), 'AConfig');
+  Result := AConfig.GetInteger('Engine/Session/TimeOut',
+    AConfig.GetInteger('Server/SessionTimeOut', 10));
+end;
 
 { TKWebEngine }
 
@@ -169,7 +188,7 @@ begin
     { TODO :  No multiple applications until we can have multiple cookie names. }
     FSessionIDCookieName := LConfig.AppName;
     FCharset := LConfig.Config.GetString('Charset', 'utf-8');
-    LSessionTimeOut := LConfig.Config.GetInteger('Engine/Session/TimeOut', 10) * OneMinute;
+    LSessionTimeOut := ReadSessionTimeOutMinutes(LConfig.Config) * OneMinute;
     FSessionCleanupInterval := LConfig.Config.GetInteger('Engine/Session/CleanupInterval') * OneSecond;
     FSessions := TKWebSessions.Create(LSessionTimeOut);
     FSessions.OnSessionStart := DoSessionStart;
@@ -184,7 +203,7 @@ begin
     // Fail here, and say what is wrong, if Auth names a class nobody registered
     // — a typo, or more often an authenticator unit missing from the project's
     // UseKitto.pas (only Auth: Null is registered by the core; DB, DBCrypt,
-    // DBServer, TextFile, OSDB, LDAP and JWT each come from their own unit).
+    // DBServer, TextFile, Ini, OSDB, LDAP and JWT each come from their own unit).
     //
     // Without this check the application starts and then serves a BLANK PAGE for
     // every request, with nothing in the log: the class is looked up again by
@@ -364,12 +383,26 @@ begin
   // an intranet, and a Secure cookie would never come back from there. Path is
   // '/' so that the static resource routes, which live outside the application
   // path, are served inside the session that asked for them.
+  //
+  // No expiry of its own (NO_EXPIRY: a browser session cookie). The cookie used
+  // to expire after Session.Timeout, refreshed at every response, "to keep it in
+  // step with the server". That bought nothing - the server is the authority on
+  // how long a session lives, and an id whose session is gone opens nothing -
+  // and it cost the one thing the cookie is for after a timeout: at the end of
+  // an idle period the browser dropped the cookie at the same moment the server
+  // dropped the session, so the next click arrived without an id, got a fresh
+  // anonymous session and an opaque 404 ("Resource not found") instead of the
+  // "Session lost or expired" dialog, which can only be raised when the server
+  // receives an id it no longer knows (EnsureSession). With no expiry the
+  // browser keeps presenting the old id and the dialog comes up however long
+  // the page was left open. Session lifetime is unchanged: Engine/Session/
+  // TimeOut and the cleanup thread decide it, exactly as before.
   if ARemove then
     TKWebResponse.Current.SetSecureCookie(FSessionIDCookieName, ASession.SessionId,
       Now - 7, '/', True, False, 'Lax')
   else
     TKWebResponse.Current.SetSecureCookie(FSessionIDCookieName, ASession.SessionId,
-      Now + ASession.Timeout, '/', True, False, 'Lax');
+      TKWebResponse.NO_EXPIRY, '/', True, False, 'Lax');
 end;
 
 function TKWebEngine.SimpleHandleRequest(const ARequest: TWebRequest; const AResponse: TWebResponse;
@@ -425,11 +458,7 @@ var
   LSession: TKWebSession;
   LClientAddress: string;
   LCreated: Boolean;
-  LWasAuthenticated: Boolean;
-  LAuthDataCopy: TEFNode;
-  LReloadingHome: Boolean;
   LLanguage: string;
-  LDatabaseName: string;
 begin
   LSessionId := GetSessionIdFromRequest;
   LClientAddress := TKWebRequest.Current.RemoteAddr;
@@ -460,30 +489,20 @@ begin
     // before this one is served are linked to the correct session.
     // Preserve authentication state across session refresh so that
     // login redirects (KittoX) and manual F5 don't lose the auth.
-    LWasAuthenticated := LSession.IsAuthenticated;
-    LReloadingHome := LSession.ReloadingHome;
+    //
+    // The old session is replaced, NOT freed here. It used to be - removed and
+    // re-created in two steps - and any other request of the same session in
+    // flight on another thread (a second tab, a reload while something is
+    // loading) was left holding a pointer to freed memory: an access violation
+    // on the session's gettext instance, on its auth data, on a string.
+    // RenewSession swaps the two under the sessions lock and leaves the old
+    // object alive until the last request on it has ended.
     LLanguage := LSession.Language;
-    LDatabaseName := LSession.DatabaseName;
-    LAuthDataCopy := TEFNode.Create;
-    try
-      LAuthDataCopy.Assign(LSession.AuthData);
-      FSessions.RemoveSession(LSession);
-      LSession := FSessions.NewSession(LClientAddress, LSessionId);
-      // Set Current before restoring language, so that ForceLanguage
-      // (called by SetLanguage) targets the new session's gnugettext instance.
-      TKWebSession.Current := LSession;
-      // Transfer auth state to the new session.
-      if LWasAuthenticated then
-      begin
-        LSession.IsAuthenticated := True;
-        LSession.AuthData.Assign(LAuthDataCopy);
-      end;
-      LSession.ReloadingHome := LReloadingHome;
-      LSession.Language := LLanguage;
-      LSession.DatabaseName := LDatabaseName;
-    finally
-      LAuthDataCopy.Free;
-    end;
+    LSession := FSessions.RenewSession(LSession, LClientAddress);
+    // Set Current before restoring language, so that ForceLanguage
+    // (called by SetLanguage) targets the new session's gnugettext instance.
+    TKWebSession.Current := LSession;
+    LSession.Language := LLanguage;
   end;
 
   TKWebSession.Current := LSession;
@@ -558,22 +577,64 @@ begin
     AIsAllowed := False;
     Exit;
   end;
-  EnsureSession(AURL);
-  TKWebSession.Current.SetDefaultLanguage(TKWebRequest.Current.AcceptLanguage);
-  TKWebSession.Current.LastRequestInfo.SetData(TKWebRequest.Current);
+  // Nothing of the previous request served by this pooled thread: if
+  // EnsureSession fails before acquiring, there is no session to give back.
+  TKWebSession.Current := nil;
+  try
+    EnsureSession(AURL);
+    TKWebSession.Current.SetDefaultLanguage(TKWebRequest.Current.AcceptLanguage);
+    TKWebSession.Current.LastRequestInfo.SetData(TKWebRequest.Current);
 
-  TKWebResponse.Current.Items.Charset := FCharset;
-  {$IFDEF MSWINDOWS}
-  if EF.DB.IsCOMNeeded then
-    OleCheck(CoInitialize(nil));
-  {$ENDIF}
-  inherited;
+    TKWebResponse.Current.Items.Charset := FCharset;
+    {$IFDEF MSWINDOWS}
+    if EF.DB.IsCOMNeeded then
+      OleCheck(CoInitialize(nil));
+    {$ENDIF}
+    inherited;
+  except
+    // AfterHandleRequest does not run when this method raises (see
+    // TKWebRoute.HandleRequest), and it is the one that gives the session
+    // back: an acquire left behind here would keep the session from ever
+    // expiring.
+    ReleaseCurrentSession;
+    raise;
+  end;
+end;
+
+procedure TKWebEngine.ReleaseCurrentSession;
+var
+  LSession: TKWebSession;
+begin
+  // Clear the pointer first: once released, nothing guarantees the object - a
+  // page refresh, the cleanup thread or a removal may free it at any time.
+  LSession := TKWebSession.Current;
+  TKWebSession.Current := nil;
+  FSessions.ReleaseSession(LSession);
 end;
 
 procedure TKWebEngine.AfterHandleRequest(const ARequest: TKWebRequest;
   const AResponse: TKWebResponse; const AURL: TKWebURL; const AIsFatalError: Boolean);
+var
+  LSession: TKWebSession;
 begin
-  inherited;
+  // The session this request acquired in BeforeHandleRequest. Kept in a local
+  // because removing it (below) clears the thread's Current - see DoSessionEnd -
+  // and it still has to be given back.
+  LSession := TKWebSession.Current;
+  try
+    FinishRequest(ARequest, AResponse, AURL, AIsFatalError);
+  finally
+    // Whatever happened above - a client gone before the response was sent, for
+    // one - the request is over and no longer keeps the session alive.
+    TKWebSession.Current := nil;
+    FSessions.ReleaseSession(LSession);
+  end;
+end;
+
+procedure TKWebEngine.FinishRequest(const ARequest: TKWebRequest;
+  const AResponse: TKWebResponse; const AURL: TKWebURL; const AIsFatalError: Boolean);
+begin
+  inherited AfterHandleRequest(ARequest, AResponse, AURL, AIsFatalError);
   TEFLogger.Instance.LogDebug('AfterHandleRequest: ' + AURL.GetURI);
   if not FActive then
     Exit;
@@ -581,13 +642,15 @@ begin
   if EF.DB.IsCOMNeeded then
     CoUninitialize;
   {$ENDIF}
-  // Send back the session id to the client and update the expiration time.
-  // remove the cookie in case of a fatal error.
+  // Send back the session id to the client (a browser session cookie, with no
+  // expiry of its own: see SetSessionIdIntoResponse); remove the cookie in
+  // case of a fatal error.
   SetSessionIdIntoResponse(TKWebSession.Current, AIsFatalError);
   // Make sure cookies and custom headers are passed through.
   TKWebResponse.Current.Send;
   // It's only after rendering the response that we can kill the session in case
   // of fatal error.
+  // The object outlives the removal until AfterHandleRequest gives it back.
   if AIsFatalError then
     FSessions.RemoveSession(TKWebSession.Current);
 end;

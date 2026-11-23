@@ -131,6 +131,11 @@ begin
   Result := FInstance;
 end;
 
+const
+  // Runtime-only node written into a controller's Config copy: its HtmlIdSuffix,
+  // read back when it creates nested controllers (see GetHtmlIdSuffix below).
+  HTML_ID_SUFFIX_NODE = '_KXHtmlIdSuffix';
+
 function TKXControllerFactory.CreateController(const AView: TKView;
   const AContainer: IKXContainer;
   const AConfig: TEFNode;
@@ -138,6 +143,7 @@ function TKXControllerFactory.CreateController(const AView: TKView;
 var
   LObject: TKXComponent;
   LType: string;
+  LSuffix: string;
 
   function GetControllerType: string;
   begin
@@ -151,6 +157,35 @@ var
       raise EKError.CreateFmt('Cannot create controller for view %s. Unspecified type.', [AView.PersistentName]);
   end;
 
+  // An inline sub-controller (WestView: Controller: ..., SouthController: ...)
+  // shares the view with the view's root controller, so the root's element id
+  // 'kx-{ViewName}' would be repeated on every nested controller. The config
+  // nodes between the view and the controller node (the regions, without the
+  // 'Controller' steps) tell them apart, each reduced to its initial: W, S, C,
+  // N, E. A nested controller gets its node from the PARENT controller's own
+  // Config (a copy), whose root is not the view: the walk stops there, and the
+  // parent's suffix, stored in that copy under HTML_ID_SUFFIX_NODE, is
+  // prepended, so the whole path is kept: 'WSSW' = west, south, south, west.
+  function GetHtmlIdSuffix: string;
+  var
+    LNode: TEFTree;
+    LName: string;
+  begin
+    Result := '';
+    if (AConfig = nil) or (AConfig = AView.FindNode('Controller')) then
+      Exit;
+    LNode := AConfig;
+    while LNode is TEFNode do
+    begin
+      LName := TEFNode(LNode).Name;
+      if (LName <> '') and not SameText(LName, 'Controller') then
+        Result := UpperCase(LName[1]) + Result;
+      LNode := TEFNode(LNode).Parent;
+    end;
+    if Assigned(LNode) then
+      Result := LNode.GetString(HTML_ID_SUFFIX_NODE) + Result;
+  end;
+
 begin
   Assert(AView <> nil, 'AView <> nil');
 
@@ -159,12 +194,17 @@ begin
   try
     if not Supports(LObject, IKXController, Result) then
       raise EKError.Create('Object does not support IKXController.');
+    LSuffix := GetHtmlIdSuffix;
+    LObject.HtmlIdSuffix := LSuffix;
     LObject := nil; // Interface owns the object now; prevent double-free in except
 
     if AConfig <> nil then
       Result.Config.Assign(AConfig)
     else
       Result.Config.Assign(AView.FindNode('Controller'));
+    // Hand the suffix down to the controllers this one will create from its Config.
+    if LSuffix <> '' then
+      Result.Config.SetString(HTML_ID_SUFFIX_NODE, LSuffix);
 
     Result.View := AView;
 

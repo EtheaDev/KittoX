@@ -470,6 +470,7 @@ uses
   Kitto.Web.Routing.AppFilters,
   Kitto.Web.Routing.Registry,
   Kitto.Chat.Provider,
+  Kitto.Chat.Attachments,
   EF.JSON,
   Web.HTTPApp;
 
@@ -2043,6 +2044,29 @@ begin
         if Config.Notifications.Enabled then
           LNotificationsEnabled := 'true';
 {$ENDIF}
+        // The name the assistant answers to: the panel writes it in its header,
+        // the system prompt opens with it, and it is the same value - there is
+        // no second place to change. It lands inside a JavaScript string
+        // literal, where the template encodes the quotes for us but not a line
+        // break, so a name written on two lines becomes one line here.
+        var LHelpChatName := '';
+        if LHelpChatEnabled = 'true' then
+          LHelpChatName := Trim(StringReplace(StringReplace(
+            Config.Config.GetExpandedString('HelpChat/AssistantName', _('Help')),
+            #13, ' ', [rfReplaceAll]), #10, ' ', [rfReplaceAll]));
+        ATemplate.SetData('helpChatName', TValue.From<string>(LHelpChatName));
+        // Attachments: whether the paper clip is shown at all, and what the
+        // file dialog offers. Both come from the one place that decides them,
+        // so the dialog cannot offer what the endpoint would refuse.
+        var LHelpChatAttach := 'false';
+        var LHelpChatAccept := '';
+        if (LHelpChatEnabled = 'true') and KXChatAttachmentsEnabled then
+        begin
+          LHelpChatAttach := 'true';
+          LHelpChatAccept := KXChatAcceptedExtensions;
+        end;
+        ATemplate.SetData('helpChatAttach', TValue.From<string>(LHelpChatAttach));
+        ATemplate.SetData('helpChatAccept', TValue.From<string>(LHelpChatAccept));
         ATemplate.SetData('helpChatEnabled', TValue.From<string>(LHelpChatEnabled));
         ATemplate.SetData('notificationsEnabled', TValue.From<string>(LNotificationsEnabled));
         ATemplate.SetData('loadingMessage', TValue.From<string>(Format(_('Loading %s...'), [Config.AppTitle])));
@@ -2072,7 +2096,18 @@ begin
         ATemplate.SetData('lblHelp', TValue.From<string>(_('Help')));
         ATemplate.SetData('lblClear', TValue.From<string>(_('Clear')));
         ATemplate.SetData('lblSend', TValue.From<string>(_('Send')));
+        ATemplate.SetData('lblStop', TValue.From<string>(_('Stop')));
         ATemplate.SetData('lblChatPlaceholder', TValue.From<string>(_('Ask about the application...')));
+        ATemplate.SetData('lblCopyConversation', TValue.From<string>(_('Copy the conversation')));
+        ATemplate.SetData('lblCopyAnswer', TValue.From<string>(_('Copy this answer')));
+        ATemplate.SetData('lblCopied', TValue.From<string>(_('Copied')));
+        ATemplate.SetData('lblCopyFailed', TValue.From<string>(_('Could not copy to the clipboard')));
+        ATemplate.SetData('lblPrint', TValue.From<string>(_('Print')));
+        ATemplate.SetData('lblNothingYet', TValue.From<string>(_('There is nothing to print yet.')));
+        ATemplate.SetData('lblQuestion', TValue.From<string>(_('Question')));
+        ATemplate.SetData('lblAttach', TValue.From<string>(_('Attach a file')));
+        ATemplate.SetData('lblAttaching', TValue.From<string>(_('Sending...')));
+        ATemplate.SetData('lblAttachFailed', TValue.From<string>(_('The file could not be attached.')));
         // Dynamic scripts/stylesheets registered by modules
         ATemplate.SetData('dynamicStyles', TValue.From<string>(
           TKXScriptRegistry.Instance.GetStylesheetTags(FResourcePath)));

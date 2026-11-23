@@ -50,7 +50,7 @@
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.2.2.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Ethea S.r.l.;FileDescription=KittoX Core Packages;FileVersion=4.3.0.0;InternalName=KittoXCore;LegalCopyright=Copyright (c) Ethea S.r.l.;LegalTrademarks=;OriginalFilename=;ProductName=KittoCore;ProductVersion=4.0;Comments=</VerInfo_Keys>
         <DCC_Description>KittoX Core Run-Time Package</DCC_Description>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
@@ -59,8 +59,8 @@
         <DllSuffix>$(Auto)</DllSuffix>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_MajorVer>4</VerInfo_MajorVer>
-        <VerInfo_Release>1</VerInfo_Release>
-        <VerInfo_MinorVer>2</VerInfo_MinorVer>
+        <VerInfo_Release>0</VerInfo_Release>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <BT_BuildType>Debug</BT_BuildType>
@@ -156,6 +156,7 @@
         <DCCReference Include="..\..\Source\Kitto.Auth.OSDB.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Auth.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Auth.TextFile.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Auth.IniFile.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Config.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Config.Defaults.pas"/>
         <DCCReference Include="..\..\Source\Kitto.DatabaseRouter.pas"/>
@@ -221,6 +222,13 @@
         <DCCReference Include="..\..\Source\Kitto.Chat.Runner.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Chat.DocSearch.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Chat.Provider.Claude.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.Server.HttpSys.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.HttpSys.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Web.HttpSysApi.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Chat.Provider.OpenAI.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Chat.Stream.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Chat.Prompt.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.Chat.Attachments.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Web.Handler.Chat.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Types.pas"/>
         <DCCReference Include="..\..\Source\Kitto.Web.Application.pas"/>

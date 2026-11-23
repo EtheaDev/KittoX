@@ -174,6 +174,7 @@ type
 implementation
 
 uses
+  Kitto.AccessControl,
   System.Classes,
   System.StrUtils,
   System.Variants,
@@ -1932,6 +1933,9 @@ var
   LHasDetails, LHasTabDetails: Boolean;
   LDetailStyle: string;
   LViewHide, LEditHide: string;
+  LCanChangeDetails: Boolean;
+  LDetailIndex: Integer;
+  LDetailTable: TKViewTable;
 begin
   LSaveIcon := GetIconHTML('save', isMedium);
   LCancelIcon := GetIconHTML('cancel', isMedium);
@@ -2012,8 +2016,27 @@ begin
 
   // ===== ViewMode buttons =====
 
-  // Edit button (ViewMode) — switches to EditMode client-side
-  if LHasTabDetails or IsActionAllowed('Edit') then
+  // Edit button (ViewMode) — switches to EditMode client-side. A master that
+  // cannot be edited still needs it when one of its detail tables can be
+  // changed, because detail rows are added, edited and deleted in edit mode;
+  // when neither the master nor any detail allows changes, the form is a
+  // read-only view and the button would only lead to a dead end.
+  LCanChangeDetails := False;
+  if LHasTabDetails then
+    for LDetailIndex := 0 to ViewTable.DetailTableCount - 1 do
+    begin
+      LDetailTable := ViewTable.DetailTables[LDetailIndex];
+      if (View.GetBoolean('IsReadOnly') or LDetailTable.IsReadOnly) then
+        Continue;
+      if (not LDetailTable.PreventAdding and LDetailTable.IsAccessGranted(ACM_ADD))
+          or (not LDetailTable.PreventEditing and LDetailTable.IsAccessGranted(ACM_MODIFY))
+          or (not LDetailTable.PreventDeleting and LDetailTable.IsAccessGranted(ACM_DELETE)) then
+      begin
+        LCanChangeDetails := True;
+        Break;
+      end;
+    end;
+  if IsActionAllowed('Edit') or LCanChangeDetails then
     Result := Result +
       '<button type="button" class="kx-form-btn kx-form-btn-save kx-btn-viewmode"' + LViewHide +
       ' onclick="kxForm.setMode(''' + FViewName + ''',''edit'')">' +

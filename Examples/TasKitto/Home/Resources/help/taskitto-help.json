@@ -1,0 +1,173 @@
+[
+{
+"id": "activities-by-type",
+"title": "Activities by type",
+"url": "activities-by-type.html",
+"summary": "The same activities as the input list, grouped by their type: analysis, development, meeting, whatever the activity types table holds.",
+"keywords": [],
+"text": "Activities by type\n\nThe same activities as the input list, grouped by their type: analysis,\ndevelopment, meeting, whatever the activity types table holds.\n\nIt answers the question the flat list answers badly - where is the time going? - without\ncounting anything: the rows are simply gathered under the type they belong to, and the groups can\nbe opened and closed.\n\nFor the same question answered with numbers instead of rows, see the dashboard and\nits pie chart by type.",
+"areas": [
+"activities"
+]
+},
+{
+"id": "activity-calendar",
+"title": "Activity calendar",
+"url": "activity-calendar.html",
+"summary": "The activities on a calendar, by their date. It answers what is happening this week?, which is the one question a list of rows answers badly.",
+"keywords": [],
+"text": "Activity calendar\n\nThe activities on a calendar, by their date. It answers what is happening this week?, which is\nthe one question a list of rows answers badly.\n\nIt is the same activities as everywhere else: what changes is that the day, not the row, is the\nunit. Open one to see it in full.",
+"areas": [
+"activities"
+]
+},
+{
+"id": "activity-input",
+"title": "Activity input",
+"url": "activity-input.html",
+"summary": "The list of activities, and the form to record one without passing through the wizard.",
+"keywords": [
+"What an activity is made of",
+"Finding what you recorded",
+"The same activities, elsewhere"
+],
+"text": "Activity input\n\nThe list of activities, and the form to record one without passing through the wizard.\n\n What an activity is made of\n\n Field | |\n \n Description | What was done. Required. |\n Phase | The phase of the project. Required: it carries the project, and the project carries the customer. |\n Employee | Who did it. Required. |\n Role | In which role. Required. |\n Type | What kind of work. Required. |\n Activity Date | The day. Required. |\n Start Time, End Time | The hours of the day it took. |\n Status | Where it stands. |\n Duration | The hours, worked out from the times. |\n\n Finding what you recorded\n\nThe Search panel above the list is how you come back to an activity: by date, by employee, by\ncustomer, by what the description says. The toolbar offers Download in TXT and Download in\nCSV for what the list is showing.\n\n The same activities, elsewhere\n\nThe same rows are grouped by type, laid out as a\nreport, put on a calendar and counted in the\ndashboard. Nothing of that is a copy: it is one table, seen five ways.",
+"areas": [
+"activities"
+]
+},
+{
+"id": "activity-report",
+"title": "Activity report",
+"url": "activity-report.html",
+"summary": "The same activities laid out as a printable document instead of a grid: a page built from a template, which is what you hand to somebody who does not use the application.",
+"keywords": [],
+"text": "Activity report\n\nThe same activities laid out as a printable document instead of a grid: a page built from a\ntemplate, which is what you hand to somebody who does not use the application.\n\nThe Search panel chooses what goes in it - a period, a customer, an employee - exactly as on\nthe input list. What the report shows is what the filters left.\n\n Download in TXT takes it away as it stands.",
+"areas": [
+"activities"
+]
+},
+{
+"id": "customer-map",
+"title": "Customer map",
+"url": "customer-map.html",
+"summary": "The customers on a map, placed by their address, rather than in a list.",
+"keywords": [],
+"text": "Customer map\n\nThe customers on a map, placed by their address, rather than in a list.\n\nIt is useful for the question a list cannot answer - who else is near the customer I am visiting\non Thursday? - and it shows nothing a customer record does not already hold: the pin is the\naddress, and clicking it opens the customer.\n\nA customer whose address cannot be placed does not appear on the map; check the address on the\ncustomer itself.",
+"areas": [
+"customers"
+]
+},
+{
+"id": "customers",
+"title": "Customers",
+"url": "customers.html",
+"summary": "Field | |    Customer Name | Required. |  Address, City | Where they are. The city is also what puts them on the map. |  Phone, Email | How to reach them. |  Status | Where the relationship stands. |",
+"keywords": [],
+"text": "Customers\n\nWho the work is done for.\n\n Field | |\n \n Customer Name | Required. |\n Address, City | Where they are. The city is also what puts them on the map. |\n Phone, Email | How to reach them. |\n Status | Where the relationship stands. |\n\nA customer cannot be deleted while projects hang from it: see projects and\nphases.",
+"areas": [
+"customers"
+]
+},
+{
+"id": "dashboard",
+"title": "Activity dashboard",
+"url": "dashboard.html",
+"summary": "Statistics → Dashboard puts on one screen the numbers the lists would make you count by hand.",
+"keywords": [],
+"text": "Activity dashboard\n\n Statistics → Dashboard puts on one screen the numbers the lists would make you count by hand.\n\n Panel | |\n \n KPI - activities | How many activities. |\n KPI - hours | How many hours they add up to. |\n KPI - projects | How many projects they are spread over. |\n KPI - customers | How many customers those projects belong to. |\n Status pie | The activities by the status they are in. |\n Type pie | The activities by their type - the same split as activities by type, counted instead of listed. |\n Daily chart | The activities day by day. |\n\nEverything on it is read from the same activities the input list shows: it is a\nreading of that table, not a second one. The two pie charts also exist as screens of their own\nunder Statistics, together with a bar chart, for when one of them is all you want to look at.",
+"areas": [
+"statistics"
+]
+},
+{
+"id": "employees",
+"title": "Employees, roles and types",
+"url": "employees.html",
+"summary": "The three short lists that the rest of the application chooses from. They are under Tables, and they are worth filling in before recording activities, because an activity asks for all three.",
+"keywords": [
+"Employees",
+"Operator roles",
+"Activity types",
+"Before deleting"
+],
+"text": "Employees, roles and activity types\n\nThe three short lists that the rest of the application chooses from. They are under Tables,\nand they are worth filling in before recording activities, because an activity asks for all three.\n\n Employees\n\n Field | |\n \n Employee Name | Required. |\n Employee Type | What kind of employee. |\n\n Operator roles\n\nThe role an employee acts in on a given activity - the same person may be an analyst on one\nactivity and a tester on the next, which is why the role is on the activity and not on the\nemployee.\n\n Activity types\n\nWhat kind of work an activity is. It is the list the activities by type\nscreen groups by, and the one the type pie of the dashboard counts.\n\n Before deleting\n\nNone of the three can be deleted while an activity refers to it.",
+"areas": [
+"tables"
+]
+},
+{
+"id": "index",
+"title": "TasKitto",
+"url": "index.html",
+"summary": "TasKitto is the demo application of the KittoX framework that records what people spend their time on: an activity, done by an employee, on a phase of a project, for a customer. Everything else in it - the charts, the calendar, the dashboard, the report - is that same activity seen from a different angle.",
+"keywords": [
+"The menu",
+"The shape of the data",
+"Where to start"
+],
+"text": "TasKitto\n\nTasKitto is the demo application of the KittoX framework that records what people spend their\ntime on: an activity, done by an employee, on a phase of a project, for a customer. Everything\nelse in it - the charts, the calendar, the dashboard, the report - is that same activity seen\nfrom a different angle.\n\n The menu\n\n Folder | What is inside |\n \n Tables | Employees, operator roles and activity types: the short lists the rest of the application chooses from. |\n Customers | Customers, their projects, and the customer map. |\n Activities | Recording them: the wizard, the input list, activities by type, the report, the calendar. |\n Statistics | The dashboard and the two pie charts, plus the bar chart. |\n Maintenance | Users, roles and permissions, the password, and the way out. |\n\n The shape of the data\n\nRead it once and the whole application makes sense:\n\n A customer has projects. A project is divided into phases. An activity is work\n done by an employee, in a role, on a phase, on a day, of some type, for a number of\n hours.\n\nThat is why an activity asks for a phase and not for a project: the project comes with the phase.\n\n Where to start\n\nNew Activity Wizard if you are here to record work; Activity\nDashboard if you are here to see how it is going. Lists and forms\nexplains the gestures that work everywhere.",
+"areas": [
+"basics"
+]
+},
+{
+"id": "lists-and-forms",
+"title": "Lists and forms",
+"url": "lists-and-forms.html",
+"summary": "Most screens of TasKitto are lists, and the same gestures work on all of them.",
+"keywords": [
+"The search panel",
+"The toolbar",
+"Sorting, paging, exporting",
+"Tabs under a form"
+],
+"text": "Lists and forms\n\nMost screens of TasKitto are lists, and the same gestures work on all of them.\n\n The search panel\n\nAbove the rows, a Search panel narrows what is shown, with the filters that screen offers -\na date range, a customer, a status, a free text box. Filters add up; emptying one puts back the\nrows it was hiding.\n\n The toolbar\n\n New, Edit, View, Delete, Refresh. A record other records depend on cannot be\ndeleted - a project with phases, a phase with activities - and the application says what is\nholding it.\n\n Sorting, paging, exporting\n\nClick a heading to sort, click again to reverse. Long lists are read a page at a time. Several\nscreens offer Download in CSV, Download in Excel or Download in TXT, and what comes\nout is what the list is showing, filters included.\n\n Tabs under a form\n\nA record that owns others shows them in a tab under its form - the phases of a project, for\ninstance - with a toolbar of their own. They are saved together with the record they belong to.",
+"areas": [
+"basics"
+]
+},
+{
+"id": "new-activity",
+"title": "New Activity Wizard",
+"url": "new-activity.html",
+"summary": "The way to record an activity when you would rather be asked than face a form with ten fields on it. Activities → New Activity opens a wizard of three steps, with Back and Next at the bottom.",
+"keywords": [
+"Step 1 - Project & Phase",
+"Step 2 - Activity Details",
+"Step 3 - Date & Time"
+],
+"text": "New Activity Wizard\n\nThe way to record an activity when you would rather be asked than face a form with ten fields on\nit. Activities → New Activity opens a wizard of three steps, with Back and Next at\nthe bottom.\n\n Step 1 - Project & Phase\n\n Field | |\n \n Phase | The phase of the project the work belongs to. Required - and it is what ties the activity to a project and therefore to a customer. |\n Employee | Who did the work. Required. |\n Role | In which role. Required. |\n\n Step 2 - Activity Details\n\n Field | |\n \n Description | What was done. Required. |\n Type | One of the activity types - the short list under Tables. Required. |\n Status | Where the activity stands. |\n\n Step 3 - Date & Time\n\n Field | |\n \n Activity Date | The day. Required. |\n Start Time, End Time | The hours. The duration is worked out from them. |\n\nThe last button is Create Activity: until it is pressed nothing is written, and Back can\nstill change any answer. The same activity can be recorded from the\ninput list instead, with everything on one form - the wizard is for the times\nyou are not sure what comes next.",
+"areas": [
+"activities"
+]
+},
+{
+"id": "projects-and-phases",
+"title": "Projects and phases",
+"url": "projects-and-phases.html",
+"summary": "A project belongs to a customer and is divided into phases. An activity is recorded against a phase, never directly against a project - which is what makes the hours of a project the sum of the hours of its phases, with nothing left over.",
+"keywords": [
+"What a project is made of",
+"What a phase is made of",
+"Before deleting"
+],
+"text": "Projects and phases\n\nA project belongs to a customer and is divided into phases. An activity is recorded\nagainst a phase, never directly against a project - which is what makes the hours of a project\nthe sum of the hours of its phases, with nothing left over.\n\n What a project is made of\n\n Field | |\n \n Project Name | Required. |\n Customer | The customer it is for. Required. |\n Status | Where the project stands. |\n\n What a phase is made of\n\n Field | |\n \n Phase Name | Required. |\n Project | The project it belongs to. Required. |\n Start Date, End Date | When it runs. |\n Status | Where it stands. |\n\nThe phases of a project are in a tab under its form, and are saved with it.\n\n Before deleting\n\nA project with phases, or a phase with activities recorded against it, cannot be deleted: the\nhours would be left pointing at nothing. Move or delete those first.",
+"areas": [
+"customers"
+]
+},
+{
+"id": "users-and-permissions",
+"title": "Users and permissions",
+"url": "users-and-permissions.html",
+"summary": "Under Maintenance, three lists decide who may sign in and what they may see.",
+"keywords": [
+"Your own password"
+],
+"text": "Users and permissions\n\nUnder Maintenance, three lists decide who may sign in and what they may see.\n\n Users - who exists, with their user name.\n User roles - which roles a user has.\n Permissions - what a role may do.\n\nPermissions are granted to roles, and roles to users: nobody is given a permission\ndirectly. That is what keeps \"what may a sales person do?\" a question with one answer, instead of\none answer per person.\n\n Your own password\n\n Change password asks for the one you have and for the new one, twice. An empty password is\nnever accepted. If the application asked you to change it as soon as you signed in, the one you\nused was temporary: it works once, to let you choose your own.\n\n Logout ends the session. A session also ends by itself after a while without activity, and\nwhat was not saved at that point is lost.",
+"areas": [
+"maintenance"
+]
+}
+]

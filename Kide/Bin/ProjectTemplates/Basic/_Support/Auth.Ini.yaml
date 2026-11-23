@@ -1,0 +1,19 @@
+Auth: Ini
+  # Users in %HOME_PATH%\FileAuthenticator.ini: one [section] per user, Password
+  # plus any user attribute (%Auth:<Key>%). Disabled=True disables a user.
+  # Clear-text passwords: switch to a hashed file before going to production.
+  IsClearPassword: True
+
+  # Master password that lets you log in as ANY user. Unsafe for production:
+  # set to False (and remove PassepartoutPassword) once real users exist.
+  IsPassepartoutEnabled: True
+  PassepartoutPassword: password
+
+  # Not used by a file authenticator; kept to make the structure visible.
+  ReadUserCommandText:
+  SetPasswordCommandText:
+
+  # Values pre-filled in the login form. Empty in production.
+  Defaults:
+    UserName:
+    Password:

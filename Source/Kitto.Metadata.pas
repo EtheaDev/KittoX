@@ -475,7 +475,9 @@ begin
     var
       LFileName: string;
     begin
-      LFileName := Objects[AIndex].PersistentFileName;
+      // Not Objects[AIndex]: it would load the object, and for a file that no
+      // longer exists (Purge) it is nil.
+      LFileName := GetFullFileName(FIndex[AIndex]);
       FIndex.Objects[AIndex].Free;
       FIndex.Delete(AIndex);
       ObjectRemoved(LFileName);
@@ -651,9 +653,12 @@ var
 begin
   Assert(IsOpen, 'IsOpen');
 
-  for I := ObjectCount - 1 downto 0 do
+  // The name is enough: Objects[I] would load every object, so Open (which
+  // calls Purge) would read and parse the whole catalog instead of loading
+  // each object on demand.
+  for I := FIndex.Count - 1 downto 0 do
   begin
-    if not FileExists(Objects[I].PersistentFileName) then
+    if not FileExists(GetFullFileName(FIndex[I])) then
       DeleteObject(I);
   end;
 end;

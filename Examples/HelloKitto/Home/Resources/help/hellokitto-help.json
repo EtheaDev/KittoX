@@ -1,0 +1,110 @@
+[
+{
+"id": "dolls",
+"title": "Dolls",
+"url": "dolls.html",
+"summary": "Every doll belongs to a girl - her mom - and that is the one thing a doll cannot be without.",
+"keywords": [
+"Dolls List",
+"What a doll is made of",
+"New Doll",
+"Doll Catalog"
+],
+"text": "Dolls\n\nEvery doll belongs to a girl - her mom - and that is the one thing a doll cannot be without.\n\n Dolls List\n\nThe list is grouped by mom. Above it, Choose Mom is a box that completes what you type:\ntype the first letter of a name, pick the girl, and the list is left with her dolls. Emptying the\nbox brings back all of them.\n\nThe toolbar is the usual one, plus View, which opens a doll without the risk of changing it.\nThe form opens over the list and carries the arrows to walk from one doll to the next without\nclosing it.\n\n What a doll is made of\n\n Field | |\n \n Name | The name of the doll. Required. |\n Birth Date | The day it was bought, which in this application is the day it was born. |\n Hair | One of the hair types. |\n Dress Size | A short code, four characters at most. |\n Mom | The girl the doll belongs to. Required: a doll without a mom cannot be saved. |\n Mom's Phone | Shown beside the mom, and read from her: it is not typed here. |\n Aspect | A free description, as long as you need. |\n\n New Doll\n\n Dolls → New Doll opens an empty form directly, without passing through the list. It is the\nsame form, and the same rules apply.\n\n Doll Catalog\n\n Dolls → Dolls Card shows the same dolls as cards instead of rows - a picture each, with\nthe name and the main fields underneath. It is the same data: what changes is only how it is laid\nout, and it is there to show that a list can be drawn any way an application wants.",
+"areas": [
+"dolls"
+]
+},
+{
+"id": "girls",
+"title": "Girls",
+"url": "girls.html",
+"summary": "The girls are the people of HelloKitto: a doll belongs to one of them, and an invitation is sent to one of them.",
+"keywords": [
+"Girl list",
+"What a girl is made of",
+"Adding a girl",
+"What holds a girl back"
+],
+"text": "Girls\n\nThe girls are the people of HelloKitto: a doll belongs to one of them, and an invitation is sent\nto one of them.\n\n Girl list\n\nOpens on every girl in the database. The search panel is called Girls Filter and offers a row\nof buttons under Hair Color - Blond, Walnut, Black, Silver, Red, Platinum. Pressing one leaves\nthe girls with that hair; pressing it again puts the others back.\n\n What a girl is made of\n\n Field | |\n \n Name | The name of the girl. Required. It is the name the other screens show her by. |\n Age | Her age, in years. Required. |\n Hair | One of the hair types. Required. |\n Phone | A phone number. Optional. |\n\n Adding a girl\n\n Girls → Girl form opens an empty form - the same one the New button of the list opens.\nFill in at least name, age and hair, then save.\n\n What holds a girl back\n\nA girl cannot be deleted while she is the mom of a doll or the invitee of a party: delete or\nreassign those first. The application names what is holding her.",
+"areas": [
+"girls"
+]
+},
+{
+"id": "hair-types",
+"title": "Hair types",
+"url": "hair-types.html",
+"summary": "A short list of the hair colours the application knows: Blond, Walnut, Black, Silver, Red, Platinum, and whatever else you add to it.",
+"keywords": [
+"What a hair type is made of",
+"Before deleting one"
+],
+"text": "Hair types\n\nA short list of the hair colours the application knows: Blond, Walnut, Black, Silver, Red,\nPlatinum, and whatever else you add to it.\n\nIt is a lookup table: nobody types a colour by hand on a girl or a doll, they choose it from\nhere. That is what keeps the buttons of the Hair Color filter on the girl list\nmeaningful - they filter on values that exist.\n\n What a hair type is made of\n\n Field | |\n \n Hair Color | The name of the colour. Required. |\n\n Before deleting one\n\nA colour that a girl or a doll is using cannot be deleted. Change those first, or the application\nwill tell you how many are holding it.",
+"areas": [
+"tables"
+]
+},
+{
+"id": "index",
+"title": "HelloKitto",
+"url": "index.html",
+"summary": "HelloKitto is the small demo application of the KittoX framework. It keeps track of a handful of girls, of the dolls that belong to them, and of the parties the girls are invited to. It is meant to be read while clicking: every screen named here is one entry of the menu on the left.",
+"keywords": [
+"The menu",
+"Signing in",
+"Where to start"
+],
+"text": "HelloKitto\n\nHelloKitto is the small demo application of the KittoX framework. It keeps track of a handful of\ngirls, of the dolls that belong to them, and of the parties the girls are invited to. It is meant\nto be read while clicking: every screen named here is one entry of the menu on the left.\n\n The menu\n\n Folder | What is inside |\n \n Girls | The girls: a list to browse them and a form to add one. |\n Dolls | The dolls, as a list grouped by their mom, as a catalog of cards, and a form to add one. |\n Parties | The parties, with their invitations, and the same parties on a calendar. |\n Lookup tables | Hair types, the short list the other screens choose a colour from. |\n User | Change your password, or close the session. |\n\n Signing in\n\nThe application asks for a user name and a password. The demo is shipped with a couple of users;\nwhich ones depends on the database you installed it with. If the password is refused, see\nYour account for how it is changed - and note that an empty password is never\naccepted, by design.\n\n Where to start\n\nIf this is your first time, open Girls and then Dolls: those two screens show everything\nthe rest of the application repeats - a search panel, a toolbar, a form that opens over the list.\nLists and forms explains those once and for all.",
+"areas": [
+"basics"
+]
+},
+{
+"id": "lists-and-forms",
+"title": "Lists and forms",
+"url": "lists-and-forms.html",
+"summary": "Almost every screen of HelloKitto is a list, and almost everything you do starts there. What this page describes is the same on all of them.",
+"keywords": [
+"The search panel",
+"The toolbar",
+"Sorting and paging",
+"The form",
+"Taking a list away with you"
+],
+"text": "Lists and forms\n\nAlmost every screen of HelloKitto is a list, and almost everything you do starts there. What\nthis page describes is the same on all of them.\n\n The search panel\n\nAbove the rows there is a panel that narrows what the list shows. It is made of the filters that\nscreen offers: a box to type into, a row of buttons to pick one value, a drop-down that completes\nwhat you type. Filters add up - choosing a hair colour and typing a name leaves the rows that\nmatch both.\n\nEmptying a filter puts back the rows it was hiding; there is nothing to confirm.\n\n The toolbar\n\n Button | |\n \n New | Opens an empty form to add a record. |\n Edit | Opens the selected record in a form you can change. |\n View | Opens the selected record read-only. |\n Delete | Removes the selected record, after asking. |\n Refresh | Reads the rows again from the database. |\n\nA record that other records depend on cannot be deleted: the application says which ones hold it\nback rather than failing with a message from the database.\n\n Sorting and paging\n\nClicking the heading of a column sorts by it; clicking it again reverses the order. Long lists are\nread a page at a time, with the page buttons at the bottom.\n\n The form\n\nA form opens over the list. Fields marked as required will not let you save while they are empty,\nand the application checks what it must before writing: it tells you what is wrong instead of\nsaving something it would have to undo.\n\n Save writes and closes, Cancel closes without writing. Some forms carry arrows to move to\nthe record before or after without closing the form.\n\n Taking a list away with you\n\nWhere a screen offers it, the toolbar has Download in CSV and Download in Excel: both save\nwhat the list is showing - filters included - not the whole table.",
+"areas": [
+"basics"
+]
+},
+{
+"id": "parties",
+"title": "Parties",
+"url": "parties.html",
+"summary": "A party has a date, a place, and the girls who were invited to it.",
+"keywords": [
+"Party list",
+"What a party is made of",
+"Invitations",
+"Party calendar"
+],
+"text": "Parties\n\nA party has a date, a place, and the girls who were invited to it.\n\n Party list\n\nThe search panel is called Search Parties. The toolbar carries, besides the usual buttons,\n Download in CSV and Download in Excel: both take away what the list is showing, filters\nincluded.\n\n What a party is made of\n\n Field | |\n \n Party Name | The name of the party. Required. |\n Party Date | The day. Required. |\n Party Time | The hour. Required. |\n Address | Where it is held. Required. |\n Period | A free label - \"morning\", \"afternoon\" - used to group the parties. |\n\n Invitations\n\nOpen a party and you will find its invitations in a tab under the form. Each one is a girl and\na yes or no:\n\n Field | |\n \n Invitee | The girl invited. Required. |\n Accepted | Whether she said yes. |\n\nThe same girl cannot be invited twice to the same party: the application refuses the second\ninvitation and says so. Invitations are saved together with the party they belong to - adding one\nand then closing the form without saving leaves nothing behind.\n\n Party calendar\n\n Parties → Party calendar puts the same parties on a calendar, by their date. It answers the\nquestion a list answers badly - what is happening that week? - and nothing else: it is the same\nparties, seen by date.",
+"areas": [
+"parties"
+]
+},
+{
+"id": "your-account",
+"title": "Your account",
+"url": "your-account.html",
+"summary": "User → Change password asks for the password you have now and for the new one, twice. The new password cannot be empty: an empty password is never accepted, which is why \"leave it blank\" is not a way to remove it.",
+"keywords": [
+"Changing your password",
+"Closing the session"
+],
+"text": "Your account\n\n Changing your password\n\n User → Change password asks for the password you have now and for the new one, twice. The new\npassword cannot be empty: an empty password is never accepted, which is why \"leave it blank\" is\nnot a way to remove it.\n\nIf the application asked you to change your password as soon as you signed in, it is because the\none you used was a temporary one: it works once, to let you choose your own.\n\n Closing the session\n\n User → Logout ends the session and brings back the sign-in page. A session also ends by\nitself after a while without activity - what you had not saved at that point is lost, which is\nworth knowing before leaving a form open over lunch.",
+"areas": [
+"basics"
+]
+}
+]

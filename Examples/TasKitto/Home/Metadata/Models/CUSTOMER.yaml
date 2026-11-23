@@ -16,9 +16,11 @@ Fields:
     DisplayLabel: _(Phone)
   EMAIL: String(60)
     DisplayLabel: _(Email)
+    # Row colour by e-mail validity (documentation example): soft green for a
+    # well-formed address, soft yellow otherwise.
     Colors:
-      FFFF00: ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$
-      FF0000: .*
+      bbf7d0: ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$
+      fde68a: .*
   STATUS: String(10)
     DisplayLabel: _(Status)
     AllowedValues:

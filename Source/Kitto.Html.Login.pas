@@ -529,14 +529,21 @@ begin
     // htmx binds hx-post on DOMContentLoaded and a click before that submits
     // the form natively. 'complete', not 'interactive': the latter fires as
     // soon as the DOM is parsed, while the user still sees a loading page.
+    //
+    // Loading is the ONLY condition. The button used to stay disabled while
+    // either field read empty, updated on "input"; but a browser's password
+    // manager fills both fields without an "input" event and (Chrome, Edge)
+    // keeps the autofilled password unreadable by script until the user's
+    // first gesture on the page, so the button showed the not-allowed cursor
+    // over credentials that were plainly there, until a click anywhere. Empty
+    // fields are refused by the inputs' own "required" (htmx does not issue
+    // the request while the form is invalid), which needs no script.
     SB.Append('  function ready() {').Append(sLineBreak);
     SB.Append('    return !!window.htmx && document.readyState === "complete";').Append(sLineBreak);
     SB.Append('  }').Append(sLineBreak);
     SB.Append('  function updateBtn() {').Append(sLineBreak);
-    SB.Append('    btnEl.disabled = !ready() || userEl.value.trim() === "" || passEl.value.trim() === "";').Append(sLineBreak);
+    SB.Append('    btnEl.disabled = !ready();').Append(sLineBreak);
     SB.Append('  }').Append(sLineBreak);
-    SB.Append('  userEl.addEventListener("input", updateBtn);').Append(sLineBreak);
-    SB.Append('  passEl.addEventListener("input", updateBtn);').Append(sLineBreak);
     SB.Append('  document.addEventListener("DOMContentLoaded", updateBtn);').Append(sLineBreak);
     SB.Append('  window.addEventListener("load", updateBtn);').Append(sLineBreak);
     SB.Append('  updateBtn();').Append(sLineBreak);

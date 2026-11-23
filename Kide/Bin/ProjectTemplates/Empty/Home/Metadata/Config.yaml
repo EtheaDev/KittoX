@@ -40,7 +40,20 @@ Charset: utf-8
 AjaxTimeout: 100000
 
 Server:
+  # Which HTTP stack serves this application when it runs on its own:
+  #   indy    - the one KittoX has always had; works everywhere, no privileges
+  #   httpsys - the kernel-mode stack of Windows (the one IIS sits on): TLS
+  #             bound with netsh from the certificate store, several processes
+  #             sharing one port, requests queued while the application
+  #             restarts. A URL other than localhost needs a reservation
+  #             (netsh http add urlacl).
+  # It can be changed at any time, with no rebuild. The Desktop executable
+  # always uses Indy; under IIS and Apache this whole node is ignored.
+  Engine: indy
   Port: 8080
   ThreadPoolSize: 20
-  # In minutes.
-  SessionTimeOut: 10
+
+Engine:
+  Session:
+    # In minutes.
+    TimeOut: 10

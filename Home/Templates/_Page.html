@@ -25,6 +25,7 @@
     dynamicStyles$  per-page extra <link>/<style> tags (raw)
     dynamicScripts$ per-page extra <script> tags (raw)
     homeContent$    the rendered page body (raw)
+    helpChatName    name the help assistant answers to (window.KX_CFG)
     msgErrorTitle, msgTimeout, msgServerError, msgNotFound, msgInternalError,
     msgDataSaved, msgDataDeleted, btnRetry, btnReset
                     localized strings exposed to client JS (window.KX_STRINGS)
@@ -75,7 +76,7 @@
     htmx.config.timeout = {{:ajaxTimeout}};
 
     // Client config: resource base path and active Material icon style.
-    window.KX_CFG = { resPath: '{{:resPath}}', iconStyle: '{{:iconStyle}}', helpChat: {{:helpChatEnabled}}, notifications: {{:notificationsEnabled}} };
+    window.KX_CFG = { resPath: '{{:resPath}}', iconStyle: '{{:iconStyle}}', helpChat: {{:helpChatEnabled}}, helpChatName: '{{:helpChatName}}', helpChatAttach: {{:helpChatAttach}}, helpChatAccept: '{{:helpChatAccept}}', notifications: {{:notificationsEnabled}} };
 
     // Localized strings for client-side JS (injected from Delphi via _() translation)
     window.KX_STRINGS = {
@@ -97,7 +98,18 @@
       helpAssistant: '{{:lblHelpAssistant}}',
       help: '{{:lblHelp}}',
       clear: '{{:lblClear}}',
+      copyConversation: '{{:lblCopyConversation}}',
+      copyAnswer: '{{:lblCopyAnswer}}',
+      copied: '{{:lblCopied}}',
+      copyFailed: '{{:lblCopyFailed}}',
+      print: '{{:lblPrint}}',
+      nothingYet: '{{:lblNothingYet}}',
+      question: '{{:lblQuestion}}',
+      attach: '{{:lblAttach}}',
+      attaching: '{{:lblAttaching}}',
+      attachFailed: '{{:lblAttachFailed}}',
       send: '{{:lblSend}}',
+      stop: '{{:lblStop}}',
       chatPlaceholder: '{{:lblChatPlaceholder}}'
     };
 

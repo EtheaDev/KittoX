@@ -43,10 +43,15 @@ Email:
 # Never put the real API key here: use the ANTHROPIC_API_KEY environment
 # variable, exactly as for GoogleMapsApiKey.
 HelpChat:
-  Enabled: False
+  Enabled: True
   Provider: claude
   DocIndex: %HOME_PATH%Resources\help\scm-help.json
   DocBaseUrl: https://sportclubmanager.it/docs/scm/
+  # The manual (Home\Help, 202 pages converted from the wiki) is written in
+  # Italian: a question asked in another language is turned into Italian search
+  # terms before the manual is searched.
+  DocLanguage: it
+  AssistantName: Assistente SCM
   Claude:
     ApiKey: %ENV(ANTHROPIC_API_KEY)%
     Model: claude-haiku-4-5

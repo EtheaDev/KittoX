@@ -75,6 +75,8 @@ type
     FItems: TStack<TKWebResponseContent>;
     FOwnsResponse: Boolean;
     class threadvar FCurrent: TKWebResponse;
+    class var FNoExpiryCookieValue: TDateTime;
+    function CookieExpires(const AExpires: TDateTime): TDateTime;
     class function GetCurrent: TKWebResponse; static;
     class procedure SetCurrent(const AValue: TKWebResponse); static;
     function GetItems: TKWebResponseContent;
@@ -103,6 +105,31 @@ type
     procedure SetCustomHeader(const AName, AValue: string);
     /// <summary>The custom response headers collection.</summary>
     property CustomHeaders: TStrings read GetCustomHeaders;
+    const
+      /// <summary>
+      ///  AExpires value for a cookie with no expiry of its own: the browser
+      ///  keeps it for the browser session and drops it when the browser
+      ///  closes. The two hosts spell "no expiry" differently (0 for the Indy
+      ///  cookie, -1 for the WebBroker one, and each takes the other's value
+      ///  as a date in 1899, which deletes the cookie on the spot), so the
+      ///  translation is done here and callers only ever pass NO_EXPIRY.
+      /// </summary>
+      NO_EXPIRY: TDateTime = 0;
+
+    /// <summary>
+    ///  How the **active host** wants "no expiry" written into a WebBroker
+    ///  cookie. Default -1, which is what ISAPI and Apache emit nothing for;
+    ///  the standalone Indy host declares 0 in <c>Kitto.Web.Server</c>'s
+    ///  initialization, because its bridge copies the cookie field by field
+    ///  into a <c>TIdCookie</c>, which emits nothing only for 0 — each of the
+    ///  two reads the other's value as a date in 1899 and deletes the cookie.
+    ///  Declared by the host and not deduced from the class of the response:
+    ///  this unit is the host-agnostic wrapper, and asking who is serving is
+    ///  exactly the question it exists not to ask. It also kept the Indy
+    ///  bridge unit out of the core package, where it was being compiled in.
+    /// </summary>
+    class property NoExpiryCookieValue: TDateTime
+      read FNoExpiryCookieValue write FNoExpiryCookieValue;
     /// <summary>Writes a simple cookie (name/value/expiry).</summary>
     procedure SetCookie(const AName, AValue: string; const AExpires: TDateTime);
     /// <summary>
@@ -276,6 +303,15 @@ begin
   FResponse.StatusCode := Value;
 end;
 
+function TKWebResponse.CookieExpires(const AExpires: TDateTime): TDateTime;
+begin
+  if AExpires <> NO_EXPIRY then
+    Exit(AExpires);
+  // The value the active host needs, declared by the host itself: see
+  // NoExpiryCookieValue.
+  Result := FNoExpiryCookieValue;
+end;
+
 procedure TKWebResponse.SetCookie(const AName, AValue: string; const AExpires: TDateTime);
 var
   LCookie: TCookie;
@@ -284,7 +320,7 @@ begin
   LCookie.Name := AName;
   LCookie.Value := AValue;
   LCookie.Path := '/';
-  LCookie.Expires := AExpires;
+  LCookie.Expires := CookieExpires(AExpires);
 end;
 
 procedure TKWebResponse.SetSecureCookie(const AName, AValue: string;
@@ -301,7 +337,7 @@ begin
   LCookie.Name := AName;
   LCookie.Value := AValue;
   LCookie.Path := LPath;
-  LCookie.Expires := AExpires;
+  LCookie.Expires := CookieExpires(AExpires);
   LCookie.HttpOnly := AHttpOnly;
   LCookie.Secure := ASecure;
   LCookie.SameSite := ASameSite;
@@ -323,5 +359,11 @@ begin
   FItems := TStack<TKWebResponseContent>.Create;
   FItems.Push(TKWebResponseContent.Create);
 end;
+
+initialization
+  // The WebBroker meaning of "no expiry", which is what ISAPI and Apache need.
+  // The standalone Indy host overrides it in its own initialization, which runs
+  // after this one because that unit uses this one.
+  TKWebResponse.NoExpiryCookieValue := -1;
 
 end.

@@ -28,7 +28,7 @@ See [LICENSE](LICENSE) for the full text.
 - All `Kitto.Html.*` controllers (List, Form, Wizard, FlexPanel, TreePanel, TabPanel, etc.)
 - All `Kitto.Web.Routing.*` infrastructure (attribute-based routing, dependency injection)
 - All `EF.*` foundation classes (database, YAML, trees, logging)
-- All `Kitto.Auth.*` authenticators (DB, TextFile, OSDB, DBServer)
+- All `Kitto.Auth.*` authenticators (DB, TextFile, Ini, OSDB, DBServer)
 - All `Kitto.AccessControl.*` access controllers
 - All `Kitto.Tool.*` standard tools (Export, SQL, ADO, Indy)
 - Web server infrastructure (Indy standalone, ISAPI, Apache module)

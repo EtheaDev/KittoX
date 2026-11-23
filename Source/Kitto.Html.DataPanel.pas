@@ -525,6 +525,27 @@ begin
   Result := nil;
 end;
 
+/// <summary>
+///  Width style of a filter input from the filter's Width node, in characters
+///  as in the form editors, plus the padding allowance. The same value gives
+///  a text input and a select the same outer width (box-sizing is border-box
+///  on .kx-filter-input), so filters stacked in a column line up. Empty when
+///  Width is absent or zero: the input keeps its natural size.
+/// </summary>
+const
+  // Closing tag of a filter row; SameRow takes it back to extend the row.
+  ROW_CLOSE_TAG = '</div>';
+
+function FilterWidthStyle(const ANode: TEFNode): string;
+var
+  LWidth: Integer;
+begin
+  LWidth := ANode.GetInteger('Width', 0);
+  if LWidth <= 0 then
+    Exit('');
+  Result := 'width:' + IntToStr(LWidth + INPUT_EXTRA_CHS) + 'ch';
+end;
+
 function TKXDataPanelController.BuildFilterPanel(const AViewName: string;
   AViewTable: TKViewTable; out ADefaultFilterExpr: string;
   const AUrlViewName: string): string;
@@ -607,18 +628,33 @@ begin
       // --- Spacer: empty row ---
       else if SameText(LFilterType, 'Spacer') then
       begin
-        SBCol.Append('<div class="kx-filter-row" style="visibility:hidden">&nbsp;</div>');
+        // kx-filter-spacer: as tall as a row with an input, so the rows below it
+        // line up with the other columns (an empty row would be text-high).
+        SBCol.Append('<div class="kx-filter-row kx-filter-spacer" style="visibility:hidden">&nbsp;</div>');
         Continue;
       end
       // --- ApplyButton: handled separately after the loop ---
       else if SameText(LFilterType, 'ApplyButton') then
         Continue;
 
-      // Open filter row
-      SBCol.Append('<div class="kx-filter-row">');
-      SBCol.Append('<label class="kx-filter-label" style="min-width:');
-      SBCol.Append(IntToStr(LCurrentLabelWidth));
-      SBCol.Append('px">');
+      // Open filter row. SameRow: True appends the filter to the row of the
+      // previous one (a short input and a checkbox side by side, for example)
+      // instead of starting a new row: the previous row's closing tag is taken
+      // back and the label is inline, at its natural width, with no column
+      // alignment. The first item of a column always opens a row.
+      if LNode.GetBoolean('SameRow') and (SBCol.Length >= Length(ROW_CLOSE_TAG))
+          and SBCol.ToString(SBCol.Length - Length(ROW_CLOSE_TAG), Length(ROW_CLOSE_TAG)).Equals(ROW_CLOSE_TAG) then
+      begin
+        SBCol.Length := SBCol.Length - Length(ROW_CLOSE_TAG);
+        SBCol.Append('<label class="kx-filter-label kx-filter-label-inline">');
+      end
+      else
+      begin
+        SBCol.Append('<div class="kx-filter-row">');
+        SBCol.Append('<label class="kx-filter-label" style="min-width:');
+        SBCol.Append(IntToStr(LCurrentLabelWidth));
+        SBCol.Append('px">');
+      end;
       SBCol.Append(TNetEncoding.HTML.Encode(LLabel));
       SBCol.Append('</label>');
 
@@ -635,11 +671,18 @@ begin
         LCtx.IsReadOnly := False;
         LCtx.IsRequired := False;
         LCtx.IsKey := False;
+        LCtx.WidthStyle := FilterWidthStyle(LNode);
         if not LHasApplyButton then
           LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="input changed delay:300ms, search"'
         else
           LCtx.ExtraAttrs := '';
-        SBCol.Append(TKXEditorFactory.RenderSearchInput(LCtx, LLabel));
+        // Placeholder: the label, as always, unless the filter has a
+        // Placeholder: node, whose value (even empty) replaces it.
+        if Assigned(LNode.FindNode('Placeholder')) then
+          SBCol.Append(TKXEditorFactory.RenderSearchInput(LCtx,
+            _(LNode.GetExpandedString('Placeholder'))))
+        else
+          SBCol.Append(TKXEditorFactory.RenderSearchInput(LCtx, LLabel));
       end
       // --- DynaList ---
       else if SameText(LFilterType, 'DynaList') then
@@ -682,7 +725,7 @@ begin
         LCtx.IsReadOnly := False;
         LCtx.IsRequired := False;
         LCtx.IsKey := False;
-        LCtx.TriggerWidthStyle := '';
+        LCtx.TriggerWidthStyle := FilterWidthStyle(LNode);
         if not LHasApplyButton then
           LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="change"'
         else
@@ -730,7 +773,7 @@ begin
         LCtx.IsReadOnly := False;
         LCtx.IsRequired := False;
         LCtx.IsKey := False;
-        LCtx.TriggerWidthStyle := '';
+        LCtx.TriggerWidthStyle := FilterWidthStyle(LNode);
         if not LHasApplyButton then
           LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="change"'
         else
@@ -750,7 +793,7 @@ begin
         LCtx.IsReadOnly := False;
         LCtx.IsRequired := False;
         LCtx.IsKey := False;
-        LCtx.TriggerWidthStyle := '';
+        LCtx.TriggerWidthStyle := FilterWidthStyle(LNode);
         if not LHasApplyButton then
           // 'change' fires immediately on calendar-picker selection and also
           // when typed input is committed; some browsers fire it on partial
@@ -848,6 +891,7 @@ begin
         LCtx.IsReadOnly := False;
         LCtx.IsRequired := False;
         LCtx.IsKey := False;
+        LCtx.WidthStyle := FilterWidthStyle(LNode);
         if not LHasApplyButton then
           LCtx.ExtraAttrs := LHxAttrs + 'hx-trigger="input changed delay:300ms"'
         else
@@ -899,7 +943,7 @@ begin
       end;
 
       // Close filter row
-      SBCol.Append('</div>');
+      SBCol.Append(ROW_CLOSE_TAG);
     end;
 
     // Close last column

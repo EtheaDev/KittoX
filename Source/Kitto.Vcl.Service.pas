@@ -26,7 +26,7 @@ uses
   Vcl.SvcMgr,
   EF.Logger,
   Kitto.Types,
-  Kitto.Web.Server,
+  Kitto.Web.Host,
   Kitto.Web.Application;
 
 type
@@ -47,7 +47,7 @@ type
     procedure ServiceStop(Sender: TService; var Stopped: Boolean);
     procedure ServiceAfterInstall(Sender: TService);
   private
-    FServer: TKWebServer;
+    FServer: TKWebHost;
     FLogEndPoint: TKServiceLogEndpoint;
     FServiceDescription: string;
     procedure DoLog(const AString: string);
@@ -112,7 +112,7 @@ begin
   Name := TKConfig.AppName;
   DisplayName := FServiceDescription;
 
-  FServer := TKWebServer.Create(nil);
+  FServer := TKWebHost.CreateDefault;
   FServer.Engine.AddRoute(TKWebApplication.Create);
 
   Configure;

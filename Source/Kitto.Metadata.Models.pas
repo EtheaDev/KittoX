@@ -280,6 +280,7 @@ type
     function GetAliasedDBColumnNameOrExpression: string;
     function GetDisplayTemplate: string;
     function GetBlankValue: Boolean;
+    function GetImages: string;
     function GetAutoCompleteMinChars: Integer;
     function GetLookupFilter: string;
     function GetHTMLEditor: TKHTMLEditorConfig;
@@ -632,6 +633,13 @@ type
     /// </summary>
     [YamlNode('BlankValue', 'False', 'Hide field value when an image is displayed')]
     property BlankValue: Boolean read GetBlankValue;
+
+    /// <summary>Icons shown next to (or instead of) the value in grid cells:
+    /// each child is <icon-name>: <regexp matched against the value>; the first
+    /// match wins. An icon may carry a Color sub-node (hex without #, or a CSS
+    /// colour name). Read by node (FindImagesNode) at render time.</summary>
+    [YamlNode('Images', 'Icons shown with the value (each child is <icon-name>: <regexp matched against the value>; optional Color sub-node)')]
+    property Images: string read GetImages;
 
     /// <summary>
     ///   Indicates how many chars must be edited before the
@@ -2348,6 +2356,13 @@ end;
 function TKModelField.GetBlankValue: Boolean;
 begin
   Result := GetBoolean('BlankValue');
+end;
+
+function TKModelField.GetImages: string;
+begin
+  // RTTI carrier only: the <icon-name>: <regexp> children are read by node
+  // (TKViewField.FindImagesNode) at render time, not through this accessor.
+  Result := '';
 end;
 
 function TKModelField.GetAutoCompleteMinChars: Integer;

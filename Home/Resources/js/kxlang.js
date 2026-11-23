@@ -22,6 +22,22 @@
     }
   }
 
+  // The flag dropdown is a native <details>: it opens and closes on its own
+  // summary, but nothing else closes it. Close every open switcher when the
+  // user clicks (or taps) anywhere outside it, or presses Escape.
+  function closeOpenSwitchers(except) {
+    document.querySelectorAll('details.kx-lang-switcher[open]').forEach(function (d) {
+      if (d !== except) { d.removeAttribute('open'); }
+    });
+  }
+  document.addEventListener('pointerdown', function (ev) {
+    var inside = ev.target && ev.target.closest ? ev.target.closest('details.kx-lang-switcher') : null;
+    closeOpenSwitchers(inside);
+  }, true);
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') { closeOpenSwitchers(null); }
+  });
+
   g.kxLang = {
     // code: a language id offered by the switcher ('it','en','de','es','pt',...)
     set: function (code) {

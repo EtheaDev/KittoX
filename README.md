@@ -63,6 +63,19 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 
 # Release Notes
 
+## 23 Nov 2026: ver. 4.3.0
+
+- **HTTP.sys** as a second host for standalone applications on Windows (`Server/Engine: httpsys`): TLS from the Windows certificate store, no rebuild to switch. Indy stays the default
+- **Fixed** an access violation with concurrent requests of the same session (two tabs, a reload while loading).
+- **Fixed**: a page left idle past the session timeout shows *Session lost or expired* instead of *Resource not found*
+- **Fixed**: the session timeout chosen in the New Project Wizard was ignored; generated applications now honour it
+- New authenticator **`Auth: Ini`**, and user attributes for `Auth: TextFile`
+- **Help Chat**: `openai` provider (OpenAI, Azure, Ollama, LM Studio and compatibles), multiple assistants (`Profiles`), attachments, a new panel (copy, print, language, F1) and better search, also across languages
+- **Grids and filters**: icons and colours by value (`Images`), user number formats in grids and template panels, aligned filters (`Width`, `SameRow`, `Spacer`), free search `Placeholder`
+- `Languages` limits the languages offered; the metadata catalogue opens in a fraction of the time on large projects
+- **KIDE<sup>x</sup>**: Layout preview from the editor, all the new Help Chat settings, `Auth: Ini`
+- **Changed**: ids of nested controllers are now `kx-{View}-{region initials}`; custom CSS or JavaScript using the old ids must be updated
+
 ## 12 Nov 2026: ver. 4.2.2
 
 - Compatibility with Delphi 13.2
@@ -262,7 +275,7 @@ First public release of **Kitto<sup>x</sup>**, the fourth generation of the Kitt
 
 ### Authentication and tools
 
-- Pluggable authenticators `DB`, `DBCrypt`, `TextFile`, `DBServer`, `OSDB`, `Null` and access controllers `DB`, `Null`, with BCrypt hashing, TOTP two-factor and QR code generation
+- Pluggable authenticators `DB`, `DBCrypt`, `TextFile`, `Ini`, `DBServer`, `OSDB`, `Null` and access controllers `DB`, `Null`, with BCrypt hashing, TOTP two-factor and QR code generation
 - CSV and Excel export, SQL tool, file download and upload; FlexCel, ReportBuilder and DebenuQuickPDF integration (commercial)
 
 ### Deployment

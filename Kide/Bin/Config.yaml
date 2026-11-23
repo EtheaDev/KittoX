@@ -29,6 +29,7 @@ Authentication:
     Item: DBServer
     Item: OSDB
     Item: TextFile
+    Item: Ini
     Item: LDAP
 AccessControl:
   AccessControllers:
@@ -48,6 +49,7 @@ HelpChatProviders:
   Item: stub
   Item: docsearch
   Item: claude
+  Item: openai
 ClaudeModels:
   Item: claude-haiku-4-5
   Item: claude-sonnet-5

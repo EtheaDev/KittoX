@@ -222,7 +222,8 @@ function TStandaloneIOTAProjectWizard.GetComment: string;
 begin
   Result := 'Creates a new KittoX standalone Windows application (.exe) that ' +
     'auto-detects whether to run as a Windows Service or a VCL desktop GUI. ' +
-    'Uses the embedded Indy HTTP server. Recommended for production deployment.';
+    'Serves HTTP by itself: on Indy by default, or on HTTP.sys by setting ' +
+    'Server/Engine in Config.yaml. Recommended for production deployment.';
 end;
 
 function TStandaloneIOTAProjectWizard.GetDeployMode: string;

@@ -452,8 +452,14 @@ type
     /// </summary>
     function DerivedFieldsExist: Boolean;
 
-    /// <summary>Returns the field's value→color rules as value/color pairs (for conditional coloring).</summary>
+    /// <summary>Returns the field's conditional colouring rules as <hex-color>: <regexp>
+    /// pairs, from the view field or, failing that, from the model field.</summary>
     function GetColorsAsPairs: TEFPairs;
+
+    /// <summary>Returns the Images node (icon-name: regexp children, each with an
+    /// optional Color sub-node) from the view field or, failing that, from the
+    /// model field. nil when neither declares icons.</summary>
+    function FindImagesNode: TEFNode;
 
     /// <summary>For a reference field with FilterBy nodes, returns the (destination, source, foreign-field)
     /// tuples that constrain the lookup by another field's value.</summary>
@@ -1075,9 +1081,15 @@ type
     function GetWidth: Integer;
     function GetAutoSearchAfterChars: Integer;
     function GetIsRequired: Boolean;
+    function GetPlaceholder: string;
   public
     [YamlNode('DefaultValue', 'Initial search text')]
     property DefaultValue: string read GetDefaultValue;
+
+    /// <summary>Hint shown inside the empty input. Without the node the label
+    /// is used; the node present and empty means no placeholder at all.</summary>
+    [YamlNode('Placeholder', 'Hint shown inside the empty search input (default: the label; empty = none)')]
+    property Placeholder: string read GetPlaceholder;
 
     [YamlRequiredNode('ExpressionTemplate', 'SQL WHERE template with {value} placeholder')]
     property ExpressionTemplate: string read GetExpressionTemplate;
@@ -3123,6 +3135,15 @@ end;
 function TKViewField.GetColorsAsPairs: TEFPairs;
 begin
   Result := GetChildrenAsPairs('Colors', True);
+  if (Result = nil) and Assigned(ModelField) then
+    Result := ModelField.GetChildrenAsPairs('Colors', True);
+end;
+
+function TKViewField.FindImagesNode: TEFNode;
+begin
+  Result := FindNode('Images');
+  if (Result = nil) and Assigned(ModelField) then
+    Result := ModelField.FindNode('Images');
 end;
 
 function TKViewField.GetQualifiedAliasedDBName: string;
@@ -5171,6 +5192,11 @@ end;
 function TKFilterItemFreeSearch.GetIsRequired: Boolean;
 begin
   Result := GetBoolean('IsRequired', False);
+end;
+
+function TKFilterItemFreeSearch.GetPlaceholder: string;
+begin
+  Result := GetExpandedString('Placeholder');
 end;
 
 { TKFilterItemDynaList }

@@ -44,6 +44,7 @@ type
   strict private
     class threadvar FCurrent: TKAuthenticator;
     procedure ClearAuthData;
+    procedure AssignSessionAuthData(const AAuthData: TEFNode);
   strict
   private
     FIsBCrypted: Boolean;
@@ -776,8 +777,15 @@ end;
 
 procedure TKAuthenticator.ClearAuthData;
 begin
-  TKWebSession.Current.AuthData.Clear;
-  DefineAuthData(TKWebSession.Current.AuthData);
+  // Under the session's auth lock: a page refresh of the same session, on
+  // another thread, may be copying this tree right now (RenewSession).
+  TKWebSession.Current.LockAuthData;
+  try
+    TKWebSession.Current.AuthData.Clear;
+    DefineAuthData(TKWebSession.Current.AuthData);
+  finally
+    TKWebSession.Current.UnlockAuthData;
+  end;
 end;
 
 procedure TKAuthenticator.InternalAfterAuthenticate(
@@ -793,13 +801,24 @@ begin
   Result := True;
 end;
 
+procedure TKAuthenticator.AssignSessionAuthData(const AAuthData: TEFNode);
+begin
+  // See ClearAuthData for the lock.
+  TKWebSession.Current.LockAuthData;
+  try
+    TKWebSession.Current.AuthData.Assign(AAuthData);
+  finally
+    TKWebSession.Current.UnlockAuthData;
+  end;
+end;
+
 function TKAuthenticator.Authenticate(const AAuthData: TEFNode): Boolean;
 begin
   Assert(Assigned(AAuthData), 'Assigned(AAuthData)');
 
   Result := False;
   // Make sure the macros are enabled while authenticating.
-  TKWebSession.Current.AuthData.Assign(AAuthData);
+  AssignSessionAuthData(AAuthData);
   try
     InternalBeforeAuthenticate(AAuthData);
     Result := InternalAuthenticate(AAuthData);
@@ -808,7 +827,7 @@ begin
     begin
       InternalAfterAuthenticate(AAuthData);
       // Pick up any data changed by InternalAfterAuthenticate.
-      TKWebSession.Current.AuthData.Assign(AAuthData);
+      AssignSessionAuthData(AAuthData);
       // Issue the JWT cookie once the session carries the final identity, when a
       // JWT envelope is configured. The engine reads the user name and the
       // session claims (display name, database, language).

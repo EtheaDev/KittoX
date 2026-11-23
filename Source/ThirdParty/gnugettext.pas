@@ -579,6 +579,11 @@ type
       procedure WhenNewDomain (const TextDomain:DomainString); virtual; // Override to know when text domain changes. Directory is purely informational
       procedure WhenNewDomainDirectory (const TextDomain:DomainString;const Directory:FilenameString); virtual; // Override to know when any text domain's directory changes. It won't be called if a domain is fixed to a specific file.
     private
+      /// <summary>ETHEA PATCH - this instance is shared between threads: in a
+      /// web application one of them belongs to a session, and two requests of
+      /// that session run at the same time. Everything that reads or writes
+      /// domainlist, curlang or the open .mo files goes through this.</summary>
+      FStateLock: TRTLCriticalSection;
       curlang: LanguageString;
       curGetPluralForm:TGetPluralForm;
       curmsgdomain: DomainString;
@@ -614,7 +619,42 @@ const
 var
   DefaultInstance:TGnuGettextInstance;  /// Default instance of the main API for singlethreaded applications.
 
+type
+  /// <summary>
+  ///  ETHEA PATCH - what to do about a problem this unit used to open a
+  ///  MessageBox for. A server process must not be able to open a dialog: in a
+  ///  Windows service or an ISAPI nobody is there to close it, and the process
+  ///  stops there forever. Assign this to route the message into a log;
+  ///  unassigned, it goes to OutputDebugString and to standard error.
+  /// </summary>
+  TGnuGettextProblemProc = procedure(const AMessage, ATitle: string);
+
+var
+  /// <summary>ETHEA PATCH - see TGnuGettextProblemProc.</summary>
+  GnuGettextOnProblem: TGnuGettextProblemProc = nil;
+
+
 implementation
+
+// ETHEA PATCH - a problem is reported, never shown: see GnuGettextOnProblem.
+procedure GnuGettextReportProblem(const AMessage, ATitle: string);
+begin
+  if Assigned(GnuGettextOnProblem) then
+  begin
+    GnuGettextOnProblem(AMessage, ATitle);
+    Exit;
+  end;
+{$ifdef MSWINDOWS}
+  OutputDebugString(PChar(ATitle + ': ' + AMessage));
+{$endif}
+  if IsConsole then
+    try
+      WriteLn(ErrOutput, ATitle + ': ' + AMessage);
+    except
+      // A console that is not there is not a reason to fail.
+    end;
+end;
+
 
 {$ifndef MSWINDOWS}
 {$ifndef LINUX}
@@ -1311,7 +1351,8 @@ begin
     DebugLogger ('The translation for the language code '+curlang+' (in '+filename+') does not have charset=utf-8 in its Content-Type. Translations are turned off.');
     {$endif}
     {$ifdef MSWINDOWS}
-    MessageBoxW(0,PWideChar(widestring('The translation for the language code '+curlang+' (in '+filename+') does not have charset=utf-8 in its Content-Type. Translations are turned off.')),'Localization problem',MB_OK);
+    // ETHEA PATCH: reported, not shown.
+    GnuGettextReportProblem('The translation for the language code '+curlang+' (in '+filename+') does not have charset=utf-8 in its Content-Type. Translations are turned off.','Localization problem');
     {$endif}
     {$ifdef POSIX}
     writeln ('The translation for the language code '+curlang+' (in '+filename+') does not have charset=utf-8 in its Content-Type. Translations are turned off.');
@@ -1636,7 +1677,13 @@ begin
   {$ifdef DXGETTEXTDEBUG}
   DebugWriteln ('Text domain "'+szDomain+'" is now located at "'+dir+'"');
   {$endif}
-  getdomain(szDomain,DefaultDomainDirectory,CurLang).Directory := dir;
+  // ETHEA PATCH: writes into a domain another thread may be reading.
+  EnterCriticalSection(FStateLock);
+  try
+    getdomain(szDomain,DefaultDomainDirectory,CurLang).Directory := dir;
+  finally
+    LeaveCriticalSection(FStateLock);
+  end;
   WhenNewDomainDirectory (szDomain, szDirectory);
 end;
 
@@ -1655,6 +1702,8 @@ begin
   DebugWriteln('GNU gettext module version: '+VCSVersion);
   DebugWriteln('');
   {$endif}
+  // ETHEA PATCH: see FStateLock.
+  InitializeCriticalSection(FStateLock);
   curGetPluralForm:=GetPluralForm2EN;
   Enabled:=True;
   curmsgdomain:=DefaultTextDomain;
@@ -1681,6 +1730,7 @@ end;
 
 destructor TGnuGettextInstance.Destroy;
 begin
+  // ETHEA PATCH: see FStateLock.
   if savememory <> nil then begin
     savefileCS.BeginWrite;
     try
@@ -1709,6 +1759,7 @@ begin
   FreeAndNil (DebugLog);
   FreeAndNil (DebugLogCS);
   {$endif}
+  DeleteCriticalSection(FStateLock);
   inherited;
 end;
 
@@ -1728,7 +1779,14 @@ begin
     {$endif}
     Result:=szMsgId;
   end else begin
-    Result:=UTF8Decode(EnsureLineBreakInTranslatedString(getdomain(szDomain,DefaultDomainDirectory,CurLang).gettext(StripCRRawMsgId(utf8encode(szMsgId)))));
+    // ETHEA PATCH: the domain and its .mo file are read here, and
+    // UseLanguage may be closing them on another thread.
+    EnterCriticalSection(FStateLock);
+    try
+      Result:=UTF8Decode(EnsureLineBreakInTranslatedString(getdomain(szDomain,DefaultDomainDirectory,CurLang).gettext(StripCRRawMsgId(utf8encode(szMsgId)))));
+    finally
+      LeaveCriticalSection(FStateLock);
+    end;
 
     {$ifdef DXGETTEXTDEBUG}
     if (szMsgId<>'') and (Result='') then
@@ -1957,7 +2015,8 @@ begin
       DebugWriteln ('ERROR: TranslateComponent() was called twice with different languages. This indicates an attempt to switch language at runtime, but by using TranslateComponent every time. This API has changed - please use RetranslateComponent() instead.');
       {$endif}
       {$ifdef mswindows}
-      MessageBox (0,'This application tried to switch the language, but in an incorrect way. The programmer needs to replace a call to TranslateComponent with a call to RetranslateComponent(). The programmer should see the changelog of gnugettext.pas for more information.','Error',MB_OK);
+      // ETHEA PATCH: reported, not shown.
+      GnuGettextReportProblem('This application tried to switch the language, but in an incorrect way. The programmer needs to replace a call to TranslateComponent with a call to RetranslateComponent().','Localization problem');
       {$else}
       writeln ('This application tried to switch the language, but in an incorrect way. The programmer needs to replace a call to TranslateComponent with a call to RetranslateComponent(). The programmer should see the changelog of gnugettext.pas for more information.');
       {$endif}
@@ -2268,10 +2327,18 @@ begin
     {$endif}
   end;
 
-  curlang := LanguageCode;
-  for i:=0 to domainlist.Count-1 do begin
-    dom:=domainlist.Objects[i] as TDomain;
-    dom.SetLanguageCode (curlang);
+  // ETHEA PATCH: this closes and reopens the .mo file of every domain, and
+  // KittoX calls it on EVERY request through ForceLanguage. Another thread of
+  // the same session may be reading those files right now.
+  EnterCriticalSection(FStateLock);
+  try
+    curlang := LanguageCode;
+    for i:=0 to domainlist.Count-1 do begin
+      dom:=domainlist.Objects[i] as TDomain;
+      dom.SetLanguageCode (curlang);
+    end;
+  finally
+    LeaveCriticalSection(FStateLock);
   end;
 
   l2:=lowercase(LeftStr(curlang,2));
@@ -2452,6 +2519,9 @@ var
   idx:integer;
   p:integer;
 begin
+  // ETHEA PATCH: see dgettext.
+  EnterCriticalSection(FStateLock);
+  try
   {$ifdef DXGETTEXTDEBUG}
   DebugWriteln ('dngettext translation (domain '+szDomain+', number is '+IntTostr(Number)+') of '+singular+'/'+plural);
   {$endif}
@@ -2485,6 +2555,9 @@ begin
     end;
     delete (trans,1,p);
     dec (idx);
+  end;
+  finally
+    LeaveCriticalSection(FStateLock);
   end;
 end;
 
@@ -2638,6 +2711,10 @@ function TGnuGettextInstance.Getdomain(const domain:DomainString; const DefaultD
 var
   idx: integer;
 begin
+  // ETHEA PATCH: the list is read AND written here - two threads at the first
+  // call would create two domains and write while the other reads.
+  EnterCriticalSection(FStateLock);
+  try
   idx := domainlist.IndexOf(Domain);
   if idx = -1 then begin
     Result := TDomain.Create;
@@ -2650,6 +2727,9 @@ begin
     domainlist.AddObject(Domain, Result);
   end else begin
     Result := domainlist.Objects[idx] as TDomain;
+  end;
+  finally
+    LeaveCriticalSection(FStateLock);
   end;
 end;
 
@@ -3702,7 +3782,8 @@ end;
 initialization
   {$ifdef DXGETTEXTDEBUG}
   {$ifdef MSWINDOWS}
-  MessageBox (0,'gnugettext.pas debugging is enabled. Turn it off before releasing this piece of software.','Information',MB_OK);
+  // ETHEA PATCH: reported, not shown.
+  GnuGettextReportProblem('gnugettext.pas debugging is enabled. Turn it off before releasing this piece of software.','Localization problem');
   {$endif}
   {$ifdef LINUX}
   writeln (stderr,'gnugettext.pas debugging is enabled. Turn it off before releasing this piece of software.');

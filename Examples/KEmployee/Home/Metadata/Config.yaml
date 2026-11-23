@@ -203,6 +203,21 @@ HelpChat:
   # ANTHROPIC_API_KEY environment variable). Keep the real key out of the public
   # repo, exactly as for GoogleMapsApiKey.
   Provider: claude
+  # The manual of THIS application, not the documentation of the framework:
+  # Home\Help holds the pages, and Tools\build_examples_help.cmd turns them
+  # into the index below. An assistant that answers about KEmployee has no use for
+  # the pages that explain how to write a KittoX application.
+  DocIndex: %HOME_PATH%Resources\help\kemployee-help.json
+  # Declared and empty: this manual is not published anywhere, so a page is
+  # named in the answer and not linked - a link to a page that does not exist
+  # is worse than no link. Set it to the address of the published manual and
+  # the answers start linking.
+  DocBaseUrl: ''
+  # The manual is written in English. It matters when the user reads the chat
+  # in another language: the question is then turned into English search terms
+  # before the manual is searched, because the index is made of its words.
+  DocLanguage: en
+  AssistantName: KEmployee Help
   Claude:
     ApiKey: sk-ant-api03-XYZ
     Model: claude-haiku-4-5

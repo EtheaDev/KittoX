@@ -56,7 +56,14 @@ type
   TKWebRoute = class(TEFSubjectAndObserver)
   private
     FSubscribers: TList<IKWebHandleRequestEventListener>;
-    FIsFatalError: Boolean;
+    // Per THREAD, and shared by all the routes a request goes through. It was
+    // an instance field, but a route is one object serving every thread: the
+    // failure of one request was read by whichever other request finished
+    // next, which then had its session cookie removed and its session
+    // destroyed - somebody else's error, another user's session. Being
+    // per-thread it is also per-request, since a thread serves one at a time.
+    class threadvar FIsFatalError: Boolean;
+    function GetIsError: Boolean;
   strict protected
     procedure BeforeHandleRequest(const ARequest: TKWebRequest; const AResponse: TKWebResponse;
       const AURL: TKWebURL; var AIsAllowed: Boolean); virtual;
@@ -67,7 +74,7 @@ type
   protected
     // This is meant to be accessed by TKWebRouteList that needs to determine if
     // any of its contained routes fired an error.
-    property IsError: Boolean read FIsFatalError;
+    property IsError: Boolean read GetIsError;
   public
     procedure AfterConstruction; override;
     destructor Destroy; override;
@@ -313,6 +320,11 @@ end;
 procedure TKWebRoute.RemoveSubscriber(const ASubscriber: IKWebHandleRequestEventListener);
 begin
   FSubscribers.Remove(ASubscriber);
+end;
+
+function TKWebRoute.GetIsError: Boolean;
+begin
+  Result := FIsFatalError;
 end;
 
 procedure TKWebRoute.SignalFatalError;

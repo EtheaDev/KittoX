@@ -92,6 +92,7 @@ type
   /// </summary>
   TKServerConfig = class(TKConfigReader)
   private
+    FEngine: string;
     FPort: Integer;
     FSessionTimeOut: Integer;
     FThreadPoolSize: Integer;
@@ -103,10 +104,15 @@ type
   public
     destructor Destroy; override;
 
+    [YamlNode('Engine', 'indy', 'HTTP stack of a stand-alone application (ignored under IIS or Apache, which bring their own)')]
+    [YamlEnumValue('indy', 'The stack KittoX has always used: works everywhere, needs no privileges')]
+    [YamlEnumValue('httpsys', 'The kernel-mode stack of Windows, the one IIS sits on: TLS bound with netsh from the certificate store, several processes sharing one port, requests queued while the application restarts. A URL other than localhost needs a reservation (netsh http add urlacl)')]
+    property Engine: string read FEngine;
+
     [YamlNode('Port', '8080', 'HTTP server port')]
     property Port: Integer read FPort;
 
-    [YamlNode('SessionTimeOut', '10', 'Session timeout in minutes')]
+    [YamlNode('SessionTimeOut', '10', 'Session timeout in minutes. Older position, read only when Engine/Session/TimeOut is missing: prefer that one')]
     property SessionTimeOut: Integer read FSessionTimeOut;
 
     [YamlNode('ThreadPoolSize', '20', 'Number of threads in the server pool')]
@@ -145,6 +151,7 @@ end;
 
 procedure TKServerConfig.ReadConfig;
 begin
+  FEngine := GetString('Engine', 'indy');
   FPort := GetInteger('Port', 8080);
   FSessionTimeOut := GetInteger('SessionTimeOut', 10);
   FThreadPoolSize := GetInteger('ThreadPoolSize', 20);

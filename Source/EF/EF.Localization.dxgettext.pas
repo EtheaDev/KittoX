@@ -57,7 +57,8 @@ type
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils,
+  EF.Logger;
 
 { TEFdxgettextLocalizationTool }
 
@@ -99,7 +100,17 @@ begin
   Result := FInstance.gettext(AString);
 end;
 
+// A problem of the translation catalogs used to be a MessageBox inside
+// gnugettext (see the ETHEA PATCH there): in a service or an ISAPI that is a
+// process that stops and waits for a click nobody can give. It is a log line
+// now - and a loud one, because "translations are turned off" is not a detail.
+procedure LogLocalizationProblem(const AMessage, ATitle: string);
+begin
+  TEFLogger.Instance.LogHigh(ATitle + ': ' + AMessage);
+end;
+
 initialization
+  Kitto.gnugettext.GnuGettextOnProblem := LogLocalizationProblem;
   TEFLocalizationToolRegistry.RegisterTool(TEFdxgettextLocalizationTool.Create);
 
 finalization

@@ -61,7 +61,8 @@ implementation
 
 uses
   Kitto.gnugettext,
-  Kitto.Config;
+  Kitto.Config,
+  EF.Logger;
 
 { TKdxgettextLocalizationTool }
 
@@ -112,7 +113,17 @@ begin
   end;
 end;
 
+// A problem of the translation catalogs used to be a MessageBox inside
+// Kitto.gnugettext (see the ETHEA PATCH there): in a service or an ISAPI that is a
+// process that stops and waits for a click nobody can give. It is a log line
+// now - and a loud one, because "translations are turned off" is not a detail.
+procedure LogLocalizationProblem(const AMessage, ATitle: string);
+begin
+  TEFLogger.Instance.LogHigh(ATitle + ': ' + AMessage);
+end;
+
 initialization
+  Kitto.gnugettext.GnuGettextOnProblem := LogLocalizationProblem;
   TEFLocalizationToolRegistry.RegisterTool(TKdxgettextLocalizationTool.Create);
 
 finalization

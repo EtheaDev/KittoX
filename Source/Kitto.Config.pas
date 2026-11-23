@@ -145,6 +145,7 @@ type
     function GetBlobPath: string;
     function GetApplicationNode: string;
     function GetLanguageId: string;
+    function GetLanguages: string;
     function GetDatabaseRouterId: string;
     function GetConfigAppName: string;
     function GetHomeViewName: string;
@@ -185,6 +186,9 @@ type
     class procedure DestroyInstance;
     /// <summary>Builds the per-user format settings from the UserFormats config node.</summary>
     procedure AfterConstruction; override;
+    /// <summary>(Re)builds UserFormatSettings and the global FormatSettings from the
+    /// UserFormats config node; called at construction and on every config reload.</summary>
+    procedure ApplyUserFormats;
     /// <summary>Frees the view and model catalogs and the macro-expansion engine.</summary>
     destructor Destroy; override;
     /// <summary>Reloads the config from disk and refreshes the cached typed config
@@ -498,6 +502,12 @@ type
     [YamlNode('LanguageId', 'Default UI language code (e.g. en, it)')]
     property LanguageId: string read GetLanguageId;
 
+    /// <summary>Comma-separated codes of the languages the LanguageSwitcher
+    /// offers (e.g. "it, de"). Empty: English plus every language with a
+    /// compiled application catalog.</summary>
+    [YamlNode('Languages', 'Languages offered to the user, comma-separated (e.g. it, de); empty = all with a catalog, plus English')]
+    property Languages: string read GetLanguages;
+
     /// <summary>Database router plugin id (routes model -> database at run time).
     /// The router's own configuration lives in the node's children and is
     /// plugin-specific, so only the id is described here.</summary>
@@ -615,13 +625,20 @@ uses
   Kitto.Metadata.Context;
 
 procedure TKConfig.AfterConstruction;
+begin
+  inherited;
+  ApplyUserFormats;
+end;
+
+procedure TKConfig.ApplyUserFormats;
 var
   LDecimalSeparator: string;
   LThousandSeparator: string;
 begin
-  inherited;
   { TODO : allow to change format settings on a per-user basis. }
-  FUserFormatSettings := FormatSettings.Create;
+  // Start from the OS locale every time, so a value removed from the config
+  // on a reload goes back to the locale default.
+  FUserFormatSettings := TFormatSettings.Create;
 
   if UserFormats.Time <> '' then
     FUserFormatSettings.ShortTimeFormat := UserFormats.Time;
@@ -697,6 +714,9 @@ begin
     FDefaults.Refresh(Config.FindNode('Defaults'));
   if FDesktop <> nil then
     FDesktop.Refresh(Config.FindNode('Desktop'));
+  // The user formats are derived from the UserFormats node: recompute them,
+  // otherwise a reload (e.g. once the Home path is known) keeps the old values.
+  ApplyUserFormats;
 end;
 
 function TKConfig.Authenticator: TKAuthenticator;
@@ -1035,6 +1055,11 @@ begin
   Result := Config.GetString('LanguageId', '');
 end;
 
+function TKConfig.GetLanguages: string;
+begin
+  Result := Config.GetString('Languages', '');
+end;
+
 function TKConfig.GetDatabaseRouterId: string;
 begin
   Result := Config.GetString('DatabaseRouter', '');
@@ -1275,13 +1300,21 @@ begin
   if TryPath('..\..\Externals\KittoX\Home\') then Exit;
   if TryPath('..\..\..\KittoX\Home\') then Exit;
   if TryPath('..\..\..\..\KittoX\Home\') then Exit;
+  // One level deeper: KittoX\MyProjects\{Customer}\{App}\Home\
+  if TryPath('..\..\..\..\..\KittoX\Home\') then Exit;
 
   // IIS/ISAPI deploy: DLL in App\{AppName}\Home\, System Home in ..\..\..\Home\
   // e.g. C:\inetpub\KittoX\App\HelloKitto\Home\ → C:\inetpub\KittoX\Home\
   if TryPath('..\..\..\Home\') then Exit;
 
-  // Environment variable
+  // Environment variables: KITTOX, then KITTOX_HOME (the one the project
+  // templates use in the .dproj search path, so a developer machine that
+  // builds has it already).
   Result := '%KITTOX%\Home\';
+  ExpandEnvironmentVariables(Result);
+  if DirectoryExists(Result) then
+    Exit;
+  Result := '%KITTOX_HOME%\Home\';
   ExpandEnvironmentVariables(Result);
   if DirectoryExists(Result) then
     Exit;

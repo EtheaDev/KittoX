@@ -88,8 +88,13 @@ begin
   // TKConfig.AfterConstruction applies each only when non-empty.
   FDate := GetString('Date');
   FTime := GetString('Time');
+  // Short and long key names are both accepted; the short one wins when both are set.
   FDecimal := GetString('Decimal');
+  if FDecimal = '' then
+    FDecimal := GetString('DecimalSeparator');
   FThousand := GetString('Thousand');
+  if FThousand = '' then
+    FThousand := GetString('ThousandSeparator');
   FCurrency := GetString('Currency');
 end;
 

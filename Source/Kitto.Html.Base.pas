@@ -96,6 +96,7 @@ type
     FView: TKView;
     [unsafe] FContainer: IKXContainer;
     FRefCount: Integer;
+    FHtmlIdSuffix: string;
     class var FSequence: Integer;
     class function NextSequence: Integer;
   strict protected
@@ -123,9 +124,20 @@ type
 
     /// <summary>
     ///  Returns a unique HTML element id for this component.
-    ///  Format: 'kx-{ViewName}' or 'kx-{ControllerType}-{sequence}'.
+    ///  Format: 'kx-{ViewName}' for a view's root controller,
+    ///  'kx-{ViewName}-{Region initials}' for an inline sub-controller of that view
+    ///  (see HtmlIdSuffix), or 'kx-{ControllerType}-{sequence}' without a view.
     /// </summary>
     function GetHtmlId: string; virtual;
+
+    /// <summary>
+    ///  Path of the inline sub-view this component was created from, relative
+    ///  to its view, as region initials (e.g. 'WS' = WestView > SouthView). Set
+    ///  by the controller factory; empty for a view's root controller. It keeps
+    ///  the element ids of nested controllers distinct from the root's, which
+    ///  the client scripts address as 'kx-{ViewName}'.
+    /// </summary>
+    property HtmlIdSuffix: string read FHtmlIdSuffix write FHtmlIdSuffix;
 
     /// <summary>
     ///  Renders this component to an HTML string.
@@ -201,7 +213,11 @@ end;
 function TKXComponent.GetHtmlId: string;
 begin
   if Assigned(FView) and (FView.PersistentName <> '') then
-    Result := 'kx-' + FView.PersistentName
+  begin
+    Result := 'kx-' + FView.PersistentName;
+    if FHtmlIdSuffix <> '' then
+      Result := Result + '-' + FHtmlIdSuffix;
+  end
   else
     Result := 'kx-' + StripPrefix(ClassName, 'TKX') + '-' + IntToStr(NextSequence);
 end;

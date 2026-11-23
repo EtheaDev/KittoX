@@ -79,6 +79,11 @@ type
     FCreationDateTime: TDateTime;
     FTimeout: Double;
     FStores: TObjectDictionary<string, TKViewTableStore>;
+    // Requests currently being served on this object, and whether it has left
+    // the session list. Both belong to TKWebSessions and are read and written
+    // only under its lock: see TKWebSessions.ReleaseSession.
+    FRequestCount: Integer;
+    FIsRetired: Boolean;
     class threadvar FCurrent: TKWebSession;
     function GetDisplayName: string;
     procedure SetLanguage(const AValue: string);
@@ -134,6 +139,17 @@ type
     ///  authentication).
     /// </summary>
     property AuthData: TEFNode read FAuthData;
+    /// <summary>
+    ///  Brackets a wholesale rewrite of AuthData (clear, assign) and the copy a
+    ///  page refresh takes of it. Two requests of the same session run on two
+    ///  threads: without this, the refresh of one copied the tree while the
+    ///  logout of the other was freeing its nodes. It does NOT make every read
+    ///  of AuthData safe against a concurrent rewrite - it makes the rewrites
+    ///  and the copy atomic with respect to each other.
+    /// </summary>
+    procedure LockAuthData;
+    /// <summary>Ends the section opened by LockAuthData.</summary>
+    procedure UnlockAuthData;
     /// <summary>
     ///  Returns True if authentication has successfully taken
     ///  place.
@@ -297,11 +313,15 @@ type
     TKWebSessionProc = TProc<TKWebSession>;
   private
     FSessions: TObjectList<TKWebSession>;
+    // Sessions that have left FSessions while a request was still being served
+    // on them. They are freed by ReleaseSession, when the last request ends.
+    FRetiredSessions: TObjectList<TKWebSession>;
     FTimeout: Double;
     FOnSessionEnd: TKWebSessionProc;
     FOnSessionStart: TKWebSessionProc;
     function CreateNewSessionId: string;
     function FindSessionById(const ASessionId: string): TKWebSession;
+    procedure RetireOrFree(const ASession: TKWebSession);
   protected
     procedure SessionAdded(const ASession: TKWebSession);
     procedure SessionRemoved(const ASession: TKWebSession);
@@ -324,9 +344,36 @@ type
     ///  is created — never one belonging to another client. AClientAddress is
     ///  recorded on the new session, it is not a matching key. ACreated is set to
     ///  True when a new session was created.
+    ///  The session is returned ACQUIRED: it counts one more request being
+    ///  served on it, and will not be freed - by a page refresh, by the cleanup
+    ///  thread, by anybody - until the caller gives it back with
+    ///  ReleaseSession. Every call must be paired with one.
     /// </summary>
     function FindOrCreateSession(const ASessionId, AClientAddress: string;
       out ACreated: Boolean): TKWebSession;
+
+    /// <summary>
+    ///  Page refresh: replaces ASession, which the caller has acquired, with a
+    ///  new session carrying the same id, and returns the new one, acquired in
+    ///  its place. The authentication state, the database and the
+    ///  application-issued reload flag are carried over; everything else (open
+    ///  stores above all) starts empty, which is what a page load means.
+    ///  The old object is NOT freed here: other requests of the same session
+    ///  may be in flight on other threads, holding a pointer to it. It leaves
+    ///  the list at once, so no new request finds it, and is freed when the
+    ///  last request being served on it ends.
+    ///  The language is left to the caller, because setting it goes through
+    ///  the current thread's session.
+    /// </summary>
+    function RenewSession(const ASession: TKWebSession;
+      const AClientAddress: string): TKWebSession;
+
+    /// <summary>
+    ///  Gives back a session acquired by FindOrCreateSession or RenewSession.
+    ///  If the session has left the list in the meantime and this was the last
+    ///  request on it, it is freed here.
+    /// </summary>
+    procedure ReleaseSession(const ASession: TKWebSession);
 
     /// <summary>
     ///  Returns all sessions as an array for reporting and diagnostic purposes.
@@ -339,14 +386,26 @@ type
     function SetSessionDisplayName(const ASessionId, ADisplayName: string): Boolean;
 
     /// <summary>
-    ///  Deletes and frees the specified session.
+    ///  How many sessions have left the list and are waiting for their last
+    ///  request to end before being freed. Zero when the server is idle: a
+    ///  number that stays above zero then means a request acquired a session
+    ///  and never gave it back.
+    /// </summary>
+    function GetRetiredSessionCount: Integer;
+
+    /// <summary>
+    ///  Removes the specified session from the list, so that no new request
+    ///  finds it, and frees it - at once if no request is being served on it,
+    ///  otherwise when the last one ends (ReleaseSession).
     /// </summary>
     procedure RemoveSession(const ASession: TKWebSession);
 
     /// <summary>Removes and frees all sessions.</summary>
     procedure ClearSessions;
 
-    /// <summary>Removes and frees the sessions that have expired (per their timeout).</summary>
+    /// <summary>Removes and frees the sessions that have expired (per their
+    /// timeout). A session with a request in flight is never expired: it is
+    /// in use by definition, whatever its last recorded activity says.</summary>
     procedure CleanupExpiredSessions;
 
     /// <summary>Fired when a new session is created.</summary>
@@ -433,23 +492,53 @@ begin
   inherited;
 end;
 
+procedure TKWebSession.LockAuthData;
+begin
+  // The monitor of the session itself: nothing else uses it.
+  TMonitor.Enter(Self);
+end;
+
+procedure TKWebSession.UnlockAuthData;
+begin
+  TMonitor.Exit(Self);
+end;
+
 procedure TKWebSession.RegisterStore(const AViewName: string; AStore: TKViewTableStore);
 begin
   // If a store was already registered for this view, it is freed and replaced
   // (TObjectDictionary with doOwnsValues frees the old value on AddOrSetValue).
-  FStores.AddOrSetValue(AViewName, AStore);
+  // Requests of the same session run in parallel - a page asks for several
+  // views at once - and a dictionary does not survive two threads adding to
+  // it. The lock guards the dictionary, not what is done with a store once
+  // found.
+  TMonitor.Enter(FStores);
+  try
+    FStores.AddOrSetValue(AViewName, AStore);
+  finally
+    TMonitor.Exit(FStores);
+  end;
 end;
 
 function TKWebSession.FindStore(const AViewName: string): TKViewTableStore;
 begin
-  if not FStores.TryGetValue(AViewName, Result) then
-    Result := nil;
+  TMonitor.Enter(FStores);
+  try
+    if not FStores.TryGetValue(AViewName, Result) then
+      Result := nil;
+  finally
+    TMonitor.Exit(FStores);
+  end;
 end;
 
 procedure TKWebSession.UnregisterStore(const AViewName: string);
 begin
   // TObjectDictionary frees the store object on Remove.
-  FStores.Remove(AViewName);
+  TMonitor.Enter(FStores);
+  try
+    FStores.Remove(AViewName);
+  finally
+    TMonitor.Exit(FStores);
+  end;
 end;
 
 class procedure TKWebSession.SetCurrent(const Value: TKWebSession);
@@ -629,6 +718,7 @@ procedure TKWebSessions.AfterConstruction;
 begin
   inherited;
   FSessions := TObjectList<TKWebSession>.Create;
+  FRetiredSessions := TObjectList<TKWebSession>.Create;
 end;
 
 procedure TKWebSessions.CleanupExpiredSessions;
@@ -641,7 +731,12 @@ begin
     for I := FSessions.Count - 1 downto 0 do
     begin
       LSession := FSessions[I];
-      if LSession.HasExpired then
+      // A session with a request in flight is in use, whatever HasExpired
+      // says: a request that outlasts the timeout, or one that arrived an
+      // instant before it and has not recorded its activity yet. Freeing it
+      // here pulled the object from under that request. It will be looked at
+      // again at the next round.
+      if (LSession.FRequestCount = 0) and LSession.HasExpired then
       begin
         FSessions.Extract(LSession);
         try
@@ -676,12 +771,121 @@ begin
       try
         SessionRemoved(ASession);
       finally
-        ASession.Free;
+        RetireOrFree(ASession);
       end;
     end;
   finally
     MonitorExit(FSessions);
   end;
+end;
+
+procedure TKWebSessions.RetireOrFree(const ASession: TKWebSession);
+begin
+  // Called under the lock, on a session already extracted from FSessions.
+  // This is the one place that decides the fate of a session that has left the
+  // list. It used to be freed on the spot, and that was the access violation
+  // under concurrent requests of the same session: the page refresh of one
+  // request freed the object another thread was still working on - its
+  // gettext instance, its auth data, its strings.
+  if ASession.FRequestCount > 0 then
+  begin
+    ASession.FIsRetired := True;
+    FRetiredSessions.Add(ASession);
+  end
+  else
+    ASession.Free;
+end;
+
+function TKWebSessions.GetRetiredSessionCount: Integer;
+begin
+  MonitorEnter(FSessions);
+  try
+    Result := FRetiredSessions.Count;
+  finally
+    MonitorExit(FSessions);
+  end;
+end;
+
+procedure TKWebSessions.ReleaseSession(const ASession: TKWebSession);
+begin
+  if not Assigned(ASession) then
+    Exit;
+  MonitorEnter(FSessions);
+  try
+    Assert(ASession.FRequestCount > 0,
+      'ReleaseSession without a matching acquire: ' + ASession.SessionId);
+    Dec(ASession.FRequestCount);
+    if ASession.FIsRetired and (ASession.FRequestCount = 0) then
+      // Owned by the list: Remove frees it.
+      FRetiredSessions.Remove(ASession);
+  finally
+    MonitorExit(FSessions);
+  end;
+end;
+
+function TKWebSessions.RenewSession(const ASession: TKWebSession;
+  const AClientAddress: string): TKWebSession;
+var
+  LListed: TKWebSession;
+  LSource: TKWebSession;
+begin
+  Assert(Assigned(ASession), 'Assigned(ASession)');
+
+  MonitorEnter(FSessions);
+  try
+    // The session this id leads to NOW. Usually ASession itself; a different
+    // object when another page refresh got here first (two tabs reloading
+    // together), none when the session was removed in the meantime. The state
+    // is taken from the listed one, as it would be had this request arrived a
+    // moment later, and that is the one replaced: an id must never lead to two
+    // live sessions.
+    LListed := FindSessionById(ASession.SessionId);
+    if Assigned(LListed) then
+      LSource := LListed
+    else
+      LSource := ASession;
+
+    Result := TKWebSession.Create(AClientAddress, ASession.SessionId, FTimeout);
+    // Carry the state over while nobody can find either object half-done: the
+    // new one is not in the list yet. The owner of the old one may be logging
+    // out or in at this very moment, on its own thread - hence the auth lock.
+    LSource.LockAuthData;
+    try
+      Result.FIsAuthenticated := LSource.FIsAuthenticated;
+      if Result.FIsAuthenticated then
+        Result.FAuthData.Assign(LSource.FAuthData);
+    finally
+      LSource.UnlockAuthData;
+    end;
+    Result.FReloadingHome := LSource.FReloadingHome;
+    Result.FDatabaseName := LSource.FDatabaseName;
+
+    // The caller's acquire moves from the old object to the new one.
+    Result.FRequestCount := 1;
+    Assert(ASession.FRequestCount > 0,
+      'RenewSession on a session not acquired: ' + ASession.SessionId);
+    Dec(ASession.FRequestCount);
+
+    if Assigned(LListed) then
+      FSessions.Extract(LListed);
+    FSessions.Add(Result);
+    // If ASession is not the listed one it is already out of the list, and
+    // whoever took it out announced its end and retired it: this request was
+    // what kept it alive, so it may go now.
+    if (ASession <> LListed) and ASession.FIsRetired and (ASession.FRequestCount = 0) then
+      FRetiredSessions.Remove(ASession);
+    if Assigned(LListed) then
+    begin
+      try
+        SessionRemoved(LListed);
+      finally
+        RetireOrFree(LListed);
+      end;
+    end;
+  finally
+    MonitorExit(FSessions);
+  end;
+  SessionAdded(Result);
 end;
 
 procedure TKWebSessions.SessionAdded(const ASession: TKWebSession);
@@ -699,6 +903,8 @@ end;
 destructor TKWebSessions.Destroy;
 begin
   FreeAndNil(FSessions);
+  // Whatever is still here at shutdown had a request that never gave it back.
+  FreeAndNil(FRetiredSessions);
   inherited;
 end;
 
@@ -789,6 +995,7 @@ begin
     if Assigned(Result) then
     begin
       ACreated := False;
+      Inc(Result.FRequestCount);
       Exit;
     end;
 
@@ -798,6 +1005,7 @@ begin
     else
       LSessionId := CreateNewSessionId;
     Result := TKWebSession.Create(AClientAddress, LSessionId, FTimeout);
+    Result.FRequestCount := 1;
     FSessions.Add(Result);
     ACreated := True;
   finally

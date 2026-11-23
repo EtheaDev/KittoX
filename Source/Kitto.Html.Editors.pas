@@ -211,6 +211,8 @@ begin
   Result := Result + ' placeholder="' + TNetEncoding.HTML.Encode(APlaceholder) + '"';
   if ACtx.Value <> '' then
     Result := Result + ' value="' + TNetEncoding.HTML.Encode(ACtx.Value) + '"';
+  if ACtx.WidthStyle <> '' then
+    Result := Result + ' style="' + ACtx.WidthStyle + '"';
   Result := Result + ' />';
 end;
 
@@ -421,6 +423,8 @@ begin
   Result := '<input type="number" class="' + ACtx.CssInputClass + '" ' + LAttrs;
   if ACtx.Value <> '' then
     Result := Result + ' value="' + TNetEncoding.HTML.Encode(ACtx.Value) + '"';
+  if ACtx.WidthStyle <> '' then
+    Result := Result + ' style="' + ACtx.WidthStyle + '"';
   Result := Result + ' />';
 end;
 

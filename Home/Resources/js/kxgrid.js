@@ -229,6 +229,33 @@ function kxServerErrorText(status) {
 }
 
 /**
+ * If the Response carries X-KittoX-Dialog, appends the dialog it holds to the
+ * page (the body is either the bare overlay fragment or, for a request without
+ * HX-Request, a whole page with the overlay inside) and returns true. Returns
+ * false for anything else -- no Response, no marker, body already consumed --
+ * leaving the caller to report the error its own way.
+ */
+function kxShowDialogResponse(response) {
+  if (!response || !response.headers || typeof response.headers.get !== 'function'
+      || typeof response.text !== 'function' || response.bodyUsed) return false;
+  var kind;
+  try { kind = response.headers.get('X-KittoX-Dialog'); } catch (e) { return false; }
+  if (!kind) return false;
+  response.text().then(function(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var overlay = doc.querySelector('.kx-msgbox-overlay');
+    if (overlay) {
+      document.body.appendChild(document.adoptNode(overlay));
+    } else {
+      kxReportRequestError({ status: response.status });
+    }
+  }).catch(function() {
+    kxReportRequestError({ status: response.status });
+  });
+  return true;
+}
+
+/**
  * Surfaces a failed user-initiated request with the standard error dialog,
  * offering [Retry]/[Reset] like the global htmx error handler. Pass the failing
  * Response (its .status drives the message) or nothing / an Error for a
@@ -241,6 +268,14 @@ function kxServerErrorText(status) {
 function kxReportRequestError(errOrResponse, onRetry) {
   var S = window.KX_STRINGS || {};
   var msg;
+  // A response carrying X-KittoX-Dialog IS the message: the server answered
+  // with a modal dialog (a rule error, "session lost or expired"...) sent with
+  // its true status, so logs and DevTools see the failure. On the htmx channel
+  // the page template's htmx:beforeSwap handler opts it back into the swap; on
+  // this fetch channel nobody did, and the user got the generic "Internal
+  // server error" in place of what the server actually said (opening a record
+  // after the session had expired, for instance). Attach the dialog instead.
+  if (kxShowDialogResponse(errOrResponse)) return;
   if (errOrResponse && typeof errOrResponse.status === 'number' && errOrResponse.status > 0) {
     msg = kxServerErrorText(errOrResponse.status);
   } else {

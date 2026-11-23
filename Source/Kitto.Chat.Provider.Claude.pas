@@ -112,7 +112,7 @@ type
     /// normalized (no trailing slash); SystemPrompt is the raw override ('' means
     /// the provider applies its localized default). AConfig is normally
     /// TKConfig.Instance.Config.</summary>
-    constructor Create(const AConfig: TEFTree);
+    constructor Create(const AConfig: TEFTree; const AProfile: string = '');
 
     [YamlNode('ApiKey', 'Anthropic API key. Supports %ENV(ANTHROPIC_API_KEY)%; falls back to the ANTHROPIC_API_KEY env var when empty')]
     property ApiKey: string read FApiKey;
@@ -153,8 +153,12 @@ type
     destructor Destroy; override;
     function GetName: string; override;
     function SupportsStreaming: Boolean; override;
+    function CompleteText(const APrompt: string; const AMaxTokens: Integer;
+      const ACancel: IKXChatCancelToken): string; override;
+    procedure Configure(const AProfile: string); override;
     function Generate(const AHistory: TArray<TKXChatMessage>;
-      const AContext: TKXChatContext; const AOnToken: TKXChatTokenProc): string; override;
+      const AContext: TKXChatContext; const AOnToken: TKXChatTokenProc;
+      const ACancel: IKXChatCancelToken): string; override;
   end;
 
 const
@@ -166,12 +170,17 @@ implementation
 uses
   System.SysUtils,
   System.Classes,
+  System.Generics.Collections,
   System.StrUtils,
   System.JSON,
   System.Net.HttpClient,
   System.Net.URLClient,
   EF.Localization,
+  EF.Logger,
   Kitto.Config,
+  Kitto.Chat.Attachments,
+  Kitto.Chat.Prompt,
+  Kitto.Chat.Stream,
   Kitto.Chat.DocSearch;
 
 type
@@ -184,148 +193,31 @@ type
   ///  full decoded body is also kept so a non-SSE error response (HTTP >= 400
   ///  returns a plain JSON error, not a stream) can be reported.
   /// </summary>
-  TKXAnthropicStream = class(TStream)
-  strict private
-    FOnToken: TKXChatTokenProc;
-    FPending: TBytes;       // bytes not yet forming a complete line
-    FText: TStringBuilder;  // accumulated assistant text (the returned reply)
-    FRaw: TStringBuilder;   // full decoded body (for error extraction)
-    FError: string;         // set on a mid-stream {"type":"error"} event
-    FWritten: Int64;
-    procedure ProcessLine(const ALine: string);
-    procedure Drain(const AFlushRemainder: Boolean);
-    function GetText: string;
-    function GetRaw: string;
-  public
-    constructor Create(const AOnToken: TKXChatTokenProc);
-    destructor Destroy; override;
-    function Read(var Buffer; Count: Longint): Longint; override;
-    function Write(const Buffer; Count: Longint): Longint; override;
-    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
-    /// <summary>Flushes any trailing partial line (the body may not end in a newline).</summary>
-    procedure Finish;
-    property Text: string read GetText;
-    property Raw: string read GetRaw;
-    property Error: string read FError;
+  /// <summary>
+  ///  The sink of the Anthropic stream: the machinery is the shared one, what
+  ///  is Anthropic's is the shape of the events - a content_block_delta
+  ///  carrying a text_delta, and an error event.
+  /// </summary>
+  TKXAnthropicStream = class(TKXChatSSEStream)
+  protected
+    procedure ProcessLine(const ALine: string); override;
   end;
-
 { TKXAnthropicStream }
 
-constructor TKXAnthropicStream.Create(const AOnToken: TKXChatTokenProc);
-begin
-  inherited Create;
-  FOnToken := AOnToken;
-  FText := TStringBuilder.Create;
-  FRaw := TStringBuilder.Create;
-end;
 
-destructor TKXAnthropicStream.Destroy;
-begin
-  FText.Free;
-  FRaw.Free;
-  inherited;
-end;
 
-function TKXAnthropicStream.GetText: string;
-begin
-  Result := FText.ToString;
-end;
 
-function TKXAnthropicStream.GetRaw: string;
-begin
-  Result := FRaw.ToString;
-end;
 
-function TKXAnthropicStream.Read(var Buffer; Count: Longint): Longint;
-begin
-  Result := 0; // write-only sink
-end;
 
-function TKXAnthropicStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
-begin
-  // THTTPClient treats the response stream as an append sink; report the end.
-  Result := FWritten;
-end;
 
-function TKXAnthropicStream.Write(const Buffer; Count: Longint): Longint;
-var
-  LOld: Integer;
-begin
-  if Count > 0 then
-  begin
-    LOld := Length(FPending);
-    SetLength(FPending, LOld + Count);
-    Move(Buffer, FPending[LOld], Count);
-    Inc(FWritten, Count);
-    Drain(False);
-  end;
-  Result := Count;
-end;
 
-procedure TKXAnthropicStream.Finish;
-begin
-  Drain(True);
-end;
 
-procedure TKXAnthropicStream.Drain(const AFlushRemainder: Boolean);
-var
-  I, LStart, LLen: Integer;
-  LLineBytes: TBytes;
-  LRemainder: TBytes;
-
-  procedure Emit(const ABytes: TBytes);
-  var
-    LDecoded: string;
-    LTrimmed: TBytes;
-    LN: Integer;
-  begin
-    LN := Length(ABytes);
-    // A complete line ends before the #10; strip a trailing #13 (CRLF).
-    if (LN > 0) and (ABytes[LN - 1] = 13) then
-    begin
-      LTrimmed := System.Copy(ABytes, 0, LN - 1);
-      LDecoded := TEncoding.UTF8.GetString(LTrimmed);
-    end
-    else
-      LDecoded := TEncoding.UTF8.GetString(ABytes);
-    FRaw.Append(LDecoded).Append(#10);
-    ProcessLine(LDecoded);
-  end;
-
-begin
-  LStart := 0;
-  I := 0;
-  while I < Length(FPending) do
-  begin
-    if FPending[I] = 10 then // #10 line feed
-    begin
-      LLineBytes := System.Copy(FPending, LStart, I - LStart);
-      Emit(LLineBytes);
-      LStart := I + 1;
-    end;
-    Inc(I);
-  end;
-
-  LLen := Length(FPending) - LStart;
-  if LLen > 0 then
-    LRemainder := System.Copy(FPending, LStart, LLen)
-  else
-    LRemainder := nil;
-
-  if AFlushRemainder and (Length(LRemainder) > 0) then
-  begin
-    Emit(LRemainder);
-    LRemainder := nil;
-  end;
-
-  FPending := LRemainder;
-end;
 
 procedure TKXAnthropicStream.ProcessLine(const ALine: string);
 var
   LData: string;
   LRoot, LDelta, LErr: TJSONObject;
-  LType, LToken: string;
+  LType: string;
 begin
   // Only SSE payload lines matter; ignore "event:" lines and blank separators.
   if not ALine.StartsWith('data:') then
@@ -348,22 +240,16 @@ begin
       LDelta := LRoot.GetValue('delta') as TJSONObject;
       if (LDelta <> nil) and (LDelta.GetValue<string>('type', '') = 'text_delta') then
       begin
-        LToken := LDelta.GetValue<string>('text', '');
-        if LToken <> '' then
-        begin
-          FText.Append(LToken);
-          if Assigned(FOnToken) then
-            FOnToken(LToken);
-        end;
+        Emit(LDelta.GetValue<string>('text', ''));
       end;
     end
     else if LType = 'error' then
     begin
       LErr := LRoot.GetValue('error') as TJSONObject;
       if LErr <> nil then
-        FError := LErr.GetValue<string>('message', _('The AI provider returned an error.'))
+        Fail(LErr.GetValue<string>('message', _('The AI provider returned an error.')))
       else
-        FError := _('The AI provider returned an error.');
+        Fail(_('The AI provider returned an error.'));
     end;
   finally
     LRoot.Free;
@@ -372,77 +258,55 @@ end;
 
 { Helpers }
 
-// The last user message is the current question (grounding + safety).
-function LastUserMessage(const AHistory: TArray<TKXChatMessage>): string;
+
+
+// The content of the user turn the attachments belong to: a document block per
+// PDF, an image block per picture, and the text last - the order Anthropic
+// recommends, because a question read after its documents is answered against
+// them. A text attachment is not a block: it was decoded when it arrived and is
+// already part of that text. The caller owns the array.
+function BuildUserContent(const AText: string;
+  const AAttachments: TArray<TKXChatAttachment>): TJSONArray;
 var
+  LBlock, LSource: TJSONObject;
   I: Integer;
 begin
-  Result := '';
-  for I := High(AHistory) downto Low(AHistory) do
-    if AHistory[I].Role = crUser then
-      Exit(AHistory[I].Content);
-end;
-
-// Builds the system prompt: base instruction (+ optional override), the current
-// view context, and the RAG grounding block (best-matching doc pages).
-function BuildSystemPrompt(const AHistory: TArray<TKXChatMessage>;
-  const AContext: TKXChatContext; const ASystemPromptOverride: string;
-  const AGroundingMaxPages: Integer): string;
-var
-  LBase, LQuestion, LScreen: string;
-  LSb: TStringBuilder;
-  LPages: TArray<TKXHelpPage>;
-  I: Integer;
-begin
-  // Use the configured override if present, else the localized default. The
-  // literal is kept here (not a constant) so dxgettext can extract it.
-  LBase := ASystemPromptOverride;
-  if LBase = '' then
-    LBase := _('You are the in-app help assistant for a web application built with the KittoX framework. ' +
-      'Answer the user concisely and practically, focusing on how to use the application. ' +
-      'Prefer the documentation excerpts provided below when they are relevant, and cite the linked page. ' +
-      'If you are not sure, say so and point to the documentation rather than inventing details. ' +
-      'Reply in the same language as the user. You may use short Markdown (links, bold, inline code).');
-
-  LSb := TStringBuilder.Create;
+  Result := TJSONArray.Create;
   try
-    LSb.Append(LBase);
-
-    // Context of the screen the chat was opened from, when available.
-    if (AContext.ViewName <> '') or (AContext.ControllerType <> '') then
+    for I := Low(AAttachments) to High(AAttachments) do
     begin
-      if AContext.ViewLabel <> '' then
-        LScreen := AContext.ViewLabel
+      if (AAttachments[I].Kind = cakText) or (Length(AAttachments[I].Data) = 0) then
+        Continue;
+      LSource := TJSONObject.Create;
+      LSource.AddPair('type', 'base64');
+      LSource.AddPair('media_type', AAttachments[I].MediaType);
+      LSource.AddPair('data', AAttachments[I].Base64);
+      LBlock := TJSONObject.Create;
+      if AAttachments[I].Kind = cakImage then
+        LBlock.AddPair('type', 'image')
       else
-        LScreen := AContext.ViewName;
-      LSb.Append(#10#10);
-      LSb.Append(Format(_('The user is currently on the "%s" screen (controller type: %s).'),
-        [LScreen, AContext.ControllerType]));
-    end;
-
-    // RAG grounding: inject the best-matching documentation pages.
-    if AGroundingMaxPages <> 0 then
-    begin
-      LQuestion := LastUserMessage(AHistory);
-      LPages := KXSearchHelpPages(LQuestion, AContext.ControllerType, AGroundingMaxPages);
-      if Length(LPages) > 0 then
       begin
-        LSb.Append(#10#10);
-        LSb.Append(_('Relevant documentation excerpts:'));
-        for I := Low(LPages) to High(LPages) do
-        begin
-          LSb.Append(#10#10);
-          LSb.Append(Format('## %s'#10'%s'#10'%s: %s',
-            [LPages[I].Title, LPages[I].Summary, _('Source'), LPages[I].Url]));
-        end;
+        LBlock.AddPair('type', 'document');
+        // Not part of the API for an image, and useful on a document: the model
+        // quotes the name back when it says where a value came from, and with
+        // two invoices attached that is the only way the user tells the two
+        // answers apart.
+        LBlock.AddPair('title', AAttachments[I].FileName);
       end;
+      LBlock.AddPair('source', LSource);
+      Result.AddElement(LBlock);
     end;
 
-    Result := LSb.ToString;
-  finally
-    LSb.Free;
+    LBlock := TJSONObject.Create;
+    LBlock.AddPair('type', 'text');
+    LBlock.AddPair('text', KXChatQuestionWithText(AText, AAttachments));
+    Result.AddElement(LBlock);
+  except
+    Result.Free;
+    raise;
   end;
 end;
+
 
 // Extracts a human-readable message from a non-2xx Anthropic response body.
 function ExtractApiError(const ARaw: string; const AStatus: Integer;
@@ -473,26 +337,31 @@ end;
 
 { TKClaudeProviderConfig }
 
-constructor TKClaudeProviderConfig.Create(const AConfig: TEFTree);
+constructor TKClaudeProviderConfig.Create(const AConfig: TEFTree;
+  const AProfile: string);
 const
-  PFX = 'HelpChat/Claude/';
+  PFX = 'Claude/';
 begin
   inherited Create;
+  // Every value is read through the profile: HelpChat/Profiles/<p>/Claude/X
+  // when that node exists, HelpChat/Claude/X otherwise. An assistant may
+  // therefore be answered by another model, with another key and another
+  // endpoint, without a second copy of everything else.
   // ApiKey: macro-expanded (so %ENV(...)% works), env-var fallback when empty.
-  FApiKey := Trim(AConfig.GetExpandedString(PFX + 'ApiKey'));
+  FApiKey := Trim(KXChatSetting(AProfile, PFX + 'ApiKey'));
   if FApiKey = '' then
     FApiKey := Trim(GetEnvironmentVariable('ANTHROPIC_API_KEY'));
-  FModel := AConfig.GetString(PFX + 'Model', KX_CLAUDE_DEF_MODEL);
-  FMaxTokens := AConfig.GetInteger(PFX + 'MaxTokens', KX_CLAUDE_DEF_MAXTOKENS);
-  FGroundingMaxPages := AConfig.GetInteger(PFX + 'GroundingMaxPages', KX_CLAUDE_DEF_GROUNDING);
+  FModel := KXChatSettingRaw(AProfile, PFX + 'Model', KX_CLAUDE_DEF_MODEL);
+  FMaxTokens := KXChatSettingInteger(AProfile, PFX + 'MaxTokens', KX_CLAUDE_DEF_MAXTOKENS);
+  FGroundingMaxPages := KXChatSettingInteger(AProfile, PFX + 'GroundingMaxPages', KX_CLAUDE_DEF_GROUNDING);
   // Raw override; '' means the provider applies its localized default prompt.
-  FSystemPrompt := AConfig.GetExpandedString(PFX + 'SystemPrompt');
-  FBaseUrl := AConfig.GetString(PFX + 'BaseUrl', KX_CLAUDE_DEF_BASEURL);
+  FSystemPrompt := KXChatSetting(AProfile, PFX + 'SystemPrompt');
+  FBaseUrl := KXChatSettingRaw(AProfile, PFX + 'BaseUrl', KX_CLAUDE_DEF_BASEURL);
   if FBaseUrl.EndsWith('/') then
     FBaseUrl := FBaseUrl.Substring(0, FBaseUrl.Length - 1);
-  FVersion := AConfig.GetString(PFX + 'Version', KX_CLAUDE_DEF_VERSION);
-  FConnectTimeoutMs := AConfig.GetInteger(PFX + 'ConnectTimeoutMs', KX_CLAUDE_DEF_CONNECTTIMEOUTMS);
-  FResponseTimeoutMs := AConfig.GetInteger(PFX + 'ResponseTimeoutMs', KX_CLAUDE_DEF_RESPONSETIMEOUTMS);
+  FVersion := KXChatSettingRaw(AProfile, PFX + 'Version', KX_CLAUDE_DEF_VERSION);
+  FConnectTimeoutMs := KXChatSettingInteger(AProfile, PFX + 'ConnectTimeoutMs', KX_CLAUDE_DEF_CONNECTTIMEOUTMS);
+  FResponseTimeoutMs := KXChatSettingInteger(AProfile, PFX + 'ResponseTimeoutMs', KX_CLAUDE_DEF_RESPONSETIMEOUTMS);
 end;
 
 { TKXClaudeProvider }
@@ -501,6 +370,19 @@ constructor TKXClaudeProvider.Create;
 begin
   inherited Create;
   FConfig := TKClaudeProviderConfig.Create(TKConfig.Instance.Config);
+end;
+
+procedure TKXClaudeProvider.Configure(const AProfile: string);
+begin
+  inherited;
+  // Read once, but read again when it turns out this instance answers for one
+  // of the declared assistants: its model, its key and its endpoint may be its
+  // own. Nothing has been asked of the provider yet at this point.
+  if AProfile <> '' then
+  begin
+    FreeAndNil(FConfig);
+    FConfig := TKClaudeProviderConfig.Create(TKConfig.Instance.Config, AProfile);
+  end;
 end;
 
 destructor TKXClaudeProvider.Destroy;
@@ -519,10 +401,95 @@ begin
   Result := True;
 end;
 
-function TKXClaudeProvider.Generate(const AHistory: TArray<TKXChatMessage>;
-  const AContext: TKXChatContext; const AOnToken: TKXChatTokenProc): string;
+
+function TKXClaudeProvider.CompleteText(const APrompt: string;
+  const AMaxTokens: Integer; const ACancel: IKXChatCancelToken): string;
 var
-  LSystem, LBody: string;
+  LClient: THTTPClient;
+  LSource: TStringStream;
+  LHeaders: TNetHeaders;
+  LResponse: IHTTPResponse;
+  LRoot, LMsg: TJSONObject;
+  LMessages: TJSONArray;
+  LBody, LText: string;
+  LContent: TJSONArray;
+begin
+  Result := '';
+  if (Trim(APrompt) = '') or (FConfig.ApiKey = '') then
+    Exit;
+  if Assigned(ACancel) and ACancel.IsCancelled then
+    Exit;
+
+  // Nothing here reaches the user, and nothing here may cost the user the
+  // answer: whatever goes wrong - the network, the key, a body that is not what
+  // we expect - leaves the result empty and the caller carries on without it.
+  try
+    LRoot := TJSONObject.Create;
+    try
+      LRoot.AddPair('model', FConfig.Model);
+      LRoot.AddPair('max_tokens', TJSONNumber.Create(AMaxTokens));
+      // The same question must give the same terms: this is a lookup, not a
+      // piece of writing.
+      LRoot.AddPair('temperature', TJSONNumber.Create(0));
+      LMessages := TJSONArray.Create;
+      LMsg := TJSONObject.Create;
+      LMsg.AddPair('role', 'user');
+      LMsg.AddPair('content', APrompt);
+      LMessages.AddElement(LMsg);
+      LRoot.AddPair('messages', LMessages);
+      LBody := LRoot.ToJSON;
+    finally
+      LRoot.Free;
+    end;
+
+    LClient := THTTPClient.Create;
+    LSource := TStringStream.Create(LBody, TEncoding.UTF8);
+    try
+      LClient.ConnectionTimeout := FConfig.ConnectTimeoutMs;
+      LClient.ResponseTimeout := FConfig.ResponseTimeoutMs;
+      LHeaders := [
+        TNetHeader.Create('x-api-key', FConfig.ApiKey),
+        TNetHeader.Create('anthropic-version', FConfig.Version),
+        TNetHeader.Create('content-type', 'application/json')
+      ];
+      LResponse := LClient.Post(FConfig.BaseUrl + '/v1/messages', LSource, nil, LHeaders);
+      if LResponse.StatusCode >= 400 then
+        Exit;
+
+      LRoot := TJSONObject.ParseJSONValue(LResponse.ContentAsString(TEncoding.UTF8)) as TJSONObject;
+      if not Assigned(LRoot) then
+        Exit;
+      try
+        // { "content": [ { "type": "text", "text": "..." } ], ... }
+        if LRoot.TryGetValue<TJSONArray>('content', LContent) and (LContent.Count > 0) and
+          (LContent.Items[0] is TJSONObject) and
+          TJSONObject(LContent.Items[0]).TryGetValue<string>('text', LText)
+        then
+          Result := LText;
+      finally
+        LRoot.Free;
+      end;
+    finally
+      LSource.Free;
+      LClient.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      TEFLogger.Instance.Log('Help Chat: the search terms were not obtained: ' +
+        E.Message, TEFLogger.LOG_DETAILED);
+      Result := '';
+    end;
+  end;
+end;
+
+
+function TKXClaudeProvider.Generate(const AHistory: TArray<TKXChatMessage>;
+  const AContext: TKXChatContext; const AOnToken: TKXChatTokenProc;
+  const ACancel: IKXChatCancelToken): string;
+var
+  LSystem, LBody, LTerms: string;
+  LGrounded: TArray<TKXHelpPage>;
   LClient: THTTPClient;
   LSource: TStringStream;
   LStream: TKXAnthropicStream;
@@ -530,14 +497,20 @@ var
   LResponse: IHTTPResponse;
   LRoot, LMsg: TJSONObject;
   LMessages: TJSONArray;
-  I: Integer;
+  I, LLastUser: Integer;
 begin
   // FConfig was read once at construction (see Create); no per-request tree lookups.
   if FConfig.ApiKey = '' then
     raise Exception.Create(_('The Claude help provider is not configured: set ' +
       'HelpChat/Claude/ApiKey in Config.yaml (or the ANTHROPIC_API_KEY environment variable).'));
 
-  LSystem := BuildSystemPrompt(AHistory, AContext, FConfig.SystemPrompt, FConfig.GroundingMaxPages);
+  // Asked before the prompt is built, because the prompt carries the pages the
+  // terms find. It is a request of its own: if it fails, or is not due, the
+  // search runs as it did before.
+  LTerms := KXChatSearchTerms(Self, AHistory, AContext, ACancel);
+
+  LSystem := KXChatBuildSystemPrompt(AHistory, AContext, FConfig.SystemPrompt,
+    FConfig.GroundingMaxPages, LTerms, LGrounded);
 
   // Build the request body with System.JSON so all content is correctly escaped.
   LRoot := TJSONObject.Create;
@@ -547,6 +520,19 @@ begin
     LRoot.AddPair('stream', TJSONBool.Create(True));
     if LSystem <> '' then
       LRoot.AddPair('system', LSystem);
+
+    // Which turn carries the attachments: the last user one, which is the
+    // question being asked. They belong to the conversation and go up again
+    // with every later question - that is what makes "and in the second
+    // invoice?" answerable - but they travel once per request, on that turn.
+    LLastUser := -1;
+    if Length(AContext.Attachments) > 0 then
+      for I := High(AHistory) downto Low(AHistory) do
+        if (AHistory[I].Role = crUser) and (Trim(AHistory[I].Content) <> '') then
+        begin
+          LLastUser := I;
+          Break;
+        end;
 
     LMessages := TJSONArray.Create;
     for I := Low(AHistory) to High(AHistory) do
@@ -559,7 +545,10 @@ begin
         LMsg.AddPair('role', 'user')
       else
         LMsg.AddPair('role', 'assistant');
-      LMsg.AddPair('content', AHistory[I].Content);
+      if I = LLastUser then
+        LMsg.AddPair('content', BuildUserContent(AHistory[I].Content, AContext.Attachments))
+      else
+        LMsg.AddPair('content', AHistory[I].Content);
       LMessages.AddElement(LMsg);
     end;
     // The API requires a non-empty messages array starting with a user turn; our
@@ -568,7 +557,7 @@ begin
     begin
       LMsg := TJSONObject.Create;
       LMsg.AddPair('role', 'user');
-      LMsg.AddPair('content', LastUserMessage(AHistory));
+      LMsg.AddPair('content', KXChatLastUserMessage(AHistory));
       LMessages.AddElement(LMsg);
     end;
     LRoot.AddPair('messages', LMessages);
@@ -580,7 +569,7 @@ begin
 
   LClient := THTTPClient.Create;
   LSource := TStringStream.Create(LBody, TEncoding.UTF8);
-  LStream := TKXAnthropicStream.Create(AOnToken);
+  LStream := TKXAnthropicStream.Create(AOnToken, ACancel);
   try
     LClient.ConnectionTimeout := FConfig.ConnectTimeoutMs;
     LClient.ResponseTimeout := FConfig.ResponseTimeoutMs;
@@ -594,7 +583,15 @@ begin
 
     // The response body is streamed into LStream, which parses the SSE tokens
     // and forwards them via AOnToken as they arrive.
-    LResponse := LClient.Post(FConfig.BaseUrl + '/v1/messages', LSource, LStream, LHeaders);
+    try
+      LResponse := LClient.Post(FConfig.BaseUrl + '/v1/messages', LSource, LStream, LHeaders);
+    except
+      // The HTTP layer may wrap what the destination stream raised: when the
+      // token is the reason, say so plainly, whatever came out of it.
+      if Assigned(ACancel) and ACancel.IsCancelled then
+        raise EKXChatCancelled.Create('cancelled');
+      raise;
+    end;
     LStream.Finish;
 
     if LResponse.StatusCode >= 400 then
@@ -603,6 +600,10 @@ begin
       raise Exception.Create(LStream.Error);
 
     Result := LStream.Text;
+    // The model was asked to cite; when it names a page without linking it, the
+    // line is added here from the pages that were actually injected.
+    if Trim(Result) <> '' then
+      Result := Result + KXChatSourcesLine(Result, LGrounded);
     if Trim(Result) = '' then
       Result := _('The assistant did not return any content.');
   finally

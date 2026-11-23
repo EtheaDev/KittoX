@@ -181,9 +181,12 @@ begin
     LAuth := Options.GetString('Auth');
     LUseJWT := Options.GetBoolean('UseJWT');
     // Unit name follows the class id, except DBCrypt which is registered by
-    // the Kitto.Auth.DB unit (there is no separate Kitto.Auth.DBCrypt).
+    // the Kitto.Auth.DB unit (there is no separate Kitto.Auth.DBCrypt) and
+    // Ini, registered by Kitto.Auth.IniFile.
     if SameText(LAuth, 'DBCrypt') then
       LAuthUnit := 'DB'
+    else if SameText(LAuth, 'Ini') then
+      LAuthUnit := 'IniFile'
     else
       LAuthUnit := LAuth;
     if LAuth = '' then
@@ -309,7 +312,10 @@ begin
     LTree.SetString('LanguageId', Options.GetString('LanguageId'));
     LTree.SetString('Server/Port', Options.GetString('Server/Port'));
     LTree.SetString('Server/ThreadPoolSize', Options.GetString('Server/ThreadPoolSize'));
-    LTree.SetString('Server/SessionTimeOut', Options.GetString('Server/SessionTimeOut'));
+    // The option keeps the name the wizard has always given it; the node is
+    // the one the engine reads. Written under Server it was read by nobody,
+    // and every generated application ran on the default.
+    LTree.SetString('Engine/Session/TimeOut', Options.GetString('Server/SessionTimeOut'));
 
     TEFYAMLWriter.SaveTree(LTree, AFileName);
     Result := ExpandMacros(AFileName, TEncoding.UTF8);
@@ -366,8 +372,18 @@ begin
   CopyAllFilesAndFolders(TemplateDirectory, ProjectDirectory,
     // before each file
     procedure (const ASourceFileName: string; var ADestinationFileName: string; var AAllow: Boolean)
+    var
+      LFileName: string;
     begin
       AAllow := not ContainsText(ExtractFilePath(ADestinationFileName), '_Support');
+      // The template ships a demo user list for both file-based storages;
+      // only the one the chosen Auth reads is copied (FileAuthenticator.ini
+      // for Ini, FileAuthenticator.txt otherwise, as it has always been).
+      LFileName := ExtractFileName(ASourceFileName);
+      if SameText(LFileName, 'FileAuthenticator.ini') then
+        AAllow := AAllow and SameText(Options.GetString('Auth'), 'Ini')
+      else if SameText(LFileName, 'FileAuthenticator.txt') then
+        AAllow := AAllow and not SameText(Options.GetString('Auth'), 'Ini');
       if AAllow then
       begin
         // Expand template-level macros in file names. {ProjectNameLower}

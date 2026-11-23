@@ -76,9 +76,11 @@ type
   TKXLanguageCatalog = class
   public
     /// <summary>Returns the gettext ids of the languages offered by this
-    /// application: English plus every language that has a catalog folder under
-    /// AppHome\Locale or SystemHome\Locale. Ordered by a preferred list then
-    /// alphabetically. Never empty (always contains 'en').</summary>
+    /// application: English plus every language that has a compiled catalog
+    /// under AppHome\Locale, restricted to the codes listed in the Config node
+    /// Languages (comma-separated) when it is set. Ordered by a preferred list
+    /// then alphabetically. Never empty: when the restriction leaves nothing,
+    /// English stays.</summary>
     class function AvailableCodes: TArray<string>;
     /// <summary>True when ACode is one of the AvailableCodes (case-insensitive,
     /// region-normalized). Used to validate the setlang request.</summary>
@@ -220,8 +222,8 @@ var
 
 var
   I: Integer;
-  LOrdered: TStringList;
-  LCode: string;
+  LOrdered, LAllowedList: TStringList;
+  LCode, LAllowed: string;
 begin
   LFound := TStringList.Create;
   try
@@ -235,6 +237,28 @@ begin
     // every application label still in the source language. A language is
     // usable only when the application itself ships a catalog for it.
     ScanLocaleDir(TKConfig.AppHomePath);
+
+    // Languages: it, de — the application names the languages it offers. English
+    // is the source language of the framework, not necessarily of the
+    // application: an app whose labels are written in Italian would otherwise
+    // offer an "English" that shows Italian labels under English chrome.
+    LAllowed := TKConfig.Instance.Config.GetString('Languages');
+    if Trim(LAllowed) <> '' then
+    begin
+      LAllowedList := TStringList.Create;
+      try
+        LAllowedList.CaseSensitive := False;
+        for LCode in LAllowed.Split([',', ';', ' '], TStringSplitOptions.ExcludeEmpty) do
+          LAllowedList.Add(TKXLanguageCatalog.NormalizeCode(LCode));
+        for I := LFound.Count - 1 downto 0 do
+          if LAllowedList.IndexOf(LFound[I]) < 0 then
+            LFound.Delete(I);
+        if LFound.Count = 0 then
+          LFound.Add('en');
+      finally
+        LAllowedList.Free;
+      end;
+    end;
 
     // Emit in the preferred order first, then any remaining alphabetically.
     LOrdered := TStringList.Create;
