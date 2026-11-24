@@ -623,6 +623,11 @@ type
   ///	overrides paging to emit a LIMIT/OFFSET clause.</summary>
   TEFPostgreSQLDBEngineType = class(TEFDBEngineType)
   public
+    ///	<summary>Expands %DB.FROM_DUAL% to nothing then delegates to the
+    ///	inherited expansion: PostgreSQL selects without a table and has no DUAL,
+    ///	so the inherited "FROM DUAL" failed with "relation dual does not
+    ///	exist".</summary>
+    function ExpandCommandText(const ACommandText: string): string; override;
     ///	<summary>"select nextval('X')": PostgreSQL takes the sequence name as
     ///	a string (regclass), so any delimiters go inside the quotes.</summary>
     function GetSequenceNextValueSQL(const ASequenceName: string): string; override;
@@ -1918,6 +1923,12 @@ begin
 end;
 
 { TEFPostgreSQLDBEngineType }
+
+function TEFPostgreSQLDBEngineType.ExpandCommandText(const ACommandText: string): string;
+begin
+  Result := ReplaceText(ACommandText, '%DB.FROM_DUAL%', '');
+  Result := inherited ExpandCommandText(Result);
+end;
 
 function TEFPostgreSQLDBEngineType.GetSequenceNextValueSQL(const ASequenceName: string): string;
 begin

@@ -180,6 +180,19 @@ type
     procedure CreateDBQuery_GivesTheQueryItsOwnConnection(const ADatabaseName: string);
 
     /// <summary>
+    ///  A select without a table written with %DB.FROM_DUAL%, run through
+    ///  TEFDBQuery as an application does: the macro is expanded by the
+    ///  engine of the connection, and the server is the judge. On PostgreSQL
+    ///  it used to become "FROM DUAL", a table PostgreSQL does not have.
+    /// </summary>
+    [Test]
+    [TestCase('MSSQL', 'MSSQL')]
+    [TestCase('Firebird', 'Firebird')]
+    [TestCase('PostgreSQL', 'PostgreSQL')]
+    [TestCase('Oracle', 'Oracle')]
+    procedure FromDualMacro_SelectsOneRow(const ADatabaseName: string);
+
+    /// <summary>
     ///  FetchSequenceGeneratorValue draws from a real sequence, on every
     ///  backend: the statement comes from the dialect, and before it did the
     ///  FireDAC adapter returned 0 without asking the database at all. Two
@@ -766,6 +779,33 @@ begin
       LQuery.Open;
       Assert.IsFalse(LQuery.DataSet.IsEmpty, ADatabaseName +
         ': the query returned nothing on its own connection.');
+    finally
+      LQuery.Free;
+    end;
+  finally
+    LConnection.Free;
+  end;
+end;
+
+procedure TEFDBIntegrationTests.FromDualMacro_SelectsOneRow(
+  const ADatabaseName: string);
+var
+  LConnection: TEFDBConnection;
+  LQuery: TEFDBQuery;
+begin
+  LConnection := OpenOrSkip(ADatabaseName);
+  try
+    LQuery := LConnection.CreateDBQuery;
+    try
+      LQuery.CommandText := 'select 1 as one %DB.FROM_DUAL%';
+      LQuery.Open;
+      Assert.IsFalse(LQuery.DataSet.IsEmpty, ADatabaseName +
+        ': the select returned no row.');
+      Assert.AreEqual(1, LQuery.DataSet.Fields[0].AsInteger, ADatabaseName);
+      LQuery.DataSet.Next;
+      Assert.IsTrue(LQuery.DataSet.Eof, ADatabaseName +
+        ': the select returned more than one row.');
+      LQuery.Close;
     finally
       LQuery.Free;
     end;

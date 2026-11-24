@@ -8,7 +8,7 @@ Databases:
   Main: FD
     Connection:
       DriverID: MSSQL
-      Server: 127.0.0.1, 1433
+      Server: 127.0.0.1, 1435
       Database: KITTOXSCM
       User_Name: SA
 ```

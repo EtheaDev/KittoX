@@ -102,6 +102,7 @@
         <DCCReference Include="..\..\Source\Kitto.ChatAttachmentTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.HttpSysTests.pas"/>
         <DCCReference Include="..\..\Source\Kitto.VendoredPatchTests.pas"/>
+        <DCCReference Include="..\..\Source\Kitto.BcryptTests.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

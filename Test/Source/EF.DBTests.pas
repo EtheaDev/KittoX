@@ -71,6 +71,16 @@ type
     /// </summary>
     [Test]
     procedure SequenceSQL_PerDialect;
+
+    /// <summary>
+    ///  %DB.FROM_DUAL% is what a select without a table needs to be valid on the
+    ///  engine: "FROM DUAL" on Oracle and MariaDB, "FROM RDB$DATABASE" on
+    ///  Firebird, nothing on SQL Server and PostgreSQL, which have no DUAL.
+    ///  PostgreSQL used to inherit "FROM DUAL" and fail with "relation dual
+    ///  does not exist" (TasKitto uses the macro in three views).
+    /// </summary>
+    [Test]
+    procedure FromDualMacro_PerDialect;
     /// <summary>
     ///  With DelimitedIdent on, every part of a schema-qualified name is
     ///  delimited; on PostgreSQL the delimited name goes inside the string
@@ -506,7 +516,9 @@ type
     // to .6719; the 64-bit one multiplies by 10000 in a Double, past the 53
     // bits it has, and lands on .6768. Neither is the value written, and
     // neither is EF's doing - measured with a three-line program on both.
-    {$IFDEF CPUX64}
+    // Linux64 rounds like the 32-bit compiler (.6719, measured 24/11/2026):
+    // .6768 is Win64 only.
+    {$IF Defined(CPUX64) and Defined(MSWINDOWS)}
     [TestCase('double money, Currency', 'ftCurrency,0,0,123456789012345.6789,Currency,123456789012345.6768')]
     {$ELSE}
     [TestCase('double money, Currency', 'ftCurrency,0,0,123456789012345.6789,Currency,123456789012345.6719')]
@@ -742,6 +754,28 @@ begin
   Check(TEFFirebirdDBEngineType.Create,
     'select next value for SEQ_PROMAN from RDB$DATABASE');
   Check(TEFPostgreSQLDBEngineType.Create, 'select nextval(''SEQ_PROMAN'')');
+end;
+
+procedure TEFDBEngineTypeTests.FromDualMacro_PerDialect;
+
+  procedure Check(const AEngine: TEFDBEngineType; const AExpected: string);
+  begin
+    try
+      Assert.AreEqual(AExpected,
+        Trim(AEngine.ExpandCommandText('select 1 as one %DB.FROM_DUAL%')),
+        AEngine.ClassName);
+    finally
+      AEngine.Free;
+    end;
+  end;
+
+begin
+  Check(TEFDBEngineType.Create, 'select 1 as one FROM DUAL');
+  Check(TEFOracleDBEngineType.Create, 'select 1 as one FROM DUAL');
+  Check(TEFMySQLDBEngineType.Create, 'select 1 as one FROM DUAL');
+  Check(TEFFirebirdDBEngineType.Create, 'select 1 as one FROM RDB$DATABASE');
+  Check(TEFSQLServerDBEngineType.Create, 'select 1 as one');
+  Check(TEFPostgreSQLDBEngineType.Create, 'select 1 as one');
 end;
 
 procedure TEFDBEngineTypeTests.SequenceSQL_DelimitsEveryPartWhenAsked;
@@ -2048,7 +2082,8 @@ begin
   // 'column|Type|TField class|rendering' for the type introspection assigned,
   // 'column>Type|rendering' for the alternative type; measured on 8 September
   // 2026. A '*' stands for text that depends on the session -- the locale
-  // FireDAC formats a time-zone value with, the counter inside a rowversion,
+  // FireDAC formats a time-zone value with (its length too: 26 characters on
+  // an Italian Windows, 22 on the default Linux locale), the counter inside a rowversion,
   // the address inside a ROWID.
   if SameText(ADatabaseName, 'MSSQL') then
     Result := [
@@ -2060,7 +2095,7 @@ begin
       'c_money|Decimal|TCurrencyField|123456789012346',
       // Which wrong cents depends on the compiler: see the 'double money,
       // Currency' case of ADecimalValue_ReadThroughDecimalOrCurrency.
-      {$IFDEF CPUX64}
+      {$IF Defined(CPUX64) and Defined(MSWINDOWS)}
       'c_money>Currency|123456789012345.6768',
       {$ELSE}
       'c_money>Currency|123456789012345.6719',
@@ -2074,7 +2109,7 @@ begin
       'c_datetime>DateTime|2026-09-08 13:45:59',
       'c_smalldatetime|Date|TSQLTimeStampField|2026-09-08 00:00:00',
       'c_smalldatetime>DateTime|2026-09-08 13:45:00',
-      'c_datetimeoffset|String|TSQLTimeStampOffsetField|len=26:*13:45:59 +02:00',
+      'c_datetimeoffset|String|TSQLTimeStampOffsetField|len=*:*13:45:59 +02:00',
       'c_guid|String|TGuidField|len=38:{0E984725-C51C-4BF4-9960-E1C80E27ABA0}',
       'c_xml|Memo|TFDXMLField|len=4:<a/>',
       'c_time7|Time|TTimeField|1899-12-30 13:45:59',
@@ -2094,7 +2129,7 @@ begin
       'c_decfloat|Decimal|TFMTBCDField|1234567890.12346',
       // Written 13:45:59 +02:00: the server hands back UTC and the zone is gone.
       'c_time_tz|Time|TTimeField|1899-12-30 11:45:59',
-      'c_ts_tz|String|TSQLTimeStampOffsetField|len=26:*13:45:59 +02:00',
+      'c_ts_tz|String|TSQLTimeStampOffsetField|len=*:*13:45:59 +02:00',
       'c_binary|String|TBytesField|len=8:\u0201\u0403\u0605\u0807\u0A09\u0C0B\u0E0D\u100F',
       'c_varbinary|String|TVarBytesField|len=2:\uFF00\u2010']
   else if SameText(ADatabaseName, 'Oracle') then
@@ -2110,7 +2145,7 @@ begin
       'c_number_nop|Decimal|TFMTBCDField|12345.6789012346',
       // number(5,-2): the driver cannot even open the column.
       'c_number_neg|Decimal|OPEN FAILS EEFDBError',
-      'c_ts_tz|String|TSQLTimeStampOffsetField|len=26:*13:45:59 +02:00',
+      'c_ts_tz|String|TSQLTimeStampOffsetField|len=*:*13:45:59 +02:00',
       // 10 and 4 characters of text in columns introspected as String(2).
       'c_interval_ds|String|TFDSQLTimeIntervalField|len=10:1 02:03:04',
       'c_interval_ym|String|TFDSQLTimeIntervalField|len=4:1-02',
@@ -2124,7 +2159,7 @@ begin
       'c_money|Decimal|OPEN FAILS EEFDBError',
       'c_datetime|Date|TSQLTimeStampField|2026-09-08 00:00:00',
       'c_datetime>DateTime|2026-09-08 13:45:59',
-      'c_datetimeoffset|String|TSQLTimeStampOffsetField|len=26:*',
+      'c_datetimeoffset|String|TSQLTimeStampOffsetField|len=*:*',
       // Written 0e984725-c51c-4bf4-...: the first three groups come back with
       // their bytes reversed. Not the GUID that is in the table.
       'c_guid|String|TGuidField|len=38:{2547980E-1CC5-F44B-9960-E1C80E27ABA0}',

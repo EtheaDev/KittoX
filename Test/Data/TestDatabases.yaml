@@ -19,7 +19,7 @@ Databases:
     Enabled: True
     Connection:
       DriverID: MSSQL
-      Server: 127.0.0.1, 1433
+      Server: 127.0.0.1, 1435
       Database: Taskitto
       OSAuthent: No
       User_Name: SA
@@ -74,7 +74,7 @@ Databases:
     Enabled: True
     Connection:
       Provider: MSOLEDBSQL
-      Data Source: 127.0.0.1,1433
+      Data Source: 127.0.0.1,1435
       Initial Catalog: Taskitto
       User ID: SA
       Password: 12345

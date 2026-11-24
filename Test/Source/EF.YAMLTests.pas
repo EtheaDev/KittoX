@@ -257,7 +257,7 @@ procedure TEFYAMLTests.Read_WithColonsInTheName_SplitsOnTheFirstColon;
 var
   LTree: TEFTree;
 begin
-  LTree := TEFYAMLReader.LoadTreeFromString('A:Node:With:Colons: A value'#13#10);
+  LTree := TEFYAMLReader.LoadTreeFromString('A:Node:With:Colons: A value' + sLineBreak);
   try
     Assert.AreEqual('A', LTree.Children[0].Name);
   finally
@@ -270,7 +270,7 @@ var
   LTree: TEFTree;
   LYaml: string;
 begin
-  LYaml := 'AFoldedNode: >'#13#10'  First line.'#13#10'  Second line.'#13#10;
+  LYaml := 'AFoldedNode: >' + sLineBreak + '  First line.' + sLineBreak + '  Second line.' + sLineBreak;
   LTree := TEFYAMLReader.LoadTreeFromString(LYaml);
   try
     Assert.AreEqual(LYaml, TEFYAMLWriter.TreeAsString(LTree));
@@ -348,10 +348,10 @@ begin
   // node that follows it - Next - is at column 0. Read then write must give the
   // file back byte for byte, comment indentation included.
   LYaml :=
-    'Block:'#13#10 +
-    '  Child: 1'#13#10 +
-    '  # a comment that belongs to Block, indented under it'#13#10 +
-    'Next: 2'#13#10;
+    'Block:' + sLineBreak +
+    '  Child: 1' + sLineBreak +
+    '  # a comment that belongs to Block, indented under it' + sLineBreak +
+    'Next: 2' + sLineBreak;
   LTree := TEFYAMLReader.LoadTreeFromString(LYaml);
   try
     Assert.AreEqual(LYaml, TEFYAMLWriter.TreeAsString(LTree));
@@ -368,13 +368,13 @@ begin
   // The blank line is between two content lines of the block: it is part of the
   // value and must round-trip in place, not migrate after the block.
   LYaml :=
-    'Body: |'#13#10 +
-    '  first line'#13#10 +
-    ''#13#10 +
-    '  last line'#13#10;
+    'Body: |' + sLineBreak +
+    '  first line' + sLineBreak +
+    '' + sLineBreak +
+    '  last line' + sLineBreak;
   LTree := TEFYAMLReader.LoadTreeFromString(LYaml);
   try
-    Assert.AreEqual('first line'#13#10#13#10'last line',
+    Assert.AreEqual('first line' + sLineBreak + sLineBreak + 'last line',
       LTree.GetString('Body'),
       'The empty line must be kept as an empty line of the value.');
     Assert.AreEqual(LYaml, TEFYAMLWriter.TreeAsString(LTree));
@@ -393,7 +393,10 @@ begin
   try
     FReader.LoadTreeFromFile(LTree, FixtureFileName);
     FWriter.SaveTreeToFile(LTree, LSavedFileName);
-    Assert.AreEqual(TFile.ReadAllText(FixtureFileName), TFile.ReadAllText(LSavedFileName));
+    // The writer ends lines the platform's way (CRLF on Windows, LF on
+    // Linux) whatever the fixture on disk uses.
+    Assert.AreEqual(AdjustLineBreaks(TFile.ReadAllText(FixtureFileName), DefaultTextLineBreakStyle),
+      TFile.ReadAllText(LSavedFileName));
   finally
     LTree.Free;
   end;
@@ -414,7 +417,10 @@ begin
     finally
       LClone.Free;
     end;
-    Assert.AreEqual(TFile.ReadAllText(FixtureFileName), TFile.ReadAllText(LSavedFileName));
+    // The writer ends lines the platform's way (CRLF on Windows, LF on
+    // Linux) whatever the fixture on disk uses.
+    Assert.AreEqual(AdjustLineBreaks(TFile.ReadAllText(FixtureFileName), DefaultTextLineBreakStyle),
+      TFile.ReadAllText(LSavedFileName));
   finally
     LTree.Free;
   end;
@@ -443,13 +449,13 @@ begin
   // 2 (F) straight to 6 (G), skipping it. H then comes back to 2: one level up,
   // not two.
   LTree := TEFYAMLReader.LoadTreeFromString(
-    'A:'#13#10 +
-    '  B:'#13#10 +
-    '    C: 1'#13#10 +
-    'E:'#13#10 +
-    '  F:'#13#10 +
-    '      G: 2'#13#10 +
-    '  H: 3'#13#10);
+    'A:' + sLineBreak +
+    '  B:' + sLineBreak +
+    '    C: 1' + sLineBreak +
+    'E:' + sLineBreak +
+    '  F:' + sLineBreak +
+    '      G: 2' + sLineBreak +
+    '  H: 3' + sLineBreak);
   try
     Assert.AreEqual(2, LTree.ChildCount, 'Only A and E are root nodes.');
     LE := LTree.Children[1];
@@ -474,7 +480,7 @@ begin
     var
       LTree: TEFTree;
     begin
-      LTree := TEFYAMLReader.LoadTreeFromString(ALine + #13#10);
+      LTree := TEFYAMLReader.LoadTreeFromString(ALine + sLineBreak);
       LTree.Free;
     end,
     EEFError,
@@ -507,15 +513,15 @@ procedure TEFYAMLTests.Read_AfterAFileEndingInAMultiLineValue_StartsTheNextFileC
 const
   // Ends inside a '|' block, so the parser is left expecting its continuation.
   FIRST_FILE =
-    'Config:'#13#10 +
-    '  Description: |'#13#10 +
-    '    first line'#13#10 +
-    '    second line'#13#10;
+    'Config:' + sLineBreak +
+    '  Description: |' + sLineBreak +
+    '    first line' + sLineBreak +
+    '    second line' + sLineBreak;
   // Starts with an INDENTED comment, which is what the stale expectation
   // mistakes for another line of the block above.
   SECOND_FILE =
-    '  # an indented comment'#13#10 +
-    'Node: a value'#13#10;
+    '  # an indented comment' + sLineBreak +
+    'Node: a value' + sLineBreak;
 var
   LReader: TEFYAMLReader;
   LFirst, LSecond: TEFTree;
@@ -525,7 +531,7 @@ begin
     LFirst := TEFTree.Create;
     try
       LReader.LoadTreeFromString(LFirst, FIRST_FILE);
-      Assert.AreEqual('first line'#13#10'second line',
+      Assert.AreEqual('first line' + sLineBreak + 'second line',
         LFirst.GetString('Config/Description'),
         'The first file did not parse as expected, so the test proves nothing.');
 
@@ -558,9 +564,9 @@ begin
     begin
       // 3 spaces: neither the level of B (2) nor a deeper one opened anywhere.
       LTree := TEFYAMLReader.LoadTreeFromString(
-        'A:'#13#10 +
-        '    B: 1'#13#10 +
-        '   C: 2'#13#10);
+        'A:' + sLineBreak +
+        '    B: 1' + sLineBreak +
+        '   C: 2' + sLineBreak);
       LTree.Free;
     end,
     EEFError,

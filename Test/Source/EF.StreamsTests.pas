@@ -307,7 +307,8 @@ begin
   LFilter := TEFBufferedReadFilter.Create(SourceStream(0), True);
   try
     LFilter.OnEndOfStream := EndOfStreamHandler;
-    Assert.AreEqual(0, LFilter.Read(LDestination[0], 16));
+    // Longint, not a literal Integer: it is 64-bit on Linux64.
+    Assert.AreEqual<Longint>(0, LFilter.Read(LDestination[0], 16));
     Assert.AreEqual(1, FEndOfStreamCount,
       'OnEndOfStream did not fire on a read that returned nothing.');
   finally

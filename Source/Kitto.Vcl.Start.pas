@@ -44,6 +44,8 @@ uses
   EF.Sys.Windows,
   Kitto.Vcl.MainForm,
   Kitto.Vcl.Service;
+  {$ELSE}
+  Kitto.Console.Start;
   {$ENDIF}
 
 { TKStart }
@@ -70,6 +72,13 @@ class procedure TKStart.Start;
   end;
 
 begin
+  {$IFNDEF MSWINDOWS}
+  // No VCL and no Windows service elsewhere: the same program runs headless,
+  // as a systemd service or from a terminal. The console start configures
+  // itself (-c included), so Configure is not called here.
+  Kitto.Console.Start.TKStart.Start;
+  Exit;
+  {$ENDIF}
   Configure;
   {$IFDEF MSWINDOWS}
   if IsRunningAsService or IsInstallingService then
@@ -87,8 +96,6 @@ begin
     Vcl.Forms.Application.CreateForm(TKMainForm, KMainForm);
     Vcl.Forms.Application.Run;
   end;
-  {$ELSE}
-  TEFLogger.Instance.Log('Start not yet supported on this platform.');
   {$ENDIF}
 end;
 

@@ -36,7 +36,8 @@ type
     ///  An exception raised by AProc is re-raised here, so the test reports it
     ///  as usual. When the timeout expires the thread is killed and its object
     ///  deliberately leaked: it is stuck inside framework code, there is no
-    ///  safe way to unwind it, and the run is about to end anyway.
+    ///  safe way to unwind it, and the run is about to end anyway. POSIX has no
+    ///  way to kill a single thread, so there it is left running instead.
     /// </summary>
     class function RunsWithin(const AProc: TProc;
       const ATimeoutMS: Cardinal = 2000): Boolean; static;
@@ -59,7 +60,11 @@ implementation
 uses
   System.Classes,
   System.IOUtils,
-  Winapi.Windows;
+  System.SyncObjs
+  {$IFDEF MSWINDOWS}
+  , Winapi.Windows
+  {$ENDIF}
+  ;
 
 { TKTestUtils }
 
@@ -67,23 +72,41 @@ class function TKTestUtils.RunsWithin(const AProc: TProc;
   const ATimeoutMS: Cardinal): Boolean;
 var
   LThread: TThread;
+  LDone: TEvent;
   LFatalMessage: string;
   LFatalClassName: string;
   LHasFatal: Boolean;
 begin
   Assert(Assigned(AProc));
 
-  LThread := TThread.CreateAnonymousThread(AProc);
+  // Signalled when AProc returns or raises. A portable alternative to waiting
+  // on the thread handle, which only Windows offers with a timeout. On timeout
+  // the event is leaked along with the thread, which may still set it later.
+  LDone := TEvent.Create(nil, True, False, '');
+  LThread := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      try
+        AProc();
+      finally
+        LDone.SetEvent;
+      end;
+    end);
   LThread.FreeOnTerminate := False;
   LThread.Start;
 
-  if WaitForSingleObject(LThread.Handle, ATimeoutMS) <> WAIT_OBJECT_0 then
+  if LDone.WaitFor(ATimeoutMS) <> wrSignaled then
   begin
     // Still running: the code under test did not return. See the note above on
     // why the thread object is not freed.
+    {$IFDEF MSWINDOWS}
     TerminateThread(LThread.Handle, 0);
+    {$ENDIF}
     Exit(False);
   end;
+  LDone.Free;
+  // AProc is over; let the thread finish so FatalException is set.
+  LThread.WaitFor;
 
   LHasFatal := False;
   LFatalMessage := '';

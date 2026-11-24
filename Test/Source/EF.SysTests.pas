@@ -37,6 +37,9 @@ type
     [Test]
     procedure GetFileSize_OnMissingFile_ReturnsMinusOne;
 
+    // The tests below exercise EF.Sys.Windows (cmd.exe, process handles,
+    // TEFFileWriter), which only exists on Windows.
+    {$IFDEF MSWINDOWS}
     /// <summary>
     ///  GetFileSize opens a search handle with FindFirst and used never to
     ///  close it: one kernel handle leaked per call. Reachable from anything
@@ -82,6 +85,7 @@ type
     /// <summary>An empty command line is an error, not a process.</summary>
     [Test]
     procedure ExecuteApplication_WithAnEmptyCommandLine_Fails;
+    {$ENDIF}
 
     /// <summary>
     ///  UnregisterTool used to leave the current tool nil, and every _() call
@@ -98,9 +102,11 @@ implementation
 uses
   System.SysUtils,
   System.IOUtils,
+  {$IFDEF MSWINDOWS}
   Winapi.Windows,
-  EF.Sys,
   EF.Sys.Windows,
+  {$ENDIF}
+  EF.Sys,
   EF.Localization,
   Kitto.TestUtils;
 
@@ -130,6 +136,7 @@ begin
   Assert.AreEqual(Int64(-1), Int64(GetFileSize(FTempPath + 'no_such_file.txt')));
 end;
 
+{$IFDEF MSWINDOWS}
 procedure TEFSysTests.GetFileSize_CalledManyTimes_DoesNotLeakHandles;
 const
   CALL_COUNT = 3000;
@@ -211,6 +218,12 @@ begin
     'The process did not start in the directory it was given.');
 end;
 
+procedure TEFSysTests.ExecuteApplication_WithAnEmptyCommandLine_Fails;
+begin
+  Assert.AreEqual(-1, ExecuteApplication('', '', True, SW_HIDE));
+end;
+{$ENDIF}
+
 procedure TEFSysTests.UnregisterLocalizationTool_LeavesTranslationWorking;
 begin
   // No saving and restoring of the previous tool: these interfaces are not
@@ -226,11 +239,6 @@ begin
     'violation.');
   // The call every translated string in the framework makes.
   Assert.AreEqual('untranslated', _('untranslated'));
-end;
-
-procedure TEFSysTests.ExecuteApplication_WithAnEmptyCommandLine_Fails;
-begin
-  Assert.AreEqual(-1, ExecuteApplication('', '', True, SW_HIDE));
 end;
 
 initialization

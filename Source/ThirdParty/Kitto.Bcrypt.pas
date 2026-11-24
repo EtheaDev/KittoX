@@ -272,7 +272,9 @@ uses
   {$IFDEF COMPILER_7_UP}
   System.Types,
   {$ENDIF}
+  {$IFDEF MSWINDOWS}
   System.Win.ComObj,
+  {$ENDIF}
   System.Math;
 
 type
@@ -396,8 +398,30 @@ uses
   {$IFDEF BCryptUnitTests}
   TestFramework,
   {$ENDIF}
+  {$IFDEF MSWINDOWS}
   Winapi.Windows,
   Winapi.ActiveX;
+  {$ELSE}
+  // ETHEA PATCH: the POSIX counterparts of the Windows calls used below.
+  System.Classes,
+  System.Hash,
+  System.Diagnostics,
+  Posix.Dlfcn;
+
+const
+  S_OK = HRESULT(0);
+  E_FAIL = HRESULT($80004005);
+
+procedure ZeroMemory(Destination: Pointer; Length: NativeUInt);
+begin
+  FillChar(Destination^, Length, 0);
+end;
+
+function Failed(Status: HRESULT): Boolean;
+begin
+  Result := Status < 0;
+end;
+  {$ENDIF}
 
 const
 	BCRYPT_COST = 11; //cost determintes the number of rounds. 11 = 2^11 rounds (2,048)
@@ -535,14 +559,13 @@ begin
 	if not QueryPerformanceCounter({var}Result) then
 		Result := 0;
 {$ELSE}
-	Result := 0;
+	// ETHEA PATCH: was 0, which made every hash look instantaneous.
+	Result := TStopwatch.GetTimeStamp;
 {$ENDIF}
 end;
 
-{$IFDEF MSWINDOWS}
 var
 	_freq: Int64 = 0;
-{$ENDIF}
 
 function PerformanceTimestampToMs(const Timestamp: Int64): Real;
 begin
@@ -552,7 +575,7 @@ begin
 		if not QueryPerformanceFrequency({var}_freq) then
 			_freq := -1;
 {$ELSE}
-		_freq := -1;
+		_freq := TStopwatch.Frequency;
 {$ENDIF}
 	end;
 
@@ -738,12 +761,17 @@ begin
 	Result := FormatPasswordHashForBsd('2a', cost, salt, hash);
 end;
 
+{$IFDEF MSWINDOWS}
 function CoCreateGuid(out guid: TGUID): HResult; stdcall; external 'ole32.dll' name 'CoCreateGuid';
+{$ENDIF}
 
 function CreateGUID: TGUID;
 begin
 	//Creates a random (i.e. Type-4) UUID
-{$IFDEF COMPILER_7_UP}
+{$IF not defined(MSWINDOWS)}
+	if System.SysUtils.CreateGuid({out}Result) <> 0 then
+		raise EBCryptException.Create('Could not create a GUID');
+{$ELSEIF defined(COMPILER_7_UP)}
 	System.Win.ComObj.OleCheck(System.SysUtils.CreateGuid({out}Result));
 {$ELSE}
 	OleCheck(CoCreateGuid({out}Result));
@@ -770,6 +798,7 @@ begin
 	Result := salt;
 end;
 
+{$IFDEF MSWINDOWS}
 const
 	advapi32 = 'advapi32.dll';
 
@@ -782,6 +811,7 @@ function CryptDestroyHash(hHash: THandle): BOOL; stdcall; external advapi32;
 function CryptAcquireContextW(out phProv: THandle; pszContainer: PWideChar; pszProvider: PWideChar; dwProvType: DWORD; dwFlags: DWORD): BOOL; stdcall; external advapi32;
 function CryptReleaseContext(hProv: THandle; dwFlags: DWORD): BOOL; stdcall; external advapi32;
 function CryptGenRandom(hProv: THandle; dwLen: DWORD; pbBuffer: Pointer): BOOL; stdcall; external advapi32;
+{$ENDIF}
 
 
 {$IFNDEF COMPILER_7_UP}
@@ -792,6 +822,26 @@ end;
 {$ENDIF}
 
 class function TBCrypt.HashBytes(Data: TBytes; HashAlgorithm: string): string;
+{$IFNDEF MSWINDOWS}
+var
+	version: THashSHA2.TSHA2Version;
+	hasher: THashSHA2;
+begin
+	// ETHEA PATCH: SHA-2 is a standard, so System.Hash yields the very digest
+	// the CryptoAPI does: hashes made on Windows verify here and vice versa.
+	if HashAlgorithm = 'SHA256' then
+		version := THashSHA2.TSHA2Version.SHA256
+	else if HashAlgorithm = 'SHA384' then
+		version := THashSHA2.TSHA2Version.SHA384
+	else if HashAlgorithm = 'SHA512' then
+		version := THashSHA2.TSHA2Version.SHA512
+	else
+		raise EBCryptException.CreateFmt('Unknown hash algorithm: ''%s''', [HashAlgorithm]);
+	hasher := THashSHA2.Create(version);
+	hasher.Update(Data);
+	Result := TBCrypt.Base64Encode(hasher.HashAsBytes);
+end;
+{$ELSE}
 var
 	provider: THandle;
 	hash: THandle;
@@ -860,6 +910,7 @@ begin
 		CryptReleaseContext(provider, 0);
 	end;
 end;
+{$ENDIF}
 
 class function TBCrypt.HashPassword(const password: UnicodeString; const salt: array of Byte; const cost: Integer): TBytes;
 var
@@ -903,13 +954,17 @@ type
 	Encrypt a single 64-bit block encoded as two 32-bit halves.
 	InData: Pointer to two
 }
-procedure BlowfishEncryptECB(const Data: TBlowfishData; InData: PLongWord; OutData: PLongWord);
+// ETHEA PATCH: UInt32, not LongWord. LongWord is 64-bit on Linux64 (as is
+// Longint), so "shl 24" kept the high bits, the S-box index went past 255 and
+// read outside the table: an access violation on every hash. On Windows the
+// two types are the same and the code is unchanged.
+procedure BlowfishEncryptECB(const Data: TBlowfishData; InData: PUInt32; OutData: PUInt32);
 var
-	xL, xR: LongWord;
+	xL, xR: UInt32;
 	S0, S1, S2, S3: PSBox;
 begin
-	xL := PLongWord(InData)^;
-	xR := PLongWord(UIntPtr(InData)+4)^;
+	xL := PUInt32(InData)^;
+	xR := PUInt32(UIntPtr(InData)+4)^;
 
 	xL := (xL shr 24) or ((xL shr 8) and $FF00) or ((xL shl 8) and $FF0000) or (xL shl 24);
 	xR := (xR shr 24) or ((xR shr 8) and $FF00) or ((xR shl 8) and $FF0000) or (xR shl 24);
@@ -945,8 +1000,8 @@ begin
 	xR := (xR shr 24) or ((xR shr 8) and $FF00) or ((xR shl 8) and $FF0000) or (xR shl 24);
 
 	//Got rid of the moves
-	PLongWord(OutData)^ := xR;
-	PLongWord(UIntPtr(OutData)+4)^ := xL;
+	PUInt32(OutData)^ := xR;
+	PUInt32(UIntPtr(OutData)+4)^ := xL;
 end;
 {$RANGECHECKS ON}
 {$OVERFLOWCHECKS ON}
@@ -1315,7 +1370,7 @@ begin
 	end;
 
 	//Blowfish-encrypt the first 64 bits of the salt argument using the current state of the key schedule.
-	BlowfishEncryptECB(State, PLongWord(@salt[0]), PLongWord(@block));
+	BlowfishEncryptECB(State, PUInt32(@salt[0]), PUInt32(@block));
 
 	//The resulting ciphertext replaces subkeys P1 and P2.
 	State.PBox[0] := (block[0] shl 24) or (block[1] shl 16) or (block[2] shl 8) or block[3];
@@ -1330,10 +1385,10 @@ begin
 		//Delphi compiler is not worth its salt; it doesn't do hoisting ("Any compiler worth its salt will hoist" - Eric Brumer C++ compiler team)
 		//[Build 2013 Native Code Performance and Memory The Elephant in the CPU](https://youtu.be/kUpKE2F2lHc?t=1295)
 		//Salt is 0..15 (0..7 is first block, 8..15 is second block)
-		PLongWord(@block[0])^ := PLongWord(@block[0])^ xor PLongWord(@salt[saltHalfIndex  ])^;
-		PLongWord(@block[4])^ := PLongWord(@block[4])^ xor PLongWord(@salt[saltHalfIndex+4])^;
-		//block.Lo := block.Lo xor PLongWord(@salt[saltHalfIndex+0])^;
-		//block.Hi := block.Hi xor PLongWord(@salt[saltHalfIndex+4])^;
+		PUInt32(@block[0])^ := PUInt32(@block[0])^ xor PUInt32(@salt[saltHalfIndex  ])^;
+		PUInt32(@block[4])^ := PUInt32(@block[4])^ xor PUInt32(@salt[saltHalfIndex+4])^;
+		//block.Lo := block.Lo xor PUInt32(@salt[saltHalfIndex+0])^;
+		//block.Hi := block.Hi xor PUInt32(@salt[saltHalfIndex+4])^;
 
 		//saltHalf := saltHalf xor 1;
 		saltHalfIndex := saltHalfIndex xor 8; //toggle between 0 -> 8 -> 0 -> 8 -> etc
@@ -1342,8 +1397,8 @@ begin
 		BlowfishEncryptECB(State, @block, @block);
 
 		// The output of the second encryption replaces subkeys P3 and P4. (P[2] and P[3])
-		State.PBox[i*2+0] := LongWord(block[3]) or (block[2] shl 8) or (block[1] shl 16) or (block[0] shl 24);
-		State.PBox[i*2+1] := LongWord(block[7]) or (block[6] shl 8) or (block[5] shl 16) or (block[4] shl 24);
+		State.PBox[i*2+0] := UInt32(block[3]) or (block[2] shl 8) or (block[1] shl 16) or (block[0] shl 24);
+		State.PBox[i*2+1] := UInt32(block[7]) or (block[6] shl 8) or (block[5] shl 16) or (block[4] shl 24);
 	end;
 
 	//When ExpandKey finishes replacing entries in the P-Array, it continues on replacing S-box entries two at a time.
@@ -1355,8 +1410,8 @@ begin
 			//That same ciphertext is also XORed with the second 64-bits of salt
 			//Delphi compiler is not worth its salt; it doesn't do hoisting ("Any compiler worth its salt will hoist" - Eric Brumer C++ compiler team)
 			//Salt is 0..15 (0..7 is first block, 8..15 is second block)
-			PLongWord(@block[0])^ := PLongWord(@block[0])^ xor PLongWord(@salt[saltHalfIndex  ])^;
-			PLongWord(@block[4])^ := PLongWord(@block[4])^ xor PLongWord(@salt[saltHalfIndex+4])^;
+			PUInt32(@block[0])^ := PUInt32(@block[0])^ xor PUInt32(@salt[saltHalfIndex  ])^;
+			PUInt32(@block[4])^ := PUInt32(@block[4])^ xor PUInt32(@salt[saltHalfIndex+4])^;
 
 			//saltHalf := saltHalf xor 1;
 			saltHalfIndex := saltHalfIndex xor 8;
@@ -1365,8 +1420,8 @@ begin
 			BlowfishEncryptECB(State, @Block, @Block);
 
 			// The output of the second encryption replaces subkeys S1 and P2. (S[0] and S[1])
-			State.SBox[j, i+0] := LongWord(block[3]) or (block[2] shl 8) or (block[1] shl 16) or (block[0] shl 24);
-			State.SBox[j, i+1] := LongWord(block[7]) or (block[6] shl 8) or (block[5] shl 16) or (block[4] shl 24);
+			State.SBox[j, i+0] := UInt32(block[3]) or (block[2] shl 8) or (block[1] shl 16) or (block[0] shl 24);
+			State.SBox[j, i+1] := UInt32(block[7]) or (block[6] shl 8) or (block[5] shl 16) or (block[4] shl 24);
 
 			Inc(i, 2);
 		end;
@@ -1395,7 +1450,10 @@ begin
 	Result := CompareMem(@candidateHash[0], @hash[0], len);
 
 	//Based on how long it took to hash the password, see if a rehash is needed to increase the cost
-	PasswordRehashNeeded := TBcrypt.PasswordRehashNeededCore(version, cost, cost, PerformanceTimestampToMs(t2-t1));
+	// ETHEA PATCH: this overload has no version of its own, and "version" used to
+	// bind to Winapi.Windows.version, the constant 'version.dll'. A raw hash is
+	// one this library made, so the version it writes is the one to pass.
+	PasswordRehashNeeded := TBcrypt.PasswordRehashNeededCore('2a', cost, cost, PerformanceTimestampToMs(t2-t1));
 end;
 
 {$IFNDEF UNICODE}
@@ -1895,6 +1953,99 @@ end;
 //function NormalizeString(NormForm: Cardinal; SrcString: PWideChar; SrcLength: Cardinal; DstString: PWideChar; DstLength: Cardinal): Integer; stdcall; external 'Normaliz.dll';
 
 class function TBCrypt.PasswordStringPrep(const Source: UnicodeString): TBytes;
+{$IFNDEF MSWINDOWS}
+type
+	TUNorm2GetInstance = function(var Status: Integer): Pointer; cdecl;
+	TUNorm2Normalize = function(Norm2: Pointer; Src: PWideChar; Length: Int32;
+		Dest: PWideChar; Capacity: Int32; var Status: Integer): Int32; cdecl;
+const
+	U_ZERO_ERROR = 0;
+	U_BUFFER_OVERFLOW_ERROR = 15;
+
+	function IcuFunction(const AName: string): Pointer;
+	var
+		LName: UTF8String;
+	begin
+		// The RTL loads ICU on Linux and knows the version suffix its symbols
+		// carry (unorm2_normalize_74 and the like).
+		if not IsICUAvailable then
+			raise EBCryptException.Create('[PasswordStringPrep] ICU is not available: ' +
+				'install the libicu package of the distribution');
+		LName := UTF8String(AName + System.LibICUSuffix);
+		Result := dlsym(System.HICUUC, MarshaledAString(LName));
+		if Result = nil then
+			raise EBCryptException.CreateFmt('[PasswordStringPrep] ICU function %s not found', [AName]);
+	end;
+
+var
+	getNFKC: TUNorm2GetInstance;
+	normalize: TUNorm2Normalize;
+	norm2: Pointer;
+	status: Integer;
+	normalized: UnicodeString;
+	normalizedLength: Int32;
+	utf8: TBytes;
+begin
+	{
+		ETHEA PATCH: the POSIX version must produce, byte for byte, what the
+		Windows one does, or a password hashed on one system will not verify on
+		the other.
+
+		Despite its name, FoldStringW(MAP_FOLDCZONE) performs full NFKC on
+		Windows, not only on the compatibility zone: measured, A + U+0308 becomes
+		U+00C4, U+2460 becomes "1", U+00B2 becomes "2", U+FB01 becomes "fi" (and
+		SelfTestI asserts the first and the last). ICU's NFKC is the same Unicode
+		algorithm. Without ICU the function raises: a hash that might differ from
+		the Windows one would lock its user out without a word.
+
+		The result is UTF-8 followed by a null terminator, as on Windows: the
+		terminator is hashed too, both by bcrypt and by the SHA-256 prehash.
+	}
+	if Length(Source) = 0 then
+	begin
+		SetLength(Result, 0);
+		Exit;
+	end;
+
+	getNFKC := IcuFunction('unorm2_getNFKCInstance');
+	normalize := IcuFunction('unorm2_normalize');
+	status := U_ZERO_ERROR;
+	norm2 := getNFKC(status);
+	if (status > U_ZERO_ERROR) or (norm2 = nil) then
+		raise EBCryptException.CreateFmt('[PasswordStringPrep] unorm2_getNFKCInstance failed (%d)', [status]);
+
+	// NFKC can grow a string (U+FDFA alone becomes 18 characters); ask again
+	// with the size ICU reports if the first buffer is not enough.
+	SetLength(normalized, Length(Source) * 3 + 16);
+	try
+		status := U_ZERO_ERROR;
+		normalizedLength := normalize(norm2, PWideChar(Source), Length(Source),
+			PWideChar(normalized), Length(normalized), status);
+		if status = U_BUFFER_OVERFLOW_ERROR then
+		begin
+			BurnString(normalized);
+			SetLength(normalized, normalizedLength);
+			status := U_ZERO_ERROR;
+			normalizedLength := normalize(norm2, PWideChar(Source), Length(Source),
+				PWideChar(normalized), Length(normalized), status);
+		end;
+		if status > U_ZERO_ERROR then
+			raise EBCryptException.CreateFmt('[PasswordStringPrep] unorm2_normalize failed (%d)', [status]);
+		SetLength(normalized, normalizedLength);
+
+		utf8 := TEncoding.UTF8.GetBytes(normalized);
+		SetLength(Result, Length(utf8) + 1);
+		if Length(utf8) > 0 then
+		begin
+			Move(utf8[0], Result[0], Length(utf8));
+			ZeroMemory(@utf8[0], Length(utf8));
+		end;
+		Result[Length(utf8)] := 0;
+	finally
+		BurnString(normalized);
+	end;
+end;
+{$ELSE}
 var
 	normalizedLength: Integer;
 	normalized: UnicodeString;
@@ -2015,6 +2166,7 @@ begin
 		BurnString(normalized);
 	end;
 end;
+{$ENDIF}
 
 
 class function TBCrypt.Prehash256(const password: UnicodeString): string;
@@ -2186,8 +2338,19 @@ begin
 {$IFDEF MSWINDOWS}
 	Result := GenRandomBytes_Windows(len, data);
 {$ELSE}
-//	Here is where you figure out how to call your OS's source of cryptographic random bytes.
-	Result := E_NOTIMPL;
+	// ETHEA PATCH: the kernel's cryptographic source. Without it the salt fell
+	// back to a GUID, which is unique but only partly random.
+	try
+		with TFileStream.Create('/dev/urandom', fmOpenRead or fmShareDenyNone) do
+		try
+			ReadBuffer(data^, len);
+		finally
+			Free;
+		end;
+		Result := S_OK;
+	except
+		Result := E_FAIL;
+	end;
 {$ENDIF}
 end;
 

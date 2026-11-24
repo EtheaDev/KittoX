@@ -28,10 +28,14 @@ See [LICENSE](LICENSE) for the full text.
 - All `Kitto.Html.*` controllers (List, Form, Wizard, FlexPanel, TreePanel, TabPanel, etc.)
 - All `Kitto.Web.Routing.*` infrastructure (attribute-based routing, dependency injection)
 - All `EF.*` foundation classes (database, YAML, trees, logging)
-- All `Kitto.Auth.*` authenticators (DB, TextFile, Ini, OSDB, DBServer)
+- All `Kitto.Auth.*` authenticators (DB, DBCrypt, TextFile, Ini, OSDB, DBServer, LDAP, JWT)
 - All `Kitto.AccessControl.*` access controllers
-- All `Kitto.Tool.*` standard tools (Export, SQL, ADO, Indy)
-- Web server infrastructure (Indy standalone, ISAPI, Apache module)
+- All `Kitto.Tool.*` tools (Standard, Export, SQL, ADO, Indy, XSL, FOP, FlexCel, DebenuQuickPDF);
+  the FlexCel and Debenu wrappers are Apache 2.0, but the libraries they drive are commercial
+  products licensed separately by their vendors
+- Web server infrastructure: standalone hosts on Indy (default) or HTTP.sys (Windows), run as
+  desktop GUI, Windows service or console application, including Linux64; ISAPI DLL and Apache
+  module through WebBroker
 - HTMX + AlpineJS client-side framework
 
 ## KittoX Enterprise Modules (AGPL-3.0 / Commercial)

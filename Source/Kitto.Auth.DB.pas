@@ -26,7 +26,10 @@ interface
 
 uses
   System.RegularExpressions,
+  {$IFDEF MSWINDOWS}
+  // Only for the QR bitmap handed to AfterQRGeneration; see QRGenerate.
   Vcl.Graphics,
+  {$ENDIF}
   EF.DB,
   EF.Tree,
   Kitto.Auth;
@@ -325,6 +328,7 @@ type
     /// </param>
     procedure AfterResetPassword(const ADBConnection: TEFDBConnection; const AParams: TEFNode); virtual;
 
+    {$IFDEF MSWINDOWS}
     /// <summary>
     ///  Called by QRGenerate after generating QR code for OTP authentication.
     ///  Override this method if you need to use this QR for any purpose, such
@@ -336,6 +340,7 @@ type
     ///  back to the initiator of the QR generation flow.
     /// </param>
     procedure AfterQRGeneration(const AQRCode: TBitmap; const AParams: TEFNode); virtual;
+    {$ENDIF}
 
   public
     /// <summary>Refills AAuthData from the KITTO_USERS record (no password
@@ -472,10 +477,12 @@ uses
 
 { TKDBAuthenticator }
 
+{$IFDEF MSWINDOWS}
 procedure TKDBAuthenticator.AfterQRGeneration(const AQRCode: TBitmap;
   const AParams: TEFNode);
 begin
 end;
+{$ENDIF}
 
 procedure TKDBAuthenticator.AfterResetPassword(const ADBConnection: TEFDBConnection; const AParams: TEFNode);
 begin
@@ -893,10 +900,12 @@ var
   LQuery: TEFDBQuery;
   LSecretCode, LQRString: string;
   LSecretCodeField: TField;
+  {$IFDEF MSWINDOWS}
   LQRCode: TDelphiZXingQRCode;
   LQRCodeBitmap: TBitmap;
   LRow, LColumn: Integer;
   LSCaleFactor, LRowScale, LColumnScale: Integer;
+  {$ENDIF}
 begin
   Assert(Assigned(AParams), 'Assigned(AParams)');
 
@@ -938,6 +947,10 @@ begin
   if LSecretCode = '' then
     raise EKError.Create(_('Cannot generate the QR code: the user record carries no SECRET_CODE. Add the column to ReadUserCommandText and store a random per-user secret in it.'));
   LQRString := 'otpauth://totp/'+TKConfig.Instance.Config.GetString('AppTitle')+'?secret='+LSecretCode;
+  // The bitmap is a VCL one, so the hook that receives it exists only on
+  // Windows. Elsewhere the checks above still run and the QR is not drawn.
+  // TODO Linux: hand the hook a portable image (PNG stream or SVG) instead.
+  {$IFDEF MSWINDOWS}
   LQRCode := TDelphiZXingQRCode.Create;
   LQRCodeBitmap := TBitmap.Create;
   try
@@ -967,8 +980,10 @@ begin
     AfterQRGeneration(LQRCodeBitmap,AParams);
   finally
     LQRCode.Free;
-    LQRCodeBitmap.FreeImage;
+    // Free, not FreeImage: FreeImage releases the pixels and leaks the object.
+    LQRCodeBitmap.Free;
   end;
+  {$ENDIF}
 end;
 
 procedure TKDBAuthenticator.SetPassword(const AValue: string);

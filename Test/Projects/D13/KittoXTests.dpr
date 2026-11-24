@@ -10,7 +10,10 @@ uses
   DUnitX.TestFramework,
   // Registers the FireDAC adapter, which the integration tests ask for by id...
   EF.DB.FD,
+  // ADO is COM, so Windows only: on Linux the ADO test cases find no adapter.
+  {$IFDEF MSWINDOWS}
   EF.DB.ADO,
+  {$ENDIF}
   // ...and the physical drivers it dispatches to. Without these the DriverID of
   // a connection resolves to nothing and FireDAC reports a missing object
   // factory, so every integration test would be skipped for the wrong reason.
@@ -55,7 +58,8 @@ uses
   Kitto.ChatPromptTests in '..\..\Source\Kitto.ChatPromptTests.pas',
   Kitto.ChatAttachmentTests in '..\..\Source\Kitto.ChatAttachmentTests.pas',
   Kitto.HttpSysTests in '..\..\Source\Kitto.HttpSysTests.pas',
-  Kitto.VendoredPatchTests in '..\..\Source\Kitto.VendoredPatchTests.pas';
+  Kitto.VendoredPatchTests in '..\..\Source\Kitto.VendoredPatchTests.pas',
+  Kitto.BcryptTests in '..\..\Source\Kitto.BcryptTests.pas';
 
 var
   LRunner: ITestRunner;

@@ -62,7 +62,9 @@ uses
   IdSSLOpenSSL,
   IdText,
   IdExplicitTLSClientServerBase,
-  BCrypt,
+  // The framework's copy, the one Kitto.Auth.DB verifies with (the plain
+  // BCrypt unit is Windows-only and lacks the KittoX fixes).
+  Kitto.BCrypt,
   System.StrUtils;
 
 { TDefaultPhaseStartTime }

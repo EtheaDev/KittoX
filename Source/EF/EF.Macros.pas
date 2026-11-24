@@ -535,6 +535,8 @@ uses
   {$IFDEF MSWINDOWS}
   Winapi.Windows,
   EF.Sys.Windows,
+  {$ELSE}
+  Posix.Unistd,
   {$ENDIF}
   System.StrUtils,
   System.Types,
@@ -858,6 +860,11 @@ begin
     ExpandMacros(AString, '%PROCESS_ID%', IntToStr(GetCurrentProcessId));
   if AString.Contains('%THREAD_ID%') then
     ExpandMacros(AString, '%THREAD_ID%', IntToStr(GetCurrentThreadId));
+  {$ELSE}
+  if AString.Contains('%PROCESS_ID%') then
+    ExpandMacros(AString, '%PROCESS_ID%', IntToStr(getpid));
+  if AString.Contains('%THREAD_ID%') then
+    ExpandMacros(AString, '%THREAD_ID%', IntToStr(TThread.CurrentThread.ThreadID));
   {$ENDIF}
 end;
 

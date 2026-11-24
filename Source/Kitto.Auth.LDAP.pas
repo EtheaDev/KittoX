@@ -17,7 +17,8 @@
 /// <summary>
 ///  Defines the LDAP authenticator: it validates the supplied credentials by
 ///  performing a simple bind against an LDAP directory (typically Active
-///  Directory), using the native Windows LDAP API (wldap32.dll). No local user
+///  Directory), using the native Windows LDAP API (wldap32.dll), or OpenLDAP
+///  (libldap.so.2, package libldap2) on Linux. No local user
 ///  table is needed: the directory itself confirms that the user exists and
 ///  that the password is correct.
 ///  After a successful bind, if a SearchBase is configured, the authenticator
@@ -151,6 +152,7 @@ const
 type
   PLDAP = Pointer;
   PLDAPMessage = Pointer;
+{$IFDEF MSWINDOWS}
   // Pointer to the first element of a NULL-terminated array of PWideChar,
   // as returned by ldap_get_valuesW.
   PLDAPValues = ^PWideChar;
@@ -188,6 +190,116 @@ function ldap_msgfree(res: PLDAPMessage): Cardinal;
 
 function ldap_unbind_s(ld: PLDAP): Cardinal;
   cdecl; external 'wldap32.dll';
+{$ELSE}
+{ OpenLDAP (libldap.so.2). Same protocol, same option numbers and result codes
+  as wldap32, but UTF-8 strings and the current (non-deprecated) entry points:
+  ldap_initialize takes a URI, the simple bind is ldap_sasl_bind_s with no
+  mechanism, values are read as berval. The functions below the externals have
+  the names and signatures of the wldap32 ones the authenticator calls, so its
+  code is the same on both systems.
+  Unlike wldap32, OpenLDAP validates the server certificate on ldaps:// by
+  default (TLS_REQCERT demand in /etc/ldap/ldap.conf): a self-signed directory
+  certificate must be trusted by the system, or the bind fails. }
+const
+  LIBLDAP = 'libldap.so.2';
+
+type
+  PBerval = ^TBerval;
+  TBerval = record
+    bv_len: NativeUInt;  // ber_len_t: unsigned long
+    bv_val: PAnsiChar;
+  end;
+  // NULL-terminated array of PBerval, as returned by ldap_get_values_len.
+  PPBerval = ^PBerval;
+
+function ldap_initialize(out ld: PLDAP; uri: MarshaledAString): Integer;
+  cdecl; external LIBLDAP;
+
+function ldap_set_option(ld: PLDAP; option: Integer; const invalue: Pointer): Integer;
+  cdecl; external LIBLDAP;
+
+function ldap_sasl_bind_s(ld: PLDAP; dn: MarshaledAString; mechanism: MarshaledAString;
+  cred: PBerval; sctrls, cctrls: Pointer; servercredp: Pointer): Integer;
+  cdecl; external LIBLDAP;
+
+function ldap_search_ext_s(ld: PLDAP; base: MarshaledAString; scope: Integer;
+  filter: MarshaledAString; attrs: Pointer; attrsonly: Integer;
+  sctrls, cctrls: Pointer; timeout: Pointer; sizelimit: Integer;
+  out res: PLDAPMessage): Integer; cdecl; external LIBLDAP;
+
+function ldap_first_entry(ld: PLDAP; res: PLDAPMessage): PLDAPMessage;
+  cdecl; external LIBLDAP;
+
+function ldap_get_values_len(ld: PLDAP; entry: PLDAPMessage; attr: MarshaledAString): PPBerval;
+  cdecl; external LIBLDAP;
+
+procedure ldap_value_free_len(vals: PPBerval);
+  cdecl; external LIBLDAP;
+
+function ldap_msgfree(res: PLDAPMessage): Integer;
+  cdecl; external LIBLDAP;
+
+function ldap_unbind_ext_s(ld: PLDAP; sctrls, cctrls: Pointer): Integer;
+  cdecl; external LIBLDAP;
+
+function OpenLDAP(const AScheme: string; HostName: PWideChar; PortNumber: Cardinal): PLDAP;
+var
+  LUri: UTF8String;
+begin
+  LUri := UTF8String(Format('%s://%s:%d', [AScheme, string(HostName), PortNumber]));
+  // ldap_initialize only parses the URI: the connection is made by the bind.
+  if ldap_initialize(Result, MarshaledAString(LUri)) <> 0 then
+    Result := nil;
+end;
+
+function ldap_initW(HostName: PWideChar; PortNumber: Cardinal): PLDAP;
+begin
+  Result := OpenLDAP('ldap', HostName, PortNumber);
+end;
+
+function ldap_sslinitW(HostName: PWideChar; PortNumber: Cardinal; secure: Integer): PLDAP;
+begin
+  Result := OpenLDAP('ldaps', HostName, PortNumber);
+end;
+
+function ldap_simple_bind_sW(ld: PLDAP; dn: PWideChar; passwd: PWideChar): Cardinal;
+var
+  LDN, LPassword: UTF8String;
+  LCred: TBerval;
+begin
+  LDN := UTF8String(string(dn));
+  LPassword := UTF8String(string(passwd));
+  LCred.bv_len := Length(LPassword);
+  LCred.bv_val := PAnsiChar(LPassword);
+  // No mechanism = LDAP_SASL_SIMPLE. Errors are negative in OpenLDAP (-1 is
+  // "server down"): shown as they are in the error message.
+  Result := Cardinal(ldap_sasl_bind_s(ld, MarshaledAString(LDN), nil, @LCred, nil, nil, nil));
+end;
+
+function ldap_search_sW(ld: PLDAP; base: PWideChar; scope: Cardinal;
+  filter: PWideChar; attrs: Pointer; attrsonly: Cardinal;
+  var res: PLDAPMessage): Cardinal;
+var
+  LBase, LFilter: UTF8String;
+begin
+  LBase := UTF8String(string(base));
+  LFilter := UTF8String(string(filter));
+  Result := Cardinal(ldap_search_ext_s(ld, MarshaledAString(LBase), scope,
+    MarshaledAString(LFilter), attrs, attrsonly, nil, nil, nil, 0, res));
+  // wldap32 hands back nothing on failure, OpenLDAP may hand back a message
+  // anyway: freed here, since the caller frees it only on success.
+  if (Result <> LDAP_SUCCESS) and (res <> nil) then
+  begin
+    ldap_msgfree(res);
+    res := nil;
+  end;
+end;
+
+function ldap_unbind_s(ld: PLDAP): Cardinal;
+begin
+  Result := Cardinal(ldap_unbind_ext_s(ld, nil, nil));
+end;
+{$ENDIF}
 
 { Escapes the special characters of an LDAP search filter value (RFC 4515). The
   value comes from a user who has already authenticated, so this is defence in
@@ -297,6 +409,7 @@ var
   LSearchResult: PLDAPMessage;
   LEntry: PLDAPMessage;
 
+  {$IFDEF MSWINDOWS}
   function GetAttrValues(const AAttr: string): string;
   var
     LValues: PLDAPValues;
@@ -321,6 +434,37 @@ var
       ldap_value_freeW(LValues);
     end;
   end;
+  {$ELSE}
+  function GetAttrValues(const AAttr: string): string;
+  var
+    LName: UTF8String;
+    LValues: PPBerval;
+    LCursor: PPBerval;
+    LValue: UTF8String;
+  begin
+    Result := '';
+    if AAttr = '' then
+      Exit;
+    LName := UTF8String(AAttr);
+    LValues := ldap_get_values_len(LLdap, LEntry, MarshaledAString(LName));
+    if LValues = nil then
+      Exit;
+    try
+      LCursor := LValues;
+      while LCursor^ <> nil do
+      begin
+        if Result <> '' then
+          Result := Result + ';';
+        // Values are UTF-8 octets with a length, not NUL-terminated.
+        SetString(LValue, LCursor^.bv_val, LCursor^.bv_len);
+        Result := Result + string(LValue);
+        Inc(LCursor);
+      end;
+    finally
+      ldap_value_free_len(LValues);
+    end;
+  end;
+  {$ENDIF}
 
 begin
   ACanonicalSam := '';

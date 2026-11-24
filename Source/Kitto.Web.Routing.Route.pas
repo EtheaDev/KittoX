@@ -51,9 +51,6 @@ implementation
 uses
   System.SysUtils,
   System.StrUtils,
-  {$IFDEF DEBUG}
-  Winapi.Windows,
-  {$ENDIF}
   EF.Logger,
   Kitto.Web.Application,
   Kitto.Web.Routing.Injection,

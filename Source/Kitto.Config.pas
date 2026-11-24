@@ -1284,11 +1284,21 @@ class function TKConfig.FindSystemHomePath: string;
 var
   LExePath: string;
 
-  function TryPath(const ARelPath: string): Boolean;
+  // The relative paths below are written the Windows way; on Linux a '\' is an
+  // ordinary character of a file name, not a separator.
+  function NativePath(const APath: string): string;
   begin
-    Result := DirectoryExists(LExePath + ARelPath);
+    Result := APath.Replace('\', PathDelim);
+  end;
+
+  function TryPath(const ARelPath: string): Boolean;
+  var
+    LPath: string;
+  begin
+    LPath := LExePath + NativePath(ARelPath);
+    Result := DirectoryExists(LPath);
     if Result then
-      FindSystemHomePath := LExePath + ARelPath;
+      FindSystemHomePath := LPath;
   end;
 
 begin
@@ -1312,10 +1322,12 @@ begin
   // builds has it already).
   Result := '%KITTOX%\Home\';
   ExpandEnvironmentVariables(Result);
+  Result := NativePath(Result);
   if DirectoryExists(Result) then
     Exit;
   Result := '%KITTOX_HOME%\Home\';
   ExpandEnvironmentVariables(Result);
+  Result := NativePath(Result);
   if DirectoryExists(Result) then
     Exit;
 

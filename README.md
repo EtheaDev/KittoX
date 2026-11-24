@@ -5,6 +5,7 @@
 [![Delphi 10.4+](https://img.shields.io/badge/Delphi-10.4%2B-e62329.svg)](https://www.embarcadero.com/products/delphi)
 [![Platform: VCL](https://img.shields.io/badge/Platform-VCL-8a2be2.svg)](https://docwiki.embarcadero.com/RADStudio/en/Main_Page)
 [![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d6.svg)](https://www.microsoft.com/windows)
+[![Linux64](https://img.shields.io/badge/Linux64-Ubuntu%2024.04-e95420.svg)](https://ethea.it/docs/kittox/DeployLinux.html)
 
 [![HTMX 2.0.10](https://img.shields.io/badge/HTMX-2.0.10-3d72d7.svg)](https://htmx.org)
 [![Alpine.js 3.17.3](https://img.shields.io/badge/Alpine.js-3.17.3-77c1d2.svg)](https://alpinejs.dev)
@@ -62,6 +63,13 @@ Visit [this site](https://ethea.it/Kitto-Demo/) for online demos.
 ---
 
 # Release Notes
+
+## 24 Nov 2026: ver. 4.3.1
+
+- **Linux64 support reviewed** (Ubuntu 24.04, `dcclinux64`): the same standalone `.dpr` runs headless and stops cleanly on SIGTERM/SIGINT, as a **systemd service** with its log in the journal. HelloKitto, TasKitto and KEmployee run on Linux against SQL Server and Firebird; the test suite is green on Linux64 and Win64. See [Linux Deployment](https://ethea.it/docs/kittox/DeployLinux.html)
+- **Fixed on Linux**: BCrypt hashing (crashed on every hash; hashes made on Windows now verify on Linux), FireDAC queries on the main thread, the system Home not found, the static file containment check now case-sensitive
+- `Kitto.Auth.LDAP` works on Linux through OpenLDAP
+- `Tools\Linux`: scripts to set up Ubuntu in WSL, build and deploy an application, install it as a service, and smoke-test it
 
 ## 23 Nov 2026: ver. 4.3.0
 

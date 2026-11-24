@@ -69,6 +69,12 @@ type
     /// <summary>An absolute path in the document portion is refused.</summary>
     [Test]
     procedure AnAbsoluteDocumentIsRefused;
+
+    /// <summary>A sibling directory whose name differs only in case is the
+    /// same directory on Windows and another one on Linux: the check must
+    /// follow the file system, not ignore case everywhere.</summary>
+    [Test]
+    procedure ADirectoryDifferingOnlyInCaseFollowsTheFileSystem;
   end;
 
 implementation
@@ -134,7 +140,9 @@ procedure TKStaticRouteContainmentTests.AnAbsolutePathIsRefused;
 var
   LResult: string;
 begin
-  LResult := FRoute.Map(FBase, 'C:/Windows/', 'win.ini');
+  // An absolute path of the platform: on Linux "C:/Windows/" is just a
+  // relative directory named "C:", legitimately under the base.
+  LResult := FRoute.Map(FBase, {$IFDEF MSWINDOWS}'C:/Windows/', 'win.ini'{$ELSE}'/etc/', 'passwd'{$ENDIF});
   Assert.AreEqual('', LResult, 'An absolute URL path was mapped');
 end;
 
@@ -142,8 +150,24 @@ procedure TKStaticRouteContainmentTests.AnAbsoluteDocumentIsRefused;
 var
   LResult: string;
 begin
-  LResult := FRoute.Map(FBase, '', 'C:\Windows\win.ini');
+  LResult := FRoute.Map(FBase, '', {$IFDEF MSWINDOWS}'C:\Windows\win.ini'{$ELSE}'/etc/passwd'{$ENDIF});
   Assert.AreEqual('', LResult, 'An absolute document was mapped');
+end;
+
+procedure TKStaticRouteContainmentTests.ADirectoryDifferingOnlyInCaseFollowsTheFileSystem;
+var
+  LSibling: string;
+  LResult: string;
+begin
+  LSibling := ExtractFileName(FBase).ToUpper;
+  LResult := FRoute.Map(FBase, '../' + LSibling + '/', 'secret.txt');
+  {$IFDEF MSWINDOWS}
+  Assert.AreNotEqual('', LResult,
+    'On Windows the upper-case name is the base directory itself');
+  {$ELSE}
+  Assert.AreEqual('', LResult,
+    'A sibling directory differing only in case was taken for the base');
+  {$ENDIF}
 end;
 
 initialization

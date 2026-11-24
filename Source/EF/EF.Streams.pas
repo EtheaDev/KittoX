@@ -62,9 +62,9 @@ type
     /// <summary>Frees the decorated stream if the decorator owns it.</summary>
     destructor Destroy; override;
     /// <summary>Reads from the decorated stream, firing OnEndOfStream when fewer bytes than requested are read.</summary>
-    function Read(var Buffer; Count: Integer): Integer; override;
+    function Read(var Buffer; Count: Longint): Longint; override;
     /// <summary>Writes to the decorated stream.</summary>
-    function Write(const Buffer; Count: Integer): Integer; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
     /// <summary>Seeks on the decorated stream (32-bit overload).</summary>
     function Seek(Offset: Longint; Origin: Word): Longint; overload; override;
     /// <summary>Seeks on the decorated stream (64-bit overload).</summary>
@@ -294,14 +294,14 @@ begin
     FOnEndOfStream(Self);
 end;
 
-function TEFStreamDecorator.Read(var Buffer; Count: Integer): Integer;
+function TEFStreamDecorator.Read(var Buffer; Count: Longint): Longint;
 begin
   Result := FStream.Read(Buffer, Count);
   if Result < Count then
     DoEndOfStream;
 end;
 
-function TEFStreamDecorator.Seek(Offset: Integer; Origin: Word): Longint;
+function TEFStreamDecorator.Seek(Offset: Longint; Origin: Word): Longint;
 begin
   Result := FStream.Seek(Offset, Origin);
 end;
@@ -312,7 +312,7 @@ begin
   Result := FStream.Seek(Offset, Origin);
 end;
 
-function TEFStreamDecorator.Write(const Buffer; Count: Integer): Integer;
+function TEFStreamDecorator.Write(const Buffer; Count: Longint): Longint;
 begin
   Result := FStream.Write(Buffer, Count);
 end;

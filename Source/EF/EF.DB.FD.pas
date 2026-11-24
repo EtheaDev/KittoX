@@ -389,6 +389,9 @@ uses
   System.StrUtils,
   System.TypInfo,
   System.SyncObjs,
+  {$IFNDEF MSWINDOWS}
+  FireDAC.UI.Intf,
+  {$ENDIF}
   EF.StrUtils,
   EF.Localization,
   EF.Types;
@@ -1600,6 +1603,14 @@ initialization
   // are global to the process. Created here, before any connection can be
   // opened, so it never has to be created lazily by whoever gets there first.
   _PoolDefLock := TCriticalSection.Create;
+  {$IFNDEF MSWINDOWS}
+  // On Windows FireDAC turns silent mode on by itself for console programs
+  // (IsConsole), and a KittoX server has no use for wait cursors or dialogs.
+  // On POSIX it does not: a query on the main thread (startup, tests) asks for
+  // a TFDGUIxWaitCursor nobody registered and fails with "Object factory for
+  // class {3E9B315B...} is missing". Worker threads are silent anyway.
+  FFDGUIxSilentMode := True;
+  {$ENDIF}
   TEFDBAdapterRegistry.Instance.RegisterDBAdapter(TEFDBFDAdapter.GetClassId, TEFDBFDAdapter.Create);
 
 finalization

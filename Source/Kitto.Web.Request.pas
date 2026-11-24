@@ -30,9 +30,10 @@ interface
 uses
   System.Classes,
   Web.HTTPApp,
-  {$IFNDEF LINUX}
+  // Registers the multipart/form-data parser that file uploads go through.
+  // It used to be left out on Linux, where older Delphi versions did not ship
+  // it; Delphi 13 does, and without it no upload reaches the application.
   Web.ReqMulti,
-  {$ENDIF}
   EF.Tree;
 
 type

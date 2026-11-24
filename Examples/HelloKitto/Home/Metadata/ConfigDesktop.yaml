@@ -12,7 +12,7 @@ Databases:
   FireDAC_MSSQL: FD
     Connection:
       DriverID: MSSQL
-      Server: 127.0.0.1, 1433
+      Server: 127.0.0.1, 1435
       ApplicationName: %APPTITLE%
       Database: HelloKitto
       OSAuthent: No

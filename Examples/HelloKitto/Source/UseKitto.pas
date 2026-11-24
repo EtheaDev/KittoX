@@ -39,6 +39,9 @@ uses
   // target a local DB (SQLite/InterBase) — remove the client/server driver uses
   // accordingly. (ADO/dbGo and the SQLite/InterBase drivers are in Professional.)
   // ---------------------------------------------------------------------------
+  // Windows only: ADO, the DBExpress drivers, Excel via ACE OLEDB and Debenu
+  // Quick PDF do not exist on Linux. FireDAC covers the same databases there.
+  {$IFDEF MSWINDOWS}
   //ADO Support
   , EF.DB.ADO
   //DbExpress Support
@@ -46,6 +49,7 @@ uses
   , Data.DBXMSSQL
   , Data.DBXFirebird
   , Data.DBXOracle
+  {$ENDIF}
   //FireDac base support
   , EF.DB.FD
   //FireDac support for MS-SQL
@@ -73,10 +77,12 @@ uses
   , Kitto.Auth.JWT
   //, Kitto.AccessControl.DB
 
+  {$IFDEF MSWINDOWS}
   //For Excel/Import export via ADO: requires Microsoft.ACE.OLEDB.12.0 installed
   , Kitto.Tool.ADO
   //Debenu Quick PDF Engine + Tool: requires Debenu Quick PDF (only 32bit)
   , Kitto.Tool.DebenuQuickPDF
+  {$ENDIF}
 
   // Optional feature subsystems (opt-in, gated by Config.yaml; NOT part of
   // Kitto.Html.All). If a feature is Enabled in Config but its unit is missing

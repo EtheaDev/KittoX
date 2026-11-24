@@ -196,7 +196,11 @@ begin
     on E: Exception do
       Exit('');
   end;
-  if not LFull.StartsWith(LBaseDir, True {case-insensitive: Windows file system}) then
+  // The comparison follows the file system: case-insensitive on Windows, where
+  // Resources and resources are the same directory; case-sensitive elsewhere,
+  // where they are two, and ignoring case would let a sibling directory whose
+  // name differs only in case pass for the resource directory.
+  if not LFull.StartsWith(LBaseDir, {$IFDEF MSWINDOWS}True{$ELSE}False{$ENDIF}) then
     Result := '';
 end;
 

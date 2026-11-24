@@ -256,6 +256,19 @@ interface
   {$DEFINE dx_StringList_has_OwnsObjects}
   {$DEFINE dx_StrProp_is_unicode}
 {$endif}
+// ETHEA PATCH: Delphi 13 (VER370) and later. Without this block a new
+// compiler gets none of the settings above - on Linux that means the Kylix-era
+// resource string hook, which no longer compiles.
+{$IF CompilerVersion >= 37.0}
+  {$DEFINE dx_has_Unsafe_Warnings}
+  {$IFDEF LINUX}
+    {$UNDEF dx_has_Resource_Strings}
+  {$ELSE}
+    {$DEFINE dx_has_WideStrings}
+  {$ENDIF}
+  {$DEFINE dx_StringList_has_OwnsObjects}
+  {$DEFINE dx_StrProp_is_unicode}
+{$ENDIF}
 
 {$ifdef dx_has_Unsafe_Warnings}
   {$WARN UNSAFE_TYPE OFF}
@@ -278,6 +291,7 @@ uses
   {$ENDIF dx_has_WideStrings}
   System.Classes,
   System.StrUtils,
+  System.SyncObjs,
   System.SysUtils,
   System.TypInfo;
 
@@ -585,7 +599,7 @@ type
       /// web application one of them belongs to a session, and two requests of
       /// that session run at the same time. Everything that reads or writes
       /// domainlist, curlang or the open .mo files goes through this.</summary>
-      FStateLock: TRTLCriticalSection;
+      FStateLock: TCriticalSection; // RTL, not Winapi: portable
       curlang: LanguageString;
       curGetPluralForm:TGetPluralForm;
       curmsgdomain: DomainString;
@@ -1680,11 +1694,11 @@ begin
   DebugWriteln ('Text domain "'+szDomain+'" is now located at "'+dir+'"');
   {$endif}
   // ETHEA PATCH: writes into a domain another thread may be reading.
-  EnterCriticalSection(FStateLock);
+  FStateLock.Enter;
   try
     getdomain(szDomain,DefaultDomainDirectory,CurLang).Directory := dir;
   finally
-    LeaveCriticalSection(FStateLock);
+    FStateLock.Leave;
   end;
   WhenNewDomainDirectory (szDomain, szDirectory);
 end;
@@ -1705,7 +1719,7 @@ begin
   DebugWriteln('');
   {$endif}
   // ETHEA PATCH: see FStateLock.
-  InitializeCriticalSection(FStateLock);
+  FStateLock := TCriticalSection.Create;
   curGetPluralForm:=GetPluralForm2EN;
   Enabled:=True;
   curmsgdomain:=DefaultTextDomain;
@@ -1761,7 +1775,7 @@ begin
   FreeAndNil (DebugLog);
   FreeAndNil (DebugLogCS);
   {$endif}
-  DeleteCriticalSection(FStateLock);
+  FreeAndNil(FStateLock);
   inherited;
 end;
 
@@ -1783,11 +1797,11 @@ begin
   end else begin
     // ETHEA PATCH: the domain and its .mo file are read here, and
     // UseLanguage may be closing them on another thread.
-    EnterCriticalSection(FStateLock);
+    FStateLock.Enter;
     try
       Result:=UTF8Decode(EnsureLineBreakInTranslatedString(getdomain(szDomain,DefaultDomainDirectory,CurLang).gettext(StripCRRawMsgId(utf8encode(szMsgId)))));
     finally
-      LeaveCriticalSection(FStateLock);
+      FStateLock.Leave;
     end;
 
     {$ifdef DXGETTEXTDEBUG}
@@ -2332,7 +2346,7 @@ begin
   // ETHEA PATCH: this closes and reopens the .mo file of every domain, and
   // KittoX calls it on EVERY request through ForceLanguage. Another thread of
   // the same session may be reading those files right now.
-  EnterCriticalSection(FStateLock);
+  FStateLock.Enter;
   try
     curlang := LanguageCode;
     for i:=0 to domainlist.Count-1 do begin
@@ -2340,7 +2354,7 @@ begin
       dom.SetLanguageCode (curlang);
     end;
   finally
-    LeaveCriticalSection(FStateLock);
+    FStateLock.Leave;
   end;
 
   l2:=lowercase(LeftStr(curlang,2));
@@ -2522,7 +2536,7 @@ var
   p:integer;
 begin
   // ETHEA PATCH: see dgettext.
-  EnterCriticalSection(FStateLock);
+  FStateLock.Enter;
   try
   {$ifdef DXGETTEXTDEBUG}
   DebugWriteln ('dngettext translation (domain '+szDomain+', number is '+IntTostr(Number)+') of '+singular+'/'+plural);
@@ -2559,7 +2573,7 @@ begin
     dec (idx);
   end;
   finally
-    LeaveCriticalSection(FStateLock);
+    FStateLock.Leave;
   end;
 end;
 
@@ -2715,7 +2729,7 @@ var
 begin
   // ETHEA PATCH: the list is read AND written here - two threads at the first
   // call would create two domains and write while the other reads.
-  EnterCriticalSection(FStateLock);
+  FStateLock.Enter;
   try
   idx := domainlist.IndexOf(Domain);
   if idx = -1 then begin
@@ -2731,7 +2745,7 @@ begin
     Result := domainlist.Objects[idx] as TDomain;
   end;
   finally
-    LeaveCriticalSection(FStateLock);
+    FStateLock.Leave;
   end;
 end;
 
